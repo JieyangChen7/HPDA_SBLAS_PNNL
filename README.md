@@ -118,7 +118,7 @@ The test binary will run tests on all three SpMV versions with options specified
 All SpVM version perform the matrix-vector operation:
     	y = α ∗ A ∗ x + β ∗ y
         
-###### spMV_mgpu_baseline:
+##### spMV_mgpu_baseline:
 ------------
 | Input parameter | type|  Description |
 | ---- |----| ------- | 
@@ -138,7 +138,7 @@ All SpVM version perform the matrix-vector operation:
 | ---- |----| ------- | 
 | y | double * |Vector y |
 
-###### spMV_mgpu_v1:
+##### spMV_mgpu_v1:
 ------------
 | Input parameter | type|  Description |
 | ---- |----| ------- | 
@@ -160,7 +160,7 @@ All SpVM version perform the matrix-vector operation:
 | y | double * |Vector y |
 
 
-###### spMV_mgpu_v2:
+##### spMV_mgpu_v2:
 
 ------------
 | Input parameter | type|  Description |
