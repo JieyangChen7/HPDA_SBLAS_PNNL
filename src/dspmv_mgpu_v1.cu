@@ -111,9 +111,11 @@ int spMV_mgpu_v1(int m, int n, long long nnz, double * alpha,
 										(long long)dev_n[d] * sizeof(double) +
 										(long long)dev_m[d] * sizeof(double);
 			double matrix_size_in_gb = (double)matrix_data_space / 1e9;
+			/*
 			if ( matrix_size_in_gb > 0.8 * get_gpu_availble_mem(ngpu)) {
 				return -1;
 			}
+			*/
 
 
 			dev_nnz[d]   = (int)(end_idx[d] - start_idx[d] + 1);
@@ -212,7 +214,7 @@ int spMV_mgpu_v1(int m, int n, long long nnz, double * alpha,
 				err[d] = csr5_kernel(dev_m[d], dev_n[d], dev_nnz[d], 
 							alpha, dev_csrVal[d], 
 							dev_csrRowPtr[d], dev_csrColIndex[d], 
-							dev_x[d],  beta, dev_y[d]); 
+							dev_x[d],  beta, dev_y[d], stream[d]); 
 			}
 		}
 

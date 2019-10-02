@@ -22,7 +22,7 @@ void generate_tasks(int m, int n, long long nnz, double * alpha,
 
 void assign_task(spmv_task * t, int dev_id, cudaStream_t stream);
 
-int run_task(spmv_task * t, int dev_id, cusparseHandle_t handle, int kernel);
+int run_task(spmv_task * t, int dev_id, cusparseHandle_t handle, int kernel, cudaStream_t stream);
 
 void finalize_task(spmv_task * t, int dev_id, cudaStream_t stream);
 
@@ -40,8 +40,12 @@ int spMV_mgpu_v2(int m, int n, long long nnz, double * alpha,
 				  int q)
 {
 
-	nb = min(nb, (long long )(0.8*get_gpu_availble_mem(ngpu)*1e9/(double)(sizeof(double) + sizeof(int) + sizeof(int)))/q ); 
+	
+	nb = min(nb, (long long )(0.8*16*1e9/(double)(sizeof(double) + sizeof(int) + sizeof(int)))/q ); 
 	if (nb <= 0 || ngpu == 0 || q == 0) {
+		cout << "nb = " << nb << endl;
+		cout << "ngpu = " << ngpu << endl;
+		cout << "q = " << q << endl; 
 		return -1;
 	}
 
@@ -112,17 +116,17 @@ int spMV_mgpu_v2(int m, int n, long long nnz, double * alpha,
 			cudaMalloc((void**)&(dev_csrRowPtr[c]),   (m + 1) * sizeof(int)   );
 			cudaMalloc((void**)&(dev_csrColIndex[c]), nb      * sizeof(int)   );
 			cudaMalloc((void**)&(dev_x[c]),           n       * sizeof(double));
-	    	cudaMalloc((void**)&(dev_y[c]),           m       * sizeof(double));
+		    	cudaMalloc((void**)&(dev_y[c]),           m       * sizeof(double));
 
-    	}
+    		}
 
    		c = 0; 
     	
-    	//cout << "GPU " << dev_id << " entering loop" << endl;
+    		//cout << "GPU " << dev_id << " entering loop" << endl;
 
 
-    	int num_of_assigned_task = 0;
-    	int num_of_to_be_assigned_task = num_of_tasks * (dev_id + 1) /  omp_get_num_threads() - 
+    		int num_of_assigned_task = 0;
+    		int num_of_to_be_assigned_task = num_of_tasks * (dev_id + 1) /  omp_get_num_threads() - 
     									 num_of_tasks * (dev_id) /  omp_get_num_threads();
 
 		while (true) {
@@ -155,8 +159,9 @@ int spMV_mgpu_v2(int m, int n, long long nnz, double * alpha,
 					curr_spmv_task->dev_csrColIndex = dev_csrColIndex[c];
 					curr_spmv_task->dev_x = dev_x[c];
 					curr_spmv_task->dev_y = dev_y[c];
+				
 					assign_task(curr_spmv_task, dev_id, stream[c]);
-					run_task(curr_spmv_task, dev_id, handle[c], kernel);
+					run_task(curr_spmv_task, dev_id, handle[c], kernel, stream[c]);
 					finalize_task(curr_spmv_task, dev_id, stream[c]);
 				}
 				if (!curr_spmv_task) {
@@ -167,7 +172,7 @@ int spMV_mgpu_v2(int m, int n, long long nnz, double * alpha,
 			if (!curr_spmv_task) {
 				break;
 			}
-		}
+		} //end of while
 
 		cudaDeviceSynchronize();
 
@@ -185,7 +190,7 @@ int spMV_mgpu_v2(int m, int n, long long nnz, double * alpha,
 		
 
 
-	}
+	} // end of omp
 
 	time_comm_comp = get_time() - curr_time;
 
@@ -325,7 +330,7 @@ void assign_task(spmv_task * t, int dev_id, cudaStream_t stream){
 	t->dev_id = dev_id;
 	cudaSetDevice(dev_id);
 
-    cudaMemcpyAsync(t->dev_csrRowPtr,   t->host_csrRowPtr,          
+        cudaMemcpyAsync(t->dev_csrRowPtr,   t->host_csrRowPtr,          
     			   (size_t)((t->dev_m + 1) * sizeof(int)), cudaMemcpyHostToDevice, stream);
 
 	cudaMemcpyAsync(t->dev_csrColIndex, &(t->host_csrColIndex[t->start_idx]), 
@@ -342,11 +347,11 @@ void assign_task(spmv_task * t, int dev_id, cudaStream_t stream){
 
 }
 
-int run_task(spmv_task * t, int dev_id, cusparseHandle_t handle, int kernel){
+int run_task(spmv_task * t, int dev_id, cusparseHandle_t handle, int kernel, cudaStream_t stream){
 	cudaSetDevice(dev_id);
 
-	cusparseStatus_t status;
-	int err;
+	cusparseStatus_t status = CUSPARSE_STATUS_SUCCESS;
+	int err = 0;
 	if(kernel == 1) {
 		status = cusparseDcsrmv(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, 
 								t->dev_m, t->dev_n, t->dev_nnz, 
@@ -360,13 +365,17 @@ int run_task(spmv_task * t, int dev_id, cusparseHandle_t handle, int kernel){
 									t->dev_csrRowPtr, t->dev_csrColIndex, 
 									t->dev_x,  t->beta, t->dev_y); 
 	} else if (kernel == 3) {
+		//cout << "calling csr5_kernel" << endl;
 		err = csr5_kernel(t->dev_m, t->dev_n, t->dev_nnz, 
 					t->alpha, t->dev_csrVal, 
 					t->dev_csrRowPtr, t->dev_csrColIndex, 
-					t->dev_x,  t->beta, t->dev_y); 
-		
+					t->dev_x,  t->beta, t->dev_y, stream); 
+		//cudaDeviceSynchronize();
 	}
 	if (status != CUSPARSE_STATUS_SUCCESS || err != 0 ) {
+		cout << "KERNEL ERROR: kernel(" <<kernel << ")"<< endl;
+		cout << "CSPARSE ERROR: " << status << endl;
+		cout << "CSR5 kernel: " << err << endl;
 		return -1;
 	}
 }
@@ -376,6 +385,7 @@ void finalize_task(spmv_task * t, int dev_id, cudaStream_t stream) {
 	cudaMemcpyAsync(t->local_result_y,   t->dev_y,          
     			   (size_t)((t->dev_m) * sizeof(double)), 
     			   cudaMemcpyDeviceToHost, stream);
+	//cudaDeviceSynchronize();
 }
 
 void gather_results(vector<spmv_task *> * spmv_task_completed, double * y, double * beta, int m) {
@@ -385,14 +395,16 @@ void gather_results(vector<spmv_task *> * spmv_task_completed, double * y, doubl
 	for (int i = 0; i < m; i++) {
 		flag[i] = false;
 	}
+	
 	for (t = 0; t < (*spmv_task_completed).size(); t++) {
-		 //cout << "Task " << t << endl;
-		 //cout << "flag = " << (*spmv_task_completed)[t]->start_flag <<" " <<   (*spmv_task_completed)[t]->end_flag << endl;
-		 //for (int i = 0; i < (*spmv_task_completed)[t]->dev_m; i++) {
-		 //	cout << (*spmv_task_completed)[t]->local_result_y[i] << " ";
-		 //}
-		 //cout << endl;
-
+		 /*
+		 cout << "Task " << t << "/" <<(*spmv_task_completed).size() << endl;
+		 cout << "flag = " << (*spmv_task_completed)[t]->start_flag <<" " <<   (*spmv_task_completed)[t]->end_flag << endl;
+		 for (int i = 0; i < (*spmv_task_completed)[t]->dev_m; i++) {
+		 	cout << (*spmv_task_completed)[t]->local_result_y[i] << " ";
+		 }
+		 cout << endl;
+		 */
 		double tmp = 0.0;
 
 		if ((*spmv_task_completed)[t]->dev_m == 1 && 

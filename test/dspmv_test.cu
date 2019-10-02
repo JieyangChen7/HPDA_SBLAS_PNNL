@@ -14,6 +14,8 @@
 #include <cuda_profiler_api.h>
 #include "spmv_kernel.h"
 #include <limits>
+#include <fstream>
+#include <sstream>
 using namespace std;
 
 
@@ -65,6 +67,7 @@ int main(int argc, char *argv[]) {
     double * cooVal;
     long long * csrRowPtr;
 
+    char * csv_output;
 
     int deviceCount;
 	cudaGetDeviceCount(&deviceCount);
@@ -118,6 +121,7 @@ int main(int argc, char *argv[]) {
 	    cudaMallocHost((void **)&cooColIndex, nnz * sizeof(int));
 	    cudaMallocHost((void **)&cooVal, nnz * sizeof(double));
 	   char data_type = argv[6][0];
+           csv_output = argv[7];
 	    // Read matrix from file into COO format
 	    for (int i = 0; i < nnz; i++) {
 	    	if (data_type == 'b') { // binary input
@@ -131,11 +135,13 @@ int main(int argc, char *argv[]) {
 	        cooColIndex[i]--;
 
 	        if (cooRowIndex[i] < 0 || cooColIndex[i] < 0) { // report error
-	       		cout << "i = " << i << " [" <<cooRowIndex[i] << ", " << cooColIndex[i] << "] = " << cooVal[i] << endl;
+	       	    cout << "Wrong type of matrix file, should use option 'b'" << endl;	
+		    //cout << "i = " << i << " [" <<cooRowIndex[i] << ", " << cooColIndex[i] << "] = " << cooVal[i] << endl;
 	       	}
 		}
 	} else if(input_type == 'g') { // generate data
-		//int n = 10000;
+		csv_output = argv[6];
+                //int n = 10000;
 		n = atoi(filename);
 
 		m = n;
@@ -188,7 +194,7 @@ int main(int argc, char *argv[]) {
 
 					cooRowIndex[p] = ii;
 					cooColIndex[p] = j;
-					cooVal[p] = (double) rand() / (RAND_MAX);
+					cooVal[p] = 1.0;//(double) rand() / (RAND_MAX);
 					p++;
 
 					//cout << 1 << " ";
@@ -222,55 +228,56 @@ int main(int argc, char *argv[]) {
     long long matrix_data_space = nnz * sizeof(double) + nnz * sizeof(int) + (m+1) * sizeof(int);
     //cout << matrix_data_space << endl;
 
-	double matrix_size_in_gb = (double)matrix_data_space / 1e9;
+    double matrix_size_in_gb = (double)matrix_data_space / 1e9;
     cout << "Matrix space size: " << matrix_size_in_gb << " GB." << endl;
 
     int * counter = new int[m];
     for (int i = 0; i < m; i++) {
     	counter[i] = 0;
     }
-	for (int i = 0; i < nnz; i++) {
-		counter[cooRowIndex[i]]++;
-	}
-	//cout << "nnz: " << nnz << endl;
-	//cout << "counter: ";
-	int t = 0;
-	for (int i = 0; i < m; i++) {
-		//cout << counter[i] << ", ";
-		t += counter[i];
-	}
-	//cout << t << endl;
-	//cout << endl;
+    for (int i = 0; i < nnz; i++) {
+	counter[cooRowIndex[i]]++;
+    }
+    //cout << "nnz: " << nnz << endl;
+    //cout << "counter: ";
+    int t = 0;
+    for (int i = 0; i < m; i++) {
+	//cout << counter[i] << ", ";
+	t += counter[i];
+    }
+    //cout << t << endl;
+    //cout << endl;
 
-
-	//cout << "csrRowPtr: ";
-	csrRowPtr[0] = 0;
-	for (int i = 1; i <= m; i++) {
-		csrRowPtr[i] = csrRowPtr[i - 1] + counter[i - 1];
-		//cout << "csrRowPtr[" << i <<"] = "<<csrRowPtr[i] << endl;
-	}
+    //cout << "csrRowPtr: ";
+    csrRowPtr[0] = 0;
+    for (int i = 1; i <= m; i++) {
+	csrRowPtr[i] = csrRowPtr[i - 1] + counter[i - 1];
+	//cout << "csrRowPtr[" << i <<"] = "<<csrRowPtr[i] << endl;
+    }
 
 	double * x;
 	double * y1;
 	double * y2;
 	double * y3;
-
-	//x = (double *)malloc(n * sizeof(double)); 
-	//y1 = (double *)malloc(m * sizeof(double)); 
+	//cout << "Allocating space for x and y" << endl;
+	x = (double *)malloc(n * sizeof(double)); 
+	y1 = (double *)malloc(m * sizeof(double)); 
 	y2 = (double *)malloc(m * sizeof(double)); 
-	//y3 = (double *)malloc(m * sizeof(double)); 
+	y3 = (double *)malloc(m * sizeof(double)); 
 
+	/*
 	cudaMallocHost((void **)&x, n * sizeof(double));
 	cudaMallocHost((void **)&y1, m * sizeof(double));
-	//cudaMallocHost((void **)&y2, m * sizeof(double));
+	cudaMallocHost((void **)&y2, m * sizeof(double));
 	cudaMallocHost((void **)&y3, m * sizeof(double));
-
+	*/
+        //cout << "Initializing x" << endl;
 	for (int i = 0; i < n; i++)
 	{
-		x[i] = 1.0;//((double) rand() / (RAND_MAX)); 
+		x[i] = 1.0; //((double) rand() / (RAND_MAX)); 
 	}
 
-
+	//cout << "Initializing y" << endl;
 	for (int i = 0; i < m; i++)
 	{
 		y1[i] = 0.0;
@@ -278,8 +285,8 @@ int main(int argc, char *argv[]) {
 		y3[i] = 0.0;
 	}
 
-	double ALPHA = (double) rand() / (RAND_MAX);
-	double BETA = (double) rand() / (RAND_MAX);
+	double ALPHA = 1.0;//(double) rand() / (RAND_MAX);
+	double BETA = 0.0; //(double) rand() / (RAND_MAX);
 
 	double time_baseline = 0.0;
 	double time_v1 = 0.0;
@@ -291,7 +298,7 @@ int main(int argc, char *argv[]) {
 
 	double curr_time = 0.0;
 
-	int warm_up_iter = 1;
+	int warm_up_iter = 3;
 
 	double profile_time = 0.0;
 	double min_profile_time = numeric_limits<double>::max();
@@ -376,10 +383,14 @@ int main(int argc, char *argv[]) {
 					 cooVal, csrRowPtr, cooColIndex, 
 					 x, &BETA,
 					 y3,
+					 //ngpu,
 					 best_dev_count,
 					 kernel_version,
+				         //nnz,
+ 					 //1
 					 nnz / (best_dev_count * best_copy),
-					 best_copy);
+					 best_copy
+					 );
 		time_v2 = get_time() - curr_time;	
 
 		
@@ -391,11 +402,12 @@ int main(int argc, char *argv[]) {
 		bool correct2 = true;
 		for(int i = 0; i < m; i++) {
 			//cout << y1[i] << " - "  << y2[i] << " - "<< y3[i] << endl;
-			if (abs(y1[i] - y2[i]) > 1e-3) {
-				//cout << y1[i] << " - " << y3[i] << endl;
+			if (abs(y1[i] - y2[i]) > 5) {
+				//cout << y1[i] << " - " << y2[i] << endl;
 				correct1 = false;
 			}
-			if (abs(y1[i] - y3[i]) > 1e-3) {
+			if (abs(y1[i] - y3[i]) > 5) {
+				//cout << y1[i] << " - " << y3[i] << endl;
 				correct2 = false;
 			}
 		}
@@ -435,7 +447,7 @@ int main(int argc, char *argv[]) {
 			cout << setw(9) <<"N/A";
 		}
 		cout << endl;
-
+	
 	
 	}
 
@@ -469,4 +481,15 @@ int main(int argc, char *argv[]) {
 	cudaFreeHost(cooVal);
 	cudaFreeHost(csrRowPtr);
 	
+	ofstream myfile;
+	ostringstream o;
+	if(input_type == 'g') {
+	    o << csv_output << "_" << n << "_v" << kernel_version << ".csv";
+	}
+ 	if(input_type == 'f') {
+	    o << csv_output << "_v" << kernel_version << ".csv";
+	}
+	myfile.open (o.str().c_str());
+	myfile << csv_output << "," << "v" << kernel_version << "," <<avg_time_baseline << "," << avg_time_v1 << "," << avg_time_v2;
+	myfile.close();
 }

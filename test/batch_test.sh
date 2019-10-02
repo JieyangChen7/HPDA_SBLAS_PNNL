@@ -1,11 +1,18 @@
 #!/bin/bash
 
 NGPU=8
-KERNEL=1
+NTEST=5
 
-./test_spmv g 10000 $NGPU 10 $KERNEL
-./test_spmv g 20000 $NGPU 10 $KERNEL
-./test_spmv g 30000 $NGPU 10 $KERNEL
-./test_spmv g 100000 $NGPU 10 $KERNEL
-./test_spmv g 200000 $NGPU 10 $KERNEL
-./test_spmv g 300000 $NGPU 10 $KERNEL
+_CSV_SUMMARY="summary_results.csv"
+[ -f ${_CSV_SUMMARY} ] && rm ${_CSV_SUMMARY}
+for size in 20000 40000 80000 100000
+do
+    for kernel in 1 2 3
+    do
+	_CSV_OUTPUT=generated_matrix_${size}_v${kernel}.csv
+	[ -f ${_CSV_OUTPUT} ] && rm ${_CSV_OUTPUT}
+        ./test_spmv g $size $NGPU $NTEST $kernel generated_matrix
+        cat ${_CSV_OUTPUT} >> ${_CSV_SUMMARY}
+	echo "" >> ${_CSV_SUMMARY}
+    done
+done

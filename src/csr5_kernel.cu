@@ -12,7 +12,7 @@
 int csr5_kernel(int m, int n, int nnz, double * alpha,
 				  double * csrVal, int * csrRowPtr, int * csrColIndex, 
 				  double * x, double * beta,
-				  double * y) {
+				  double * y, cudaStream_t stream) {
 		int err = 0;
 		anonymouslibHandle<int, unsigned int, double> A(m, n);
 		err = A.inputCSR(
@@ -27,6 +27,6 @@ int csr5_kernel(int m, int n, int nnz, double * alpha,
 		A.warmup();
 		err = A.asCSR5();
 		//cout << "asCSR5 err = " << err << endl;
-		err = A.spmv(*(alpha), y);
+		err = A.spmv(*(alpha), y, stream);
 		return err;
 }
