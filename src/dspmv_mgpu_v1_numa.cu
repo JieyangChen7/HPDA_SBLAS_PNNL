@@ -423,76 +423,76 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     // end_idx   = floor((double)tmp2 / num_gpus[numa_id]) - 1;
   
     // Calculate the start and end row
-    pcsrGPU[dev_id].startRow = get_row_from_index(pcsrNuma[numa_id].m, pcsrNuma[numa_id].rowPtr, pcsrGPU[dev_id].startIdx);
-    //start_row = get_row_from_index(numa_m[numa_id], numa_csrRowPtr[numa_id], start_idx);
-    // Mark imcomplete rows
-    // True: imcomplete
-    if (pcsrGPU[dev_id].startIdx > pcsrNuma[numa_id].rowPtr[pcsrGPU[dev_id].startRow]) {
-    //if (start_idx > numa_csrRowPtr[numa_id][start_row]) {
-      pcsrGPU[dev_id].startFlag = true;
-      //start_flag = true;
-      //y2 = y[start_row];
-      pcsrGPU[dev_id].org_y = pcsrNuma[numa_id].y[pcsrGPU[dev_id].startIdx];
-      //org_y[dev_id] = y[start_row]; //use dev_id for global merge
-      //start_rows[dev_id] = start_row;
-    } else {
-      pcsrGPU[dev_id].startFlag = false;
-      //start_flag = false;
-    }
+    // pcsrGPU[dev_id].startRow = get_row_from_index(pcsrNuma[numa_id].m, pcsrNuma[numa_id].rowPtr, pcsrGPU[dev_id].startIdx);
+    // //start_row = get_row_from_index(numa_m[numa_id], numa_csrRowPtr[numa_id], start_idx);
+    // // Mark imcomplete rows
+    // // True: imcomplete
+    // if (pcsrGPU[dev_id].startIdx > pcsrNuma[numa_id].rowPtr[pcsrGPU[dev_id].startRow]) {
+    // //if (start_idx > numa_csrRowPtr[numa_id][start_row]) {
+    //   pcsrGPU[dev_id].startFlag = true;
+    //   //start_flag = true;
+    //   //y2 = y[start_row];
+    //   pcsrGPU[dev_id].org_y = pcsrNuma[numa_id].y[pcsrGPU[dev_id].startIdx];
+    //   //org_y[dev_id] = y[start_row]; //use dev_id for global merge
+    //   //start_rows[dev_id] = start_row;
+    // } else {
+    //   pcsrGPU[dev_id].startFlag = false;
+    //   //start_flag = false;
+    // }
 
-    if (local_dev_id == 0) {
-      pcsrGPU[dev_id].startFlag = pcsrNuma[numa_id].startFlag; // see if numa block is complete
-    }
-  
     // if (local_dev_id == 0) {
-    //   start_flag = numa_start_flag[numa_id]; // see if numa block is complete
+    //   pcsrGPU[dev_id].startFlag = pcsrNuma[numa_id].startFlag; // see if numa block is complete
     // }
-    // start_flags[dev_id] = start_flag;   
+  
+    // // if (local_dev_id == 0) {
+    // //   start_flag = numa_start_flag[numa_id]; // see if numa block is complete
+    // // }
+    // // start_flags[dev_id] = start_flag;   
 
-    pcsrGPU[dev_id].endRow = get_row_from_index(pcsrNuma[numa_id].m, pcsrNuma[numa_id].rowPtr, pcsrGPU[dev_id].endIdx);
-    //end_row = get_row_from_index(numa_m[numa_id], numa_csrRowPtr[numa_id], end_idx);
-    // Mark imcomplete rows
-    // True: imcomplete
+    // pcsrGPU[dev_id].endRow = get_row_from_index(pcsrNuma[numa_id].m, pcsrNuma[numa_id].rowPtr, pcsrGPU[dev_id].endIdx);
+    // //end_row = get_row_from_index(numa_m[numa_id], numa_csrRowPtr[numa_id], end_idx);
+    // // Mark imcomplete rows
+    // // True: imcomplete
 
-    if (pcsrGPU[dev_id].endIdx < pcsrNuma[numa_id].rowPtr[pcsrGPU[dev_id].endRow + 1] - 1)  {
-    //if (end_idx < numa_csrRowPtr[numa_id][end_row + 1] - 1)  {
-      pcsrGPU[dev_id].endFlag = true;
-      //end_flag = true;
-    } else {
-      pcsrGPU[dev_id].endFlag = false;
-      //end_flag = false;
-    }
+    // if (pcsrGPU[dev_id].endIdx < pcsrNuma[numa_id].rowPtr[pcsrGPU[dev_id].endRow + 1] - 1)  {
+    // //if (end_idx < numa_csrRowPtr[numa_id][end_row + 1] - 1)  {
+    //   pcsrGPU[dev_id].endFlag = true;
+    //   //end_flag = true;
+    // } else {
+    //   pcsrGPU[dev_id].endFlag = false;
+    //   //end_flag = false;
+    // }
 
-    if (local_dev_id + 1 == numaContext.numGPUs[numa_id]) {
-      pcsrGPU[dev_id].endFlag = pcsrNuma[numa_id].endFlag;
-    }
+    // if (local_dev_id + 1 == numaContext.numGPUs[numa_id]) {
+    //   pcsrGPU[dev_id].endFlag = pcsrNuma[numa_id].endFlag;
+    // }
     
 
-    // if (local_dev_id+1 == num_gpus[numa_id]) {
-    //   end_flag = numa_end_flag[numa_id];
-    // }
+    // // if (local_dev_id+1 == num_gpus[numa_id]) {
+    // //   end_flag = numa_end_flag[numa_id];
+    // // }
     
-    // Cacluclate dimensions
-    pcsrGPU[dev_id].m = pcsrGPU[dev_id].endRow - pcsrGPU[dev_id].startRow + 1;
-    pcsrGPU[dev_id].n = n;
-    pcsrGPU[dev_id].nnz  = pcsrGPU[dev_id].endIdx - pcsrGPU[dev_id].startIdx + 1;
-    // dev_m = end_row - start_row + 1;
-    // dev_n = n;
-    // dev_nnz   = (int)(end_idx - start_idx + 1);
+    // // Cacluclate dimensions
+    // pcsrGPU[dev_id].m = pcsrGPU[dev_id].endRow - pcsrGPU[dev_id].startRow + 1;
+    // pcsrGPU[dev_id].n = n;
+    // pcsrGPU[dev_id].nnz  = pcsrGPU[dev_id].endIdx - pcsrGPU[dev_id].startIdx + 1;
+    // // dev_m = end_row - start_row + 1;
+    // // dev_n = n;
+    // // dev_nnz   = (int)(end_idx - start_idx + 1);
 
-    printf("omp thread %d, dev_m %d, dev_n %d, dev_nnz %d, start_idx %d, end_idx %d, start_row %d, end_row %d\n", 
-            dev_id, pcsrGPU[dev_id].m, pcsrGPU[dev_id].n, pcsrGPU[dev_id].nnz, pcsrGPU[dev_id].startIdx, pcsrGPU[dev_id].endIdx, 
-            pcsrGPU[dev_id].startRow, pcsrGPU[dev_id].endRow);
+    // printf("omp thread %d, dev_m %d, dev_n %d, dev_nnz %d, start_idx %d, end_idx %d, start_row %d, end_row %d\n", 
+    //         dev_id, pcsrGPU[dev_id].m, pcsrGPU[dev_id].n, pcsrGPU[dev_id].nnz, pcsrGPU[dev_id].startIdx, pcsrGPU[dev_id].endIdx, 
+    //         pcsrGPU[dev_id].startRow, pcsrGPU[dev_id].endRow);
 
 
     // preparing data on host 
 
     //tmp_time = get_time();
-    pcsrGPU[dev_id].val = &(pcsrNuma[numa_id].val[pcsrGPU[dev_id].startIdx]);
-    pcsrGPU[dev_id].rowPtr = &(pcsrNuma[numa_id].rowPtr[pcsrGPU[dev_id].startRow]);
-    pcsrGPU[dev_id].colIdx = &(pcsrNuma[numa_id].colIdx[pcsrGPU[dev_id].startIdx]);
-    pcsrGPU[dev_id].x = pcsrNuma[numa_id].x;
-    pcsrGPU[dev_id].y = &(pcsrNuma[numa_id].y[pcsrGPU[dev_id].startRow]);
+    // pcsrGPU[dev_id].val = &(pcsrNuma[numa_id].val[pcsrGPU[dev_id].startIdx]);
+    // pcsrGPU[dev_id].rowPtr = &(pcsrNuma[numa_id].rowPtr[pcsrGPU[dev_id].startRow]);
+    // pcsrGPU[dev_id].colIdx = &(pcsrNuma[numa_id].colIdx[pcsrGPU[dev_id].startIdx]);
+    // pcsrGPU[dev_id].x = pcsrNuma[numa_id].x;
+    // pcsrGPU[dev_id].y = &(pcsrNuma[numa_id].y[pcsrGPU[dev_id].startRow]);
 
 
     // host_csrVal = &numa_csrVal[numa_id][start_idx];
