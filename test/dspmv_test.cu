@@ -506,6 +506,8 @@ int main(int argc, char *argv[]) {
   int pass_dynamic_coo = 0;
 
   struct spmv_ret ret();
+  struct spmv_ret ret2();
+  ret = ret2;
   int numa_mapping[6] = {0,0,0,1,1,1};
   
   cout << "Starting tests..." << endl;
@@ -520,9 +522,9 @@ int main(int argc, char *argv[]) {
       y_static_csc[i] = 0.0;
       y_dynamic_csc[i] = 0.0;
 
-      y_baseline_csc[i] = 0.0;
-      y_static_csc[i] = 0.0;
-      y_dynamic_csc[i] = 0.0;
+      y_baseline_coo[i] = 0.0;
+      y_static_coo[i] = 0.0;
+      y_dynamic_coo[i] = 0.0;
     }
     ret = spMV_mgpu_baseline(m, n, nnz, &ALPHA,
                             csrVal, csrRowPtr, csrColIdx, 
@@ -547,7 +549,7 @@ int main(int argc, char *argv[]) {
                                 ngpu,
                                 1,
                                 numa_mapping); //kernel 1
-    ret_static_csr.add(ret);
+    ret_static_csc.add(ret);
 
     
 
@@ -625,25 +627,25 @@ int main(int argc, char *argv[]) {
   }
 
   ret_baseline_csr.print();
-  printf("Check: %d/%d\n", correct_baseline_csr, repeat_test);
+  printf("Check: %d/%d\n", pass_baseline_csr, repeat_test);
   ret_static_csr.print();
-  printf("Check: %d/%d\n", correct_static_csr, repeat_test);
+  printf("Check: %d/%d\n", pass_static_csr, repeat_test);
   ret_dynamic_csr.print();
-  printf("Check: %d/%d\n", correct_dynamic_csr, repeat_test);
+  printf("Check: %d/%d\n", pass_dynamic_csr, repeat_test);
 
   ret_baseline_csc.print();
-  printf("Check: %d/%d\n", correct_baseline_csc, repeat_test);
+  printf("Check: %d/%d\n", pass_baseline_csc, repeat_test);
   ret_static_csc.print();
-  printf("Check: %d/%d\n", correct_static_csc, repeat_test);
+  printf("Check: %d/%d\n", pass_static_csc, repeat_test);
   ret_dynamic_csc.print();
-  printf("Check: %d/%d\n", correct_dynamic_csc, repeat_test);
+  printf("Check: %d/%d\n", pass_dynamic_csc, repeat_test);
 
   ret_baseline_coo.print();
-  printf("Check: %d/%d\n", correct_baseline_coo, repeat_test);
+  printf("Check: %d/%d\n", pass_baseline_coo, repeat_test);
   ret_static_coo.print();
-  printf("Check: %d/%d\n", correct_static_coo, repeat_test);
+  printf("Check: %d/%d\n", pass_static_coo, repeat_test);
   ret_dynamic_coo.print();
-  printf("Check: %d/%d\n", correct_dynamic_coo, repeat_test);
+  printf("Check: %d/%d\n", pass_dynamic_coo, repeat_test);
 
   //myfile << avg_time_baseline << "," << avg_time_v1k1 << "," << avg_time_v1k2 << "," << avg_time_v1k3 << "," << avg_time_v2k1 << "," << avg_time_v2k2 << "," << avg_time_v2k3 << "," << avg_time_v1k1s << "," << avg_time_v1k2s << "," << avg_time_v1k3s << "," << avg_time_v2k1s << "," << avg_time_v2k2s << "," << avg_time_v2k3s;  
 
