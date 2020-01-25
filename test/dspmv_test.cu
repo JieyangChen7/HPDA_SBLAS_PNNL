@@ -259,12 +259,16 @@ int main(int argc, char *argv[]) {
   coo2csr(m, n, nnz,
           cooVal, cooRowIndex, cooColIndex,
           csrVal, csrRowPtr2, csrColIdx);
-
-  for (int i = 0; i < m+1; i++) {
-    if (csrRowPtr2[i] != csrRowPtr[i]) {
-      printf("rowPtr error[%d]: %d - %d\n", i,csrRowPtr[i], csrRowPtr2[i]);
+  for (int i = 1; i < nnz; i++) {
+    if (cooRowIndex[i] < cooRowIndex[i - 1]) {
+      printf("rowPtr error\n");
     }
   }
+  // for (int i = 0; i < m+1; i++) {
+  //   if (csrRowPtr2[i] != csrRowPtr[i]) {
+  //     printf("rowPtr error[%d]: %d - %d\n", i,csrRowPtr[i], csrRowPtr2[i]);
+  //   }
+  // }
 
   // print_vec(csrRowPtr, m+1, "gpu convert:");
 
