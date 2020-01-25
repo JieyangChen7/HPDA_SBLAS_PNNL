@@ -473,9 +473,9 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     // // }
     
     // // Cacluclate dimensions
-    // pcsrGPU[dev_id].m = pcsrGPU[dev_id].endRow - pcsrGPU[dev_id].startRow + 1;
-    // pcsrGPU[dev_id].n = n;
-    // pcsrGPU[dev_id].nnz  = pcsrGPU[dev_id].endIdx - pcsrGPU[dev_id].startIdx + 1;
+    pcsrGPU[dev_id].m = pcsrGPU[dev_id].endRow - pcsrGPU[dev_id].startRow + 1;
+    pcsrGPU[dev_id].n = n;
+    pcsrGPU[dev_id].nnz  = pcsrGPU[dev_id].endIdx - pcsrGPU[dev_id].startIdx + 1;
     // dev_m = end_row - start_row + 1;
     // dev_n = n;
     // dev_nnz   = (int)(end_idx - start_idx + 1);
