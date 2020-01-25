@@ -118,49 +118,49 @@ int main(int argc, char *argv[]) {
     }
     nnz = nnz_int;
         
-    //nnz = 10;
-    //  m = 11;
-    //  n = 10;
+    nnz = 10;
+     m = 11;
+     n = 10;
 
     cout << "m: " << m << " n: " << n << " nnz: " << nnz << endl;
     cudaMallocHost((void **)&cooRowIndex, nnz * sizeof(int));
     cudaMallocHost((void **)&cooColIndex, nnz * sizeof(int));
     cudaMallocHost((void **)&cooVal, nnz * sizeof(double));;
     // Read matrix from file into COO format
-    cout << "Start reading data from file" << endl;
-    if (mm_is_pattern(matcode)) { // binary input
-      cout << "binary input\n";
-      for (int i = 0; i < nnz; i++) {
-        fscanf(f, "%d %d\n", &cooRowIndex[i], &cooColIndex[i]);
-        cooVal[i] = 1;
-        cooRowIndex[i]--;
-        cooColIndex[i]--;
-      }
-    } else if (mm_is_real(matcode)){ // float input
-      cout << "float input\n";
-      for (int i = 0; i < nnz; i++) {
-        fscanf(f, "%d %d %lg\n", &cooRowIndex[i], &cooColIndex[i], &cooVal[i]);
-        cooRowIndex[i]--;
-        cooColIndex[i]--;
-      }
-    } else if (mm_is_integer(matcode)){ // integer input
-      cout << "integer input\n";
-      for (int i = 0; i < nnz; i++) {
-        int tmp;
-        fscanf(f, "%d %d %d\n", &cooRowIndex[i], &cooColIndex[i], &tmp);
-        cooVal[i] = tmp;
-        cooRowIndex[i]--;
-        cooColIndex[i]--;
-      }
-    }
-    /*
+    // cout << "Start reading data from file" << endl;
+    // if (mm_is_pattern(matcode)) { // binary input
+    //   cout << "binary input\n";
+    //   for (int i = 0; i < nnz; i++) {
+    //     fscanf(f, "%d %d\n", &cooRowIndex[i], &cooColIndex[i]);
+    //     cooVal[i] = 1;
+    //     cooRowIndex[i]--;
+    //     cooColIndex[i]--;
+    //   }
+    // } else if (mm_is_real(matcode)){ // float input
+    //   cout << "float input\n";
+    //   for (int i = 0; i < nnz; i++) {
+    //     fscanf(f, "%d %d %lg\n", &cooRowIndex[i], &cooColIndex[i], &cooVal[i]);
+    //     cooRowIndex[i]--;
+    //     cooColIndex[i]--;
+    //   }
+    // } else if (mm_is_integer(matcode)){ // integer input
+    //   cout << "integer input\n";
+    //   for (int i = 0; i < nnz; i++) {
+    //     int tmp;
+    //     fscanf(f, "%d %d %d\n", &cooRowIndex[i], &cooColIndex[i], &tmp);
+    //     cooVal[i] = tmp;
+    //     cooRowIndex[i]--;
+    //     cooColIndex[i]--;
+    //   }
+    // }
+    
     // testing data
     for (int i = 0; i < nnz; i++) {
       cooVal[i] = i;
       cooRowIndex[i] = i+1;
       cooColIndex[i] = i;
     }
-    */
+    
     cout << "Done loading data from file" << endl;
   } else if(input_type == 'g') { // generate data
     n = atoi(filename);
@@ -248,12 +248,16 @@ int main(int argc, char *argv[]) {
     csrRowPtr[i] = csrRowPtr[i - 1] + counter[i - 1];
   }
 
+
+  print_vec(csrRowPtr, m+1, "org convert:");
   csrVal = cooVal;
   csrColIdx = cooColIndex;
 
-  // coo2csr(m, n, nnz,
-  //         cooVal, cooRowIndex, cooColIndex,
-  //         csrVal, csrRowPtr, csrColIdx);
+  coo2csr(m, n, nnz,
+          cooVal, cooRowIndex, cooColIndex,
+          csrVal, csrRowPtr, csrColIdx);
+
+  print_vec(csrRowPtr, m+1, "gpu convert:");
 
   double * x;
 
