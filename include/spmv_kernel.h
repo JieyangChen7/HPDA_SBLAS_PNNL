@@ -14,6 +14,31 @@ struct spmv_ret {
   double merg_time;
 };
 
+struct pCSR {
+  double * val;
+  int * rowPtr;
+  int * colIdx;
+  double * x;
+  double * y;
+  
+  double * dval;
+  int * drowPtr;
+  int * dcolIdx;
+  double * dx;
+  double * dy;
+
+  int m;
+  int n;
+  int nnz;
+  int startIdx;
+  int endIdx;
+  int startRow;
+  int endRow;
+  bool startFlag;
+  bool endFlag;
+  double org_y;
+};
+
 
 struct pCSC {
   double * cscVal;
