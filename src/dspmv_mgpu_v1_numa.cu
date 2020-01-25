@@ -449,7 +449,7 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     // }
     // start_flags[dev_id] = start_flag;   
 
-    // pcsrGPU[dev_id].endRow = get_row_from_index(pcsrNuma[numa_id].m, pcsrNuma[numa_id].rowPtr, pcsrGPU[dev_id].endIdx);
+    pcsrGPU[dev_id].endRow = get_row_from_index(pcsrNuma[numa_id].m, pcsrNuma[numa_id].rowPtr, pcsrGPU[dev_id].endIdx);
     // //end_row = get_row_from_index(numa_m[numa_id], numa_csrRowPtr[numa_id], end_idx);
     // // Mark imcomplete rows
     // // True: imcomplete
