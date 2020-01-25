@@ -3,6 +3,8 @@
 
 #include <sstream>
 #include <string>
+#include <cstdio>
+#include "common_cuda.h"
 
 using namespace std;
 
@@ -17,6 +19,32 @@ struct spmv_ret {
   double comp_time;
   double comm_time;
   double merg_time;
+  spmv_ret () {
+    numa_part_time = 0.0;
+    part_time = 0.0;
+    comp_time = 0.0;
+    comm_time = 0.0;
+    merg_time = 0.0;
+  }
+  void add(struct spmv_ret other) {
+    this->numa_part_time += other.numa_part_time;
+    this->part_time += other.part_time;
+    this->comp_time += other.comp_time;
+    this->comm_time += other.comm_time;
+    this->merg_time += other.merg_time;
+  }
+  void avg(int n) {
+    this->numa_part_time /= n;
+    this->part_time /= n;
+    this->comp_time /= n;
+    this->comm_time /= n;
+    this->merg_time /= n;
+  }
+  void print() {
+    printf("%f, %f, %f, %f, %f\n", 
+            numa_part_time, part_time, 
+            comp_time, comm_time, merg_time);
+  }
 };
 
 struct pCSR {
@@ -46,16 +74,25 @@ struct pCSR {
 
 
 struct pCSC {
-  double * cscVal;
-  int * cscColPtr;
-  int * cscRowIdx;
+  double * val;
+  int * colPtr;
+  int * rowIdx;
+  double * x;
+  double * y;
+
+  double * dval;
+  int * dcolPtr;
+  int * drowIdx;
+  double * dx;
+  double * dy;
+
   int m;
   int n;
   int nnz;
   int startIdx;
   int endIdx;
-  int startRow;
-  int endRow;
+  int startCol;
+  int endCol;
   bool startFlag;
   bool endFlag;
 };
@@ -186,6 +223,22 @@ int get_row_from_index(int n, int * a, int idx);
 double get_time();
 
 double get_gpu_availble_mem(int ngpu);
+
+void coo2csr(int m, int n, int nnz,
+       double * cooVal, int * cooRowIdx, int * cooColIdx,
+       double * csrVal, int * csrRowPtr, int * csrColIdx);
+
+void coo2csc(int m, int n, int nnz,
+       double * cooVal, int * cooRowIdx, int * cooColIdx,
+       double * cscVal, int * cscColPtr, int * cscRowIdx);
+
+void coo2csr_gpu(int m, int n, int nnz,
+         double * cooVal, int * cooRowIdx, int * cooColIdx,
+         double * csrVal, int * csrRowPtr, int * csrColIdx);
+
+void csc2csr_gpu(int m, int n, int nnz,
+         double * cscVal, int * cscColPtr, int * cscRowIdx,
+         double * csrVal, int * csrRowPtr, int * csrColIdx);
 
 
 
