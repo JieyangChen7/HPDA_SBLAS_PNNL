@@ -306,17 +306,17 @@ int main(int argc, char *argv[]) {
   double time_baseline = 0.0;
   double time_baseline_part = 0.0;
 
-  struct spmv_ret ret_baseline_csr();
-  struct spmv_ret ret_static_csr();
-  struct spmv_ret ret_dynamic_csr();
+  struct spmv_ret ret_baseline_csr;
+  struct spmv_ret ret_static_csr;
+  struct spmv_ret ret_dynamic_csr;
 
-  struct spmv_ret ret_baseline_csc();
-  struct spmv_ret ret_static_csc();
-  struct spmv_ret ret_dynamic_csc();
+  struct spmv_ret ret_baseline_csc;
+  struct spmv_ret ret_static_csc;
+  struct spmv_ret ret_dynamic_csc;
 
-  struct spmv_ret ret_baseline_coo();
-  struct spmv_ret ret_static_coo();
-  struct spmv_ret ret_dynamic_coo();
+  struct spmv_ret ret_baseline_coo;
+  struct spmv_ret ret_static_coo;
+  struct spmv_ret ret_dynamic_coo;
   
   cout << "Compute CPU version" << endl;
   for (int i = 0; i < m; i++) y_verify[i] = 0.0;
