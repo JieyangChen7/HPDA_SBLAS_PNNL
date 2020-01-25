@@ -126,7 +126,7 @@ int main(int argc, char *argv[]) {
     cudaMallocHost((void **)&cooRowIndex, nnz * sizeof(int));
     cudaMallocHost((void **)&cooColIndex, nnz * sizeof(int));
     cudaMallocHost((void **)&cooVal, nnz * sizeof(double));;
-    Read matrix from file into COO format
+    //Read matrix from file into COO format
     cout << "Start reading data from file" << endl;
     if (mm_is_pattern(matcode)) { // binary input
       cout << "binary input\n";
