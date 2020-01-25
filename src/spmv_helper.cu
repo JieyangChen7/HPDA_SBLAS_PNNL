@@ -200,12 +200,13 @@ void csr2csc_gpu(int m, int n, int nnz,
   checkCudaErrors(cudaMalloc((void**)&A, lda * n * sizeof(double)));
 
   int * nnzPerCol = new int[n];
+  int * nnzTotalDevHostPtr = new int[1];
   checkCudaErrors(cusparseDcsr2dense(handle, m, n, descr,
                                      csrVal, csrRowPtr, csrColIdx,
                                      A, lda));
 
   checkCudaErrors(cusparseDnnz(handle, CUSPARSE_DIRECTION_COLUMN,
-                               m, n, descr, A, lda, nnzPerCol));
+                               m, n, descr, A, lda, nnzPerCol, nnzTotalDevHostPtr));
 
   checkCudaErrors(cusparseDdense2csc(handle, m, n, descr, 
                                      A, lda, nnzPerCol,
