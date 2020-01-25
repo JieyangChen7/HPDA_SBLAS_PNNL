@@ -505,8 +505,8 @@ int main(int argc, char *argv[]) {
   int pass_static_coo = 0;
   int pass_dynamic_coo = 0;
 
-  struct spmv_ret ret();
-  struct spmv_ret ret2();
+  struct spmv_ret ret;
+  struct spmv_ret ret2;
   ret = ret2;
   int numa_mapping[6] = {0,0,0,1,1,1};
   
