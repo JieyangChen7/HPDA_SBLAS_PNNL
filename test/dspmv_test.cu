@@ -118,48 +118,48 @@ int main(int argc, char *argv[]) {
     }
     nnz = nnz_int;
         
-    nnz = 10;
-     m = 11;
-     n = 10;
+    // nnz = 10;
+    //  m = 11;
+    //  n = 10;
 
     cout << "m: " << m << " n: " << n << " nnz: " << nnz << endl;
     cudaMallocHost((void **)&cooRowIndex, nnz * sizeof(int));
     cudaMallocHost((void **)&cooColIndex, nnz * sizeof(int));
     cudaMallocHost((void **)&cooVal, nnz * sizeof(double));;
-    // Read matrix from file into COO format
-    // cout << "Start reading data from file" << endl;
-    // if (mm_is_pattern(matcode)) { // binary input
-    //   cout << "binary input\n";
-    //   for (int i = 0; i < nnz; i++) {
-    //     fscanf(f, "%d %d\n", &cooRowIndex[i], &cooColIndex[i]);
-    //     cooVal[i] = 1;
-    //     cooRowIndex[i]--;
-    //     cooColIndex[i]--;
-    //   }
-    // } else if (mm_is_real(matcode)){ // float input
-    //   cout << "float input\n";
-    //   for (int i = 0; i < nnz; i++) {
-    //     fscanf(f, "%d %d %lg\n", &cooRowIndex[i], &cooColIndex[i], &cooVal[i]);
-    //     cooRowIndex[i]--;
-    //     cooColIndex[i]--;
-    //   }
-    // } else if (mm_is_integer(matcode)){ // integer input
-    //   cout << "integer input\n";
-    //   for (int i = 0; i < nnz; i++) {
-    //     int tmp;
-    //     fscanf(f, "%d %d %d\n", &cooRowIndex[i], &cooColIndex[i], &tmp);
-    //     cooVal[i] = tmp;
-    //     cooRowIndex[i]--;
-    //     cooColIndex[i]--;
-    //   }
-    // }
+    Read matrix from file into COO format
+    cout << "Start reading data from file" << endl;
+    if (mm_is_pattern(matcode)) { // binary input
+      cout << "binary input\n";
+      for (int i = 0; i < nnz; i++) {
+        fscanf(f, "%d %d\n", &cooRowIndex[i], &cooColIndex[i]);
+        cooVal[i] = 1;
+        cooRowIndex[i]--;
+        cooColIndex[i]--;
+      }
+    } else if (mm_is_real(matcode)){ // float input
+      cout << "float input\n";
+      for (int i = 0; i < nnz; i++) {
+        fscanf(f, "%d %d %lg\n", &cooRowIndex[i], &cooColIndex[i], &cooVal[i]);
+        cooRowIndex[i]--;
+        cooColIndex[i]--;
+      }
+    } else if (mm_is_integer(matcode)){ // integer input
+      cout << "integer input\n";
+      for (int i = 0; i < nnz; i++) {
+        int tmp;
+        fscanf(f, "%d %d %d\n", &cooRowIndex[i], &cooColIndex[i], &tmp);
+        cooVal[i] = tmp;
+        cooRowIndex[i]--;
+        cooColIndex[i]--;
+      }
+    }
     
     // testing data
-    for (int i = 0; i < nnz; i++) {
-      cooVal[i] = i;
-      cooRowIndex[i] = i+1;
-      cooColIndex[i] = i;
-    }
+    // for (int i = 0; i < nnz; i++) {
+    //   cooVal[i] = i;
+    //   cooRowIndex[i] = i+1;
+    //   cooColIndex[i] = i;
+    // }
     
     cout << "Done loading data from file" << endl;
   } else if(input_type == 'g') { // generate data
@@ -232,32 +232,41 @@ int main(int argc, char *argv[]) {
   double matrix_size_in_gb = (double)matrix_data_space / 1e9;
   cout << "Matrix space size: " << matrix_size_in_gb << " GB." << endl;
 
-  // int * counter = new int[m];
-  // for (int i = 0; i < m; i++) {
-  //   counter[i] = 0;
-  // }
-  // for (int i = 0; i < nnz; i++) {
-  //   counter[cooRowIndex[i]]++;
-  // }
-  // int t = 0;
-  // for (int i = 0; i < m; i++) {
-  //   t += counter[i];
-  // }
-  // csrRowPtr[0] = 0;
-  // for (int i = 1; i <= m; i++) {
-  //   csrRowPtr[i] = csrRowPtr[i - 1] + counter[i - 1];
-  // }
+  int * counter = new int[m];
+  for (int i = 0; i < m; i++) {
+    counter[i] = 0;
+  }
+  for (int i = 0; i < nnz; i++) {
+    counter[cooRowIndex[i]]++;
+  }
+  int t = 0;
+  for (int i = 0; i < m; i++) {
+    t += counter[i];
+  }
+  csrRowPtr[0] = 0;
+  for (int i = 1; i <= m; i++) {
+    csrRowPtr[i] = csrRowPtr[i - 1] + counter[i - 1];
+  }
 
 
   // print_vec(csrRowPtr, m+1, "org convert:");
   // csrVal = cooVal;
   // csrColIdx = cooColIndex;
 
+  int * csrRowPtr2;
+  cudaMallocHost((void **)&csrRowPtr2, (m+1) * sizeof(int));
+
   coo2csr(m, n, nnz,
           cooVal, cooRowIndex, cooColIndex,
-          csrVal, csrRowPtr, csrColIdx);
+          csrVal, csrRowPtr2, csrColIdx);
 
-  print_vec(csrRowPtr, m+1, "gpu convert:");
+  for (int i = 0; i < m+1; i++) {
+    if (csrRowPtr2[i] != csrRowPtr[i]) {
+      printf("rowPtr error[%d]: %d - %d\n", i,csrRowPtr[i], csrRowPtr2[i]);
+    }
+  }
+
+  // print_vec(csrRowPtr, m+1, "gpu convert:");
 
   double * x;
 
