@@ -107,7 +107,7 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
   double time_comm = 0.0;
   double time_comp = 0.0;
   
-  struct NumaContext numaContext(numa_mapping);
+  struct NumaContext numaContext(numa_mapping, ngpu);
   struct pCSR * pcsrNuma = new struct pCSR[numaContext.numNumaNodes];
 
   // figure out the number of numa nodes
@@ -220,7 +220,7 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
       //numa_start_row[numa_id] = get_row_from_index(m+1, csrRowPtr, numa_start_idx[numa_id]);
       // Mark imcomplete rows
       // True: imcomplete
-      if (pcsrNuma[numa_id].startIdx > csrRowPtr[csrNuma[numa_id].startRow]) {
+      if (pcsrNuma[numa_id].startIdx > csrRowPtr[pcsrNuma[numa_id].startRow]) {
       //if (numa_start_idx[numa_id] > csrRowPtr[numa_start_row[numa_id]]) {
         pcsrNuma[numa_id].startFlag = true;
         //numa_start_flag[numa_id] = true;
@@ -338,7 +338,7 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
 
 
   
-  struct pCSR * pcsrGPU = new struct pCSR[numaContext.numGPUs];
+  struct pCSR * pcsrGPU = new struct pCSR[ngpu];
 
   double * start_element = new double[ngpu];
   double * end_element = new double[ngpu];
@@ -705,7 +705,7 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     tmp_time = get_time();
     double * dev_y_no_overlap = pcsrGPU[dev_id].dy;
     int dev_m_no_overlap = pcsrGPU[dev_id].m;
-    int start_row_no_overlap = pcsrNuma.startRow + pcsrGPU.startRow;
+    int start_row_no_overlap = pcsrNuma[numa_id].startRow + pcsrGPU[dev_id].startRow;
 
     // double * dev_y_no_overlap = dev_y;
     // int dev_m_no_overlap = dev_m;

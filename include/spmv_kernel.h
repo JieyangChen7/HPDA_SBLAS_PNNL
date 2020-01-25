@@ -66,7 +66,7 @@ struct NumaContext {
   bool * representiveThreads;
   int * numGPUs;
   int * workload;
-  NumaContext(int * numaMapping) {
+  NumaContext(int * numaMapping, int ngpu) {
     int num_numa_nodes = 0;
     for (int i = 0; i < ngpu; i++) {
       if (numaMapping[i] > num_numa_nodes) {
@@ -111,11 +111,11 @@ struct NumaContext {
     }
     print_vec(workload, num_numa_nodes+1, "workload: ");
 
-    numaContext->numaMapping = numaMapping;
-    numaContext->numNumaNodes = num_numa_nodes;
-    numaContext->representiveThreads = representive_threads;
-    numaContext->numGPUs = num_gpus;
-    numaContext->workload = workload;
+    this->numaMapping = numaMapping;
+    this->numNumaNodes = num_numa_nodes;
+    this->representiveThreads = representive_threads;
+    this->numGPUs = num_gpus;
+    this->workload = workload;
 
   }
 };
