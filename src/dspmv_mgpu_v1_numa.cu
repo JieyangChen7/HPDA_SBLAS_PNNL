@@ -449,33 +449,33 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     // }
     // start_flags[dev_id] = start_flag;   
 
-    pcsrGPU[dev_id].endRow = get_row_from_index(pcsrNuma[numa_id].m, pcsrNuma[numa_id].rowPtr, pcsrGPU[dev_id].endIdx);
-    //end_row = get_row_from_index(numa_m[numa_id], numa_csrRowPtr[numa_id], end_idx);
-    // Mark imcomplete rows
-    // True: imcomplete
+    // pcsrGPU[dev_id].endRow = get_row_from_index(pcsrNuma[numa_id].m, pcsrNuma[numa_id].rowPtr, pcsrGPU[dev_id].endIdx);
+    // //end_row = get_row_from_index(numa_m[numa_id], numa_csrRowPtr[numa_id], end_idx);
+    // // Mark imcomplete rows
+    // // True: imcomplete
 
-    if (pcsrGPU[dev_id].endIdx < pcsrNuma[numa_id].rowPtr[pcsrGPU[dev_id].endRow + 1] - 1)  {
-    //if (end_idx < numa_csrRowPtr[numa_id][end_row + 1] - 1)  {
-      pcsrGPU[dev_id].endFlag = true;
-      //end_flag = true;
-    } else {
-      pcsrGPU[dev_id].endFlag = false;
-      //end_flag = false;
-    }
+    // if (pcsrGPU[dev_id].endIdx < pcsrNuma[numa_id].rowPtr[pcsrGPU[dev_id].endRow + 1] - 1)  {
+    // //if (end_idx < numa_csrRowPtr[numa_id][end_row + 1] - 1)  {
+    //   pcsrGPU[dev_id].endFlag = true;
+    //   //end_flag = true;
+    // } else {
+    //   pcsrGPU[dev_id].endFlag = false;
+    //   //end_flag = false;
+    // }
 
-    if (local_dev_id + 1 == numaContext.numGPUs[numa_id]) {
-      pcsrGPU[dev_id].endFlag = pcsrNuma[numa_id].endFlag;
-    }
-    
-
-    // if (local_dev_id+1 == num_gpus[numa_id]) {
-    //   end_flag = numa_end_flag[numa_id];
+    // if (local_dev_id + 1 == numaContext.numGPUs[numa_id]) {
+    //   pcsrGPU[dev_id].endFlag = pcsrNuma[numa_id].endFlag;
     // }
     
-    // Cacluclate dimensions
-    pcsrGPU[dev_id].m = pcsrGPU[dev_id].endRow - pcsrGPU[dev_id].startRow + 1;
-    pcsrGPU[dev_id].n = n;
-    pcsrGPU[dev_id].nnz  = pcsrGPU[dev_id].endIdx - pcsrGPU[dev_id].startIdx + 1;
+
+    // // if (local_dev_id+1 == num_gpus[numa_id]) {
+    // //   end_flag = numa_end_flag[numa_id];
+    // // }
+    
+    // // Cacluclate dimensions
+    // pcsrGPU[dev_id].m = pcsrGPU[dev_id].endRow - pcsrGPU[dev_id].startRow + 1;
+    // pcsrGPU[dev_id].n = n;
+    // pcsrGPU[dev_id].nnz  = pcsrGPU[dev_id].endIdx - pcsrGPU[dev_id].startIdx + 1;
     // dev_m = end_row - start_row + 1;
     // dev_n = n;
     // dev_nnz   = (int)(end_idx - start_idx + 1);
