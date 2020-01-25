@@ -621,27 +621,27 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
   //   // cudaMalloc((void**)&dev_x,           dev_n       * sizeof(double)); 
   //   // cudaMalloc((void**)&dev_y,           dev_m       * sizeof(double)); 
 
-  //   tmp_time = get_time();
-  //   cudaMemcpyAsync(pcsrGPU[dev_id].drowPtr, pcsrGPU[dev_id].rowPtr, (pcsrGPU[dev_id].m + 1) * sizeof(int), cudaMemcpyHostToDevice, stream);
-  //   //cudaMemcpyAsync(dev_csrRowPtr, host_csrRowPtr, (dev_m + 1) * sizeof(int), cudaMemcpyHostToDevice, stream);
-  //   cudaDeviceSynchronize();
-  //   tmp_time = get_time();
-  //   calcCsrRowPtr(pcsrGPU[dev_id].drowPtr, pcsrGPU[dev_id].m, pcsrGPU[dev_id].startIdx, pcsrGPU[dev_id].nnz, stream);
-  //   //calcCsrRowPtr(dev_csrRowPtr, dev_m, start_idx, dev_nnz, stream);
-  //   cudaDeviceSynchronize();
-  //   printf("dev_id %d, part_kernel_time = %f\n", dev_id, get_time() - tmp_time);
-  //   part_time += get_time() - tmp_time;  
-  //   printf("dev_id %d, part_time = %f\n", dev_id, part_time); 
-  // //cudaProfilerStart();
-  //   #pragma omp barrier
-  //   tmp_time = get_time();
+    tmp_time = get_time();
+    cudaMemcpyAsync(pcsrGPU[dev_id].drowPtr, pcsrGPU[dev_id].rowPtr, (pcsrGPU[dev_id].m + 1) * sizeof(int), cudaMemcpyHostToDevice, stream);
+    //cudaMemcpyAsync(dev_csrRowPtr, host_csrRowPtr, (dev_m + 1) * sizeof(int), cudaMemcpyHostToDevice, stream);
+    cudaDeviceSynchronize();
+    tmp_time = get_time();
+    calcCsrRowPtr(pcsrGPU[dev_id].drowPtr, pcsrGPU[dev_id].m, pcsrGPU[dev_id].startIdx, pcsrGPU[dev_id].nnz, stream);
+    //calcCsrRowPtr(dev_csrRowPtr, dev_m, start_idx, dev_nnz, stream);
+    cudaDeviceSynchronize();
+    printf("dev_id %d, part_kernel_time = %f\n", dev_id, get_time() - tmp_time);
+    part_time += get_time() - tmp_time;  
+    printf("dev_id %d, part_time = %f\n", dev_id, part_time); 
+  //cudaProfilerStart();
+    #pragma omp barrier
+    tmp_time = get_time();
 
-  //   //cudaMemcpyAsync(dev_csrRowPtr, host_csrRowPtr, (dev_m + 1) * sizeof(int), cudaMemcpyHostToDevice, stream);
+    //cudaMemcpyAsync(dev_csrRowPtr, host_csrRowPtr, (dev_m + 1) * sizeof(int), cudaMemcpyHostToDevice, stream);
 
-  //   cudaMemcpyAsync(pcsrGPU[dev_id].dcolIdx, pcsrGPU[dev_id].colIdx, pcsrGPU[dev_id].nnz * sizeof(int), cudaMemcpyHostToDevice, stream); 
-  //   cudaMemcpyAsync(pcsrGPU[dev_id].dval, pcsrGPU[dev_id].val, pcsrGPU[dev_id].nnz * sizeof(double), cudaMemcpyHostToDevice, stream); 
-  //   cudaMemcpyAsync(pcsrGPU[dev_id].dy, pcsrGPU[dev_id].y, pcsrGPU[dev_id].m*sizeof(double),  cudaMemcpyHostToDevice, stream); 
-  //   cudaMemcpyAsync(pcsrGPU[dev_id].dx, pcsrGPU[dev_id].x, pcsrGPU[dev_id].n*sizeof(double), cudaMemcpyHostToDevice, stream); 
+    cudaMemcpyAsync(pcsrGPU[dev_id].dcolIdx, pcsrGPU[dev_id].colIdx, pcsrGPU[dev_id].nnz * sizeof(int), cudaMemcpyHostToDevice, stream); 
+    cudaMemcpyAsync(pcsrGPU[dev_id].dval, pcsrGPU[dev_id].val, pcsrGPU[dev_id].nnz * sizeof(double), cudaMemcpyHostToDevice, stream); 
+    cudaMemcpyAsync(pcsrGPU[dev_id].dy, pcsrGPU[dev_id].y, pcsrGPU[dev_id].m*sizeof(double),  cudaMemcpyHostToDevice, stream); 
+    cudaMemcpyAsync(pcsrGPU[dev_id].dx, pcsrGPU[dev_id].x, pcsrGPU[dev_id].n*sizeof(double), cudaMemcpyHostToDevice, stream); 
 
 
   //   // cudaMemcpyAsync(dev_csrColIndex, host_csrColIndex, dev_nnz * sizeof(int), cudaMemcpyHostToDevice, stream); 
