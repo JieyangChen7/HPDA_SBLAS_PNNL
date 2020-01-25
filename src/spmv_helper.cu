@@ -245,7 +245,7 @@ void coo2csr_gpu(int m, int n, int nnz,
                                    CUSPARSE_INDEX_BASE_ZERO));
   checkCudaErrors(cudaMemcpy(csrVal, cooVal, nnz * sizeof(double), 
                               cudaMemcpyDeviceToDevice));
-  checkCudaErrors(cudaMemcpy(csrColIdx, cooColIdx, nnz * sizeof(double), 
+  checkCudaErrors(cudaMemcpy(csrColIdx, cooColIdx, nnz * sizeof(int), 
                               cudaMemcpyDeviceToDevice));
 
   checkCudaErrors(cudaDeviceSynchronize());
