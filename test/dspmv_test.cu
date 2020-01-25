@@ -220,10 +220,10 @@ int main(int argc, char *argv[]) {
   }
 
   // Convert COO to CSR
-  int * csrVal;
+  double * csrVal;
   int * csrRowPtr;
   int * csrColIdx;
-  cudaMallocHost((void **)&csrVal, nnz * sizeof(int));
+  cudaMallocHost((void **)&csrVal, nnz * sizeof(double));
   cudaMallocHost((void **)&csrRowPtr, (m+1) * sizeof(int));
   cudaMallocHost((void **)&csrColIdx, nnz * sizeof(int));
 
@@ -575,7 +575,7 @@ int main(int argc, char *argv[]) {
         correct_static_csr = false;
       }
       if (abs(y_verify[i] - y_dynamic_csr[i]) > E) {
-        correct_dnamic_csr = false;
+        correct_dynamic_csr = false;
       }
 
       if (abs(y_verify[i] - y_baseline_csc[i]) > E) {
@@ -585,7 +585,7 @@ int main(int argc, char *argv[]) {
         correct_static_csc = false;
       }
       if (abs(y_verify[i] - y_dynamic_csc[i]) > E) {
-        correct_dnamic_csc = false;
+        correct_dynamic_csc = false;
       }
 
       if (abs(y_verify[i] - y_baseline_coo[i]) > E) {
@@ -595,7 +595,7 @@ int main(int argc, char *argv[]) {
         correct_static_coo = false;
       }
       if (abs(y_verify[i] - y_dynamic_coo[i]) > E) {
-        correct_dnamic_coo = false;
+        correct_dynamic_coo = false;
       }
     
       if (correct_baseline_csr) pass_baseline_csr++;
