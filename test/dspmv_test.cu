@@ -232,26 +232,26 @@ int main(int argc, char *argv[]) {
   double matrix_size_in_gb = (double)matrix_data_space / 1e9;
   cout << "Matrix space size: " << matrix_size_in_gb << " GB." << endl;
 
-  int * counter = new int[m];
-  for (int i = 0; i < m; i++) {
-    counter[i] = 0;
-  }
-  for (int i = 0; i < nnz; i++) {
-    counter[cooRowIndex[i]]++;
-  }
-  int t = 0;
-  for (int i = 0; i < m; i++) {
-    t += counter[i];
-  }
-  csrRowPtr[0] = 0;
-  for (int i = 1; i <= m; i++) {
-    csrRowPtr[i] = csrRowPtr[i - 1] + counter[i - 1];
-  }
+  // int * counter = new int[m];
+  // for (int i = 0; i < m; i++) {
+  //   counter[i] = 0;
+  // }
+  // for (int i = 0; i < nnz; i++) {
+  //   counter[cooRowIndex[i]]++;
+  // }
+  // int t = 0;
+  // for (int i = 0; i < m; i++) {
+  //   t += counter[i];
+  // }
+  // csrRowPtr[0] = 0;
+  // for (int i = 1; i <= m; i++) {
+  //   csrRowPtr[i] = csrRowPtr[i - 1] + counter[i - 1];
+  // }
 
 
-  print_vec(csrRowPtr, m+1, "org convert:");
-  csrVal = cooVal;
-  csrColIdx = cooColIndex;
+  // print_vec(csrRowPtr, m+1, "org convert:");
+  // csrVal = cooVal;
+  // csrColIdx = cooColIndex;
 
   coo2csr(m, n, nnz,
           cooVal, cooRowIndex, cooColIndex,
