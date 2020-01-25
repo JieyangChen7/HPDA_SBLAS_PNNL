@@ -228,18 +228,18 @@ void coo2csr_gpu(int m, int n, int nnz,
   checkCudaErrors(cusparseSetMatIndexBase(descr,CUSPARSE_INDEX_BASE_ZERO));
 
 
-  size_t buffer_size;
-  checkCudaErrors(cusparseXcoosort_bufferSizeExt(handle, m, n, nnz,
-                                                 cooRowIdx, cooColIdx,
-                                                 &buffer_size));
+  // size_t buffer_size;
+  // checkCudaErrors(cusparseXcoosort_bufferSizeExt(handle, m, n, nnz,
+  //                                                cooRowIdx, cooColIdx,
+  //                                                &buffer_size));
 
-  void * buffer;
-  checkCudaErrors(cudaMalloc((void**)&buffer, buffer_size));
+  // void * buffer;
+  // checkCudaErrors(cudaMalloc((void**)&buffer, buffer_size));
 
-  int * P = new int[nnz];
-  checkCudaErrors(cusparseXcoosortByRow(handle, m, n, nnz,
-                                        cooRowIdx, cooColIdx,
-                                        P, buffer));
+  // int * P = new int[nnz];
+  // checkCudaErrors(cusparseXcoosortByRow(handle, m, n, nnz,
+  //                                       cooRowIdx, cooColIdx,
+  //                                       P, buffer));
   checkCudaErrors(cusparseXcoo2csr(handle,
                                    cooRowIdx, nnz, m, csrRowPtr,
                                    CUSPARSE_INDEX_BASE_ZERO));
@@ -249,8 +249,8 @@ void coo2csr_gpu(int m, int n, int nnz,
                               cudaMemcpyDeviceToDevice));
 
   checkCudaErrors(cudaDeviceSynchronize());
-  checkCudaErrors(cudaFree(buffer));
-  delete [] P;
+  // checkCudaErrors(cudaFree(buffer));
+  // delete [] P;
 
   checkCudaErrors(cusparseDestroyMatDescr(descr));
   checkCudaErrors(cusparseDestroy(handle));
