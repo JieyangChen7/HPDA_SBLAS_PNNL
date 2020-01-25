@@ -158,7 +158,7 @@ void csr2csrNcsc(int m, int n, int nnz,
         p++;
       }
     }
-    csrColPtr[j + 1] = p;
+    cscColPtr[j + 1] = p;
   }
 
 
