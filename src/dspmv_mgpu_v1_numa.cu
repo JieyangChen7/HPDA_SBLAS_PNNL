@@ -355,433 +355,433 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
   double core_time;
   double part_time;
   double merg_time;
-//   #pragma omp parallel default (shared) reduction(max:core_time) reduction(max:part_time) reduction(max:merg_time)
-//   {
-//     unsigned int dev_id = omp_get_thread_num();
-//     cudaSetDevice(dev_id);
-//     unsigned int hwthread = sched_getcpu();
+  #pragma omp parallel default (shared) reduction(max:core_time) reduction(max:part_time) reduction(max:merg_time)
+  {
+    unsigned int dev_id = omp_get_thread_num();
+    cudaSetDevice(dev_id);
+    unsigned int hwthread = sched_getcpu();
 
-//     int numa_id = numaContext.numaMapping[dev_id];
-//     int local_dev_id = 0;
-//     for (int i = 0; i < ngpu; i++) {
-//       if (i == dev_id) break;
-//       if (numa_id == numaContext.numaMapping[i]) local_dev_id++;
-//     }
+    int numa_id = numaContext.numaMapping[dev_id];
+    int local_dev_id = 0;
+    for (int i = 0; i < ngpu; i++) {
+      if (i == dev_id) break;
+      if (numa_id == numaContext.numaMapping[i]) local_dev_id++;
+    }
 
-//     // int numa_id = numa_mapping[dev_id];
-//     // int local_dev_id = 0;
-//     // for (int i = 0; i < ngpu; i++) {
-//     //   if (i == dev_id) break;
-//     //   if (numa_id == numa_mapping[i]) local_dev_id++;
-//     // }
-
-
-//     printf("omp thread %d, hw thread %d, numa_id %d, local_id %d\n", dev_id, hwthread, numa_id, local_dev_id);  
-
-//     // int start_idx, end_idx;
-//     // int start_row, end_row;
-//     // bool start_flag, end_flag; 
+    // int numa_id = numa_mapping[dev_id];
+    // int local_dev_id = 0;
+    // for (int i = 0; i < ngpu; i++) {
+    //   if (i == dev_id) break;
+    //   if (numa_id == numa_mapping[i]) local_dev_id++;
+    // }
 
 
-//     // double * host_csrVal;
-//     // int    * host_csrRowPtr;
-//     // int    * host_csrColIndex;
-//     // double * host_x;
-//     // double * host_y;
+    printf("omp thread %d, hw thread %d, numa_id %d, local_id %d\n", dev_id, hwthread, numa_id, local_dev_id);  
 
-//     // double * dev_csrVal;
-//     // int    * dev_csrRowPtr;
-//     // int    * dev_csrColIndex;
+    // int start_idx, end_idx;
+    // int start_row, end_row;
+    // bool start_flag, end_flag; 
 
-//     // int    dev_nnz, dev_m, dev_n;
+
+    // double * host_csrVal;
+    // int    * host_csrRowPtr;
+    // int    * host_csrColIndex;
+    // double * host_x;
+    // double * host_y;
+
+    // double * dev_csrVal;
+    // int    * dev_csrRowPtr;
+    // int    * dev_csrColIndex;
+
+    // int    dev_nnz, dev_m, dev_n;
 
     
-//     // double * dev_x;
-//     // double * dev_y;
-//     // double y2;
+    // double * dev_x;
+    // double * dev_y;
+    // double y2;
 
-//     cudaStream_t stream;
-//     cusparseStatus_t status;
-//     cusparseHandle_t handle;
-//     cusparseMatDescr_t descr;
-//     int err;
+    cudaStream_t stream;
+    cusparseStatus_t status;
+    cusparseHandle_t handle;
+    cusparseMatDescr_t descr;
+    int err;
 
-//     double tmp_time = get_time();
+    double tmp_time = get_time();
 
-//     // Calculate the start and end index
-//     int tmp1 = local_dev_id * pcsrNuma[numa_id].nnz;
-//     int tmp2 = (local_dev_id + 1) * pcsrNuma[numa_id].nnz;
+    // Calculate the start and end index
+    int tmp1 = local_dev_id * pcsrNuma[numa_id].nnz;
+    int tmp2 = (local_dev_id + 1) * pcsrNuma[numa_id].nnz;
 
-//     pcsrGPU[dev_id].startIdx = floor((double)tmp1 / numaContext.numGPUs[numa_id]);
-//     pcsrGPU[dev_id].endIdx   = floor((double)tmp2 / numaContext.numGPUs[numa_id]) - 1;
+    pcsrGPU[dev_id].startIdx = floor((double)tmp1 / numaContext.numGPUs[numa_id]);
+    pcsrGPU[dev_id].endIdx   = floor((double)tmp2 / numaContext.numGPUs[numa_id]) - 1;
 
 
-//     // int tmp1 = local_dev_id * numa_nnz[numa_id];
-//     // int tmp2 = (local_dev_id + 1) * numa_nnz[numa_id];
+    // int tmp1 = local_dev_id * numa_nnz[numa_id];
+    // int tmp2 = (local_dev_id + 1) * numa_nnz[numa_id];
 
-//     // start_idx = floor((double)tmp1 / num_gpus[numa_id]);
-//     // end_idx   = floor((double)tmp2 / num_gpus[numa_id]) - 1;
+    // start_idx = floor((double)tmp1 / num_gpus[numa_id]);
+    // end_idx   = floor((double)tmp2 / num_gpus[numa_id]) - 1;
   
-//     // Calculate the start and end row
-//     pcsrGPU[dev_id].startRow = get_row_from_index(pcsrNuma[numa_id].m, pcsrNuma[numa_id].rowPtr, pcsrGPU[dev_id].startIdx);
-//     //start_row = get_row_from_index(numa_m[numa_id], numa_csrRowPtr[numa_id], start_idx);
-//     // Mark imcomplete rows
-//     // True: imcomplete
-//     if (pcsrGPU[dev_id].startIdx > pcsrNuma[numa_id].rowPtr[pcsrGPU[dev_id].startRow]) {
-//     //if (start_idx > numa_csrRowPtr[numa_id][start_row]) {
-//       pcsrGPU[dev_id].startFlag = true;
-//       //start_flag = true;
-//       //y2 = y[start_row];
-//       pcsrGPU[dev_id].org_y = pcsrNuma[numa_id].y[pcsrGPU[dev_id].startIdx];
-//       //org_y[dev_id] = y[start_row]; //use dev_id for global merge
-//       //start_rows[dev_id] = start_row;
-//     } else {
-//       pcsrGPU[dev_id].startFlag = false;
-//       //start_flag = false;
-//     }
+    // Calculate the start and end row
+    pcsrGPU[dev_id].startRow = get_row_from_index(pcsrNuma[numa_id].m, pcsrNuma[numa_id].rowPtr, pcsrGPU[dev_id].startIdx);
+    //start_row = get_row_from_index(numa_m[numa_id], numa_csrRowPtr[numa_id], start_idx);
+    // Mark imcomplete rows
+    // True: imcomplete
+    if (pcsrGPU[dev_id].startIdx > pcsrNuma[numa_id].rowPtr[pcsrGPU[dev_id].startRow]) {
+    //if (start_idx > numa_csrRowPtr[numa_id][start_row]) {
+      pcsrGPU[dev_id].startFlag = true;
+      //start_flag = true;
+      //y2 = y[start_row];
+      pcsrGPU[dev_id].org_y = pcsrNuma[numa_id].y[pcsrGPU[dev_id].startIdx];
+      //org_y[dev_id] = y[start_row]; //use dev_id for global merge
+      //start_rows[dev_id] = start_row;
+    } else {
+      pcsrGPU[dev_id].startFlag = false;
+      //start_flag = false;
+    }
 
-//     if (local_dev_id == 0) {
-//       pcsrGPU[dev_id].startFlag = pcsrNuma[numa_id].startFlag; // see if numa block is complete
-//     }
+    if (local_dev_id == 0) {
+      pcsrGPU[dev_id].startFlag = pcsrNuma[numa_id].startFlag; // see if numa block is complete
+    }
   
-//     // if (local_dev_id == 0) {
-//     //   start_flag = numa_start_flag[numa_id]; // see if numa block is complete
-//     // }
-//     // start_flags[dev_id] = start_flag;   
+    // if (local_dev_id == 0) {
+    //   start_flag = numa_start_flag[numa_id]; // see if numa block is complete
+    // }
+    // start_flags[dev_id] = start_flag;   
 
-//     pcsrGPU[dev_id].endRow = get_row_from_index(pcsrNuma[numa_id].m, pcsrNuma[numa_id].rowPtr, pcsrGPU[dev_id].endIdx);
-//     //end_row = get_row_from_index(numa_m[numa_id], numa_csrRowPtr[numa_id], end_idx);
-//     // Mark imcomplete rows
-//     // True: imcomplete
+    pcsrGPU[dev_id].endRow = get_row_from_index(pcsrNuma[numa_id].m, pcsrNuma[numa_id].rowPtr, pcsrGPU[dev_id].endIdx);
+    //end_row = get_row_from_index(numa_m[numa_id], numa_csrRowPtr[numa_id], end_idx);
+    // Mark imcomplete rows
+    // True: imcomplete
 
-//     if (pcsrGPU[dev_id].endIdx < pcsrNuma[numa_id].rowPtr[pcsrGPU[dev_id].endRow + 1] - 1)  {
-//     //if (end_idx < numa_csrRowPtr[numa_id][end_row + 1] - 1)  {
-//       pcsrGPU[dev_id].endFlag = true;
-//       //end_flag = true;
-//     } else {
-//       pcsrGPU[dev_id].endFlag = false;
-//       //end_flag = false;
-//     }
+    if (pcsrGPU[dev_id].endIdx < pcsrNuma[numa_id].rowPtr[pcsrGPU[dev_id].endRow + 1] - 1)  {
+    //if (end_idx < numa_csrRowPtr[numa_id][end_row + 1] - 1)  {
+      pcsrGPU[dev_id].endFlag = true;
+      //end_flag = true;
+    } else {
+      pcsrGPU[dev_id].endFlag = false;
+      //end_flag = false;
+    }
 
-//     if (local_dev_id + 1 == numaContext.numGPUs[numa_id]) {
-//       pcsrGPU[dev_id].endFlag = pcsrNuma[numa_id].endFlag;
-//     }
+    if (local_dev_id + 1 == numaContext.numGPUs[numa_id]) {
+      pcsrGPU[dev_id].endFlag = pcsrNuma[numa_id].endFlag;
+    }
     
 
-//     // if (local_dev_id+1 == num_gpus[numa_id]) {
-//     //   end_flag = numa_end_flag[numa_id];
-//     // }
+    // if (local_dev_id+1 == num_gpus[numa_id]) {
+    //   end_flag = numa_end_flag[numa_id];
+    // }
     
-//     // Cacluclate dimensions
-//     pcsrGPU[dev_id].m = pcsrGPU[dev_id].endRow - pcsrGPU[dev_id].startRow + 1;
-//     pcsrGPU[dev_id].n = n;
-//     pcsrGPU[dev_id].nnz  = pcsrGPU[dev_id].endIdx - pcsrGPU[dev_id].startIdx + 1;
-//     // dev_m = end_row - start_row + 1;
-//     // dev_n = n;
-//     // dev_nnz   = (int)(end_idx - start_idx + 1);
+    // Cacluclate dimensions
+    pcsrGPU[dev_id].m = pcsrGPU[dev_id].endRow - pcsrGPU[dev_id].startRow + 1;
+    pcsrGPU[dev_id].n = n;
+    pcsrGPU[dev_id].nnz  = pcsrGPU[dev_id].endIdx - pcsrGPU[dev_id].startIdx + 1;
+    // dev_m = end_row - start_row + 1;
+    // dev_n = n;
+    // dev_nnz   = (int)(end_idx - start_idx + 1);
 
-//     printf("omp thread %d, dev_m %d, dev_n %d, dev_nnz %d, start_idx %d, end_idx %d, start_row %d, end_row %d\n", 
-//             dev_id, pcsrGPU[dev_id].m, pcsrGPU[dev_id].n, pcsrGPU[dev_id].nnz, pcsrGPU[dev_id].startIdx, pcsrGPU[dev_id].endIdx, 
-//             pcsrGPU[dev_id].startRow, pcsrGPU[dev_id].endRow);
-
-
-//     // preparing data on host 
-
-//     //tmp_time = get_time();
-//     pcsrGPU[dev_id].val = &(pcsrNuma[numa_id].val[pcsrGPU[dev_id].startIdx]);
-//     pcsrGPU[dev_id].rowPtr = &(pcsrNuma[numa_id].rowPtr[pcsrGPU[dev_id].startRow]);
-//     pcsrGPU[dev_id].colIdx = &(pcsrNuma[numa_id].colIdx[pcsrGPU[dev_id].startIdx]);
-//     pcsrGPU[dev_id].x = pcsrNuma[numa_id].x;
-//     pcsrGPU[dev_id].y = &(pcsrNuma[numa_id].y[pcsrGPU[dev_id].startRow]);
+    printf("omp thread %d, dev_m %d, dev_n %d, dev_nnz %d, start_idx %d, end_idx %d, start_row %d, end_row %d\n", 
+            dev_id, pcsrGPU[dev_id].m, pcsrGPU[dev_id].n, pcsrGPU[dev_id].nnz, pcsrGPU[dev_id].startIdx, pcsrGPU[dev_id].endIdx, 
+            pcsrGPU[dev_id].startRow, pcsrGPU[dev_id].endRow);
 
 
-//     // host_csrVal = &numa_csrVal[numa_id][start_idx];
-//     // host_csrRowPtr = &numa_csrRowPtr[numa_id][start_row];
-//     // host_csrColIndex = &numa_csrColIndex[numa_id][start_idx];
-//     // host_x = numa_x[numa_id];
-//     // host_y = &numa_y[numa_id][start_row];
-//     part_time = get_time() - tmp_time;  
+    // preparing data on host 
+
+    //tmp_time = get_time();
+    pcsrGPU[dev_id].val = &(pcsrNuma[numa_id].val[pcsrGPU[dev_id].startIdx]);
+    pcsrGPU[dev_id].rowPtr = &(pcsrNuma[numa_id].rowPtr[pcsrGPU[dev_id].startRow]);
+    pcsrGPU[dev_id].colIdx = &(pcsrNuma[numa_id].colIdx[pcsrGPU[dev_id].startIdx]);
+    pcsrGPU[dev_id].x = pcsrNuma[numa_id].x;
+    pcsrGPU[dev_id].y = &(pcsrNuma[numa_id].y[pcsrGPU[dev_id].startRow]);
 
 
-//     // original partition*******************************************
-// /*    int tmp1 = dev_id * nnz;
-//     int tmp2 = (dev_id + 1) * nnz;
+    // host_csrVal = &numa_csrVal[numa_id][start_idx];
+    // host_csrRowPtr = &numa_csrRowPtr[numa_id][start_row];
+    // host_csrColIndex = &numa_csrColIndex[numa_id][start_idx];
+    // host_x = numa_x[numa_id];
+    // host_y = &numa_y[numa_id][start_row];
+    part_time = get_time() - tmp_time;  
 
-//     start_idx = floor((double)tmp1 / ngpu);
-//     end_idx   = floor((double)tmp2 / ngpu) - 1;
 
-//     // Calculate the start and end row
-//     start_row = get_row_from_index(m, csrRowPtr, start_idx);
-//     // Mark imcomplete rows
-//     // True: imcomplete
-//     if (start_idx > csrRowPtr[start_row]) {
-//       start_flag = true;
-//       y2 = y[start_row];
-//       org_y[dev_id] = y[start_row]; //use dev_id for global merge
-//       start_rows[dev_id] = start_row;
-//     } else {
-//       start_flag = false;
-//     }
-//     start_flags[dev_id] = start_flag;
+    // original partition*******************************************
+/*    int tmp1 = dev_id * nnz;
+    int tmp2 = (dev_id + 1) * nnz;
 
-//     end_row = get_row_from_index(m, csrRowPtr, end_idx);
-//     // Mark imcomplete rows
-//     // True: imcomplete
-//     if (end_idx < csrRowPtr[end_row + 1] - 1)  {
-//       end_flag = true;
-//     } else {
-//       end_flag = false;
-//     }
+    start_idx = floor((double)tmp1 / ngpu);
+    end_idx   = floor((double)tmp2 / ngpu) - 1;
+
+    // Calculate the start and end row
+    start_row = get_row_from_index(m, csrRowPtr, start_idx);
+    // Mark imcomplete rows
+    // True: imcomplete
+    if (start_idx > csrRowPtr[start_row]) {
+      start_flag = true;
+      y2 = y[start_row];
+      org_y[dev_id] = y[start_row]; //use dev_id for global merge
+      start_rows[dev_id] = start_row;
+    } else {
+      start_flag = false;
+    }
+    start_flags[dev_id] = start_flag;
+
+    end_row = get_row_from_index(m, csrRowPtr, end_idx);
+    // Mark imcomplete rows
+    // True: imcomplete
+    if (end_idx < csrRowPtr[end_row + 1] - 1)  {
+      end_flag = true;
+    } else {
+      end_flag = false;
+    }
     
-//     // Cacluclate dimensions
-//     dev_m = end_row - start_row + 1;
-//     dev_n = n;
-//     dev_nnz   = (int)(end_idx - start_idx + 1);
+    // Cacluclate dimensions
+    dev_m = end_row - start_row + 1;
+    dev_n = n;
+    dev_nnz   = (int)(end_idx - start_idx + 1);
 
 
     
 
-//     part_time = get_time() - tmp_time;  
+    part_time = get_time() - tmp_time;  
 
-//     printf("omp thread %d, dev_m %d, dev_n %d, dev_nnz %d, start_idx %d, end_idx %d, start_row %d, end_row %d\n", dev_id, dev_m, dev_n, dev_nnz, start_idx, end_idx, start_row, end_row);
+    printf("omp thread %d, dev_m %d, dev_n %d, dev_nnz %d, start_idx %d, end_idx %d, start_row %d, end_row %d\n", dev_id, dev_m, dev_n, dev_nnz, start_idx, end_idx, start_row, end_row);
 
-//     // preparing data on host 
-//     cudaMallocHost((void**)&host_csrVal, dev_nnz * sizeof(double));
-//     cudaMallocHost((void**)&host_csrRowPtr, (dev_m + 1)*sizeof(int));
-//     cudaMallocHost((void**)&host_csrColIndex, dev_nnz * sizeof(int));
-//     cudaMallocHost((void**)&host_x, dev_n * sizeof(double));
-//     cudaMallocHost((void**)&host_y, dev_m * sizeof(double));
+    // preparing data on host 
+    cudaMallocHost((void**)&host_csrVal, dev_nnz * sizeof(double));
+    cudaMallocHost((void**)&host_csrRowPtr, (dev_m + 1)*sizeof(int));
+    cudaMallocHost((void**)&host_csrColIndex, dev_nnz * sizeof(int));
+    cudaMallocHost((void**)&host_x, dev_n * sizeof(double));
+    cudaMallocHost((void**)&host_y, dev_m * sizeof(double));
 
-//     tmp_time = get_time();
-//     for (int i = start_idx; i <= end_idx; i++) {
-//       host_csrVal[i - start_idx] = csrVal[i];
-//     }
-//     //host_csrVal = &numa_csrVal[numa_id][start_idx];
+    tmp_time = get_time();
+    for (int i = start_idx; i <= end_idx; i++) {
+      host_csrVal[i - start_idx] = csrVal[i];
+    }
+    //host_csrVal = &numa_csrVal[numa_id][start_idx];
 
-//     host_csrRowPtr[0] = 0;
-//     host_csrRowPtr[dev_m] = dev_nnz;
-//     for (int j = 1; j < dev_m; j++) {
-//       host_csrRowPtr[j] = (int)(csrRowPtr[start_row + j] - start_idx);
-//     }
-//     //host_csrRowPtr = &numa_csrRowPtr[numa_id][start_row];
+    host_csrRowPtr[0] = 0;
+    host_csrRowPtr[dev_m] = dev_nnz;
+    for (int j = 1; j < dev_m; j++) {
+      host_csrRowPtr[j] = (int)(csrRowPtr[start_row + j] - start_idx);
+    }
+    //host_csrRowPtr = &numa_csrRowPtr[numa_id][start_row];
 
-//     printf("dev %d: %d %d %d %d %d\n", host_csrRowPtr[0],host_csrRowPtr[1],host_csrRowPtr[2],host_csrRowPtr[3],host_csrRowPtr[4]);
+    printf("dev %d: %d %d %d %d %d\n", host_csrRowPtr[0],host_csrRowPtr[1],host_csrRowPtr[2],host_csrRowPtr[3],host_csrRowPtr[4]);
 
-//     for (int i = start_idx; i <= end_idx; i++) {
-//       host_csrColIndex[i - start_idx] = csrColIndex[i];
-//     }
-//     //host_csrColIndex = &numa_csrColIndex[numa_id][start_idx];
+    for (int i = start_idx; i <= end_idx; i++) {
+      host_csrColIndex[i - start_idx] = csrColIndex[i];
+    }
+    //host_csrColIndex = &numa_csrColIndex[numa_id][start_idx];
 
-//     for (int i = 0; i < dev_n; i++) {
-//       host_x[i] = x[i];
-//     }
-//     //host_x = numa_x[numa_id];
+    for (int i = 0; i < dev_n; i++) {
+      host_x[i] = x[i];
+    }
+    //host_x = numa_x[numa_id];
 
-//     for (int i = 0; i < dev_m; i++) {
-//       host_y[i] = y[start_row + i];
-//     }
-//     //host_y = &numa_y[numa_id][start_row];
+    for (int i = 0; i < dev_m; i++) {
+      host_y[i] = y[start_row + i];
+    }
+    //host_y = &numa_y[numa_id][start_row];
 
-//     part_time += get_time() - tmp_time;
-// */
-//     // end of original partition*********************************
+    part_time += get_time() - tmp_time;
+*/
+    // end of original partition*********************************
 
-//     cudaStreamCreate(&stream);
+  //   cudaStreamCreate(&stream);
 
-//     status = cusparseCreate(&handle); 
-//     if (status != CUSPARSE_STATUS_SUCCESS) 
-//     { 
-//       printf("CUSPARSE Library initialization failed");
-//       //return 1; 
-//     } 
-//     status = cusparseSetStream(handle, stream);
-//     if (status != CUSPARSE_STATUS_SUCCESS) 
-//     { 
-//       printf("Stream bindind failed");
-//       //return 1;
-//     } 
-//     status = cusparseCreateMatDescr(&descr);
-//     if (status != CUSPARSE_STATUS_SUCCESS) 
-//     { 
-//       printf("Matrix descriptor initialization failed");
-//       //return 1;
-//     }   
-//     cusparseSetMatType(descr,CUSPARSE_MATRIX_TYPE_GENERAL); 
-//     cusparseSetMatIndexBase(descr,CUSPARSE_INDEX_BASE_ZERO);
+  //   status = cusparseCreate(&handle); 
+  //   if (status != CUSPARSE_STATUS_SUCCESS) 
+  //   { 
+  //     printf("CUSPARSE Library initialization failed");
+  //     //return 1; 
+  //   } 
+  //   status = cusparseSetStream(handle, stream);
+  //   if (status != CUSPARSE_STATUS_SUCCESS) 
+  //   { 
+  //     printf("Stream bindind failed");
+  //     //return 1;
+  //   } 
+  //   status = cusparseCreateMatDescr(&descr);
+  //   if (status != CUSPARSE_STATUS_SUCCESS) 
+  //   { 
+  //     printf("Matrix descriptor initialization failed");
+  //     //return 1;
+  //   }   
+  //   cusparseSetMatType(descr,CUSPARSE_MATRIX_TYPE_GENERAL); 
+  //   cusparseSetMatIndexBase(descr,CUSPARSE_INDEX_BASE_ZERO);
 
-//     cudaMalloc((void**)&(pcsrGPU[dev_id].dval),    pcsrGPU[dev_id].nnz     * sizeof(double));
-//     cudaMalloc((void**)&(pcsrGPU[dev_id].drowPtr), (pcsrGPU[dev_id].m + 1) * sizeof(int)   );
-//     cudaMalloc((void**)&(pcsrGPU[dev_id].dcolIdx), pcsrGPU[dev_id].nnz     * sizeof(int)   );
-//     cudaMalloc((void**)&(pcsrGPU[dev_id].dx),      pcsrGPU[dev_id].n       * sizeof(double)); 
-//     cudaMalloc((void**)&(pcsrGPU[dev_id].dy),      pcsrGPU[dev_id].m       * sizeof(double)); 
+  //   cudaMalloc((void**)&(pcsrGPU[dev_id].dval),    pcsrGPU[dev_id].nnz     * sizeof(double));
+  //   cudaMalloc((void**)&(pcsrGPU[dev_id].drowPtr), (pcsrGPU[dev_id].m + 1) * sizeof(int)   );
+  //   cudaMalloc((void**)&(pcsrGPU[dev_id].dcolIdx), pcsrGPU[dev_id].nnz     * sizeof(int)   );
+  //   cudaMalloc((void**)&(pcsrGPU[dev_id].dx),      pcsrGPU[dev_id].n       * sizeof(double)); 
+  //   cudaMalloc((void**)&(pcsrGPU[dev_id].dy),      pcsrGPU[dev_id].m       * sizeof(double)); 
     
-//     // cudaMalloc((void**)&dev_csrVal,      dev_nnz     * sizeof(double));
-//     // cudaMalloc((void**)&dev_csrRowPtr,   (dev_m + 1) * sizeof(int)   );
-//     // cudaMalloc((void**)&dev_csrColIndex, dev_nnz     * sizeof(int)   );
-//     // cudaMalloc((void**)&dev_x,           dev_n       * sizeof(double)); 
-//     // cudaMalloc((void**)&dev_y,           dev_m       * sizeof(double)); 
+  //   // cudaMalloc((void**)&dev_csrVal,      dev_nnz     * sizeof(double));
+  //   // cudaMalloc((void**)&dev_csrRowPtr,   (dev_m + 1) * sizeof(int)   );
+  //   // cudaMalloc((void**)&dev_csrColIndex, dev_nnz     * sizeof(int)   );
+  //   // cudaMalloc((void**)&dev_x,           dev_n       * sizeof(double)); 
+  //   // cudaMalloc((void**)&dev_y,           dev_m       * sizeof(double)); 
 
-//     tmp_time = get_time();
-//     cudaMemcpyAsync(pcsrGPU[dev_id].drowPtr, pcsrGPU[dev_id].rowPtr, (pcsrGPU[dev_id].m + 1) * sizeof(int), cudaMemcpyHostToDevice, stream);
-//     //cudaMemcpyAsync(dev_csrRowPtr, host_csrRowPtr, (dev_m + 1) * sizeof(int), cudaMemcpyHostToDevice, stream);
-//     cudaDeviceSynchronize();
-//     tmp_time = get_time();
-//     calcCsrRowPtr(pcsrGPU[dev_id].drowPtr, pcsrGPU[dev_id].m, pcsrGPU[dev_id].startIdx, pcsrGPU[dev_id].nnz, stream);
-//     //calcCsrRowPtr(dev_csrRowPtr, dev_m, start_idx, dev_nnz, stream);
-//     cudaDeviceSynchronize();
-//     printf("dev_id %d, part_kernel_time = %f\n", dev_id, get_time() - tmp_time);
-//     part_time += get_time() - tmp_time;  
-//     printf("dev_id %d, part_time = %f\n", dev_id, part_time); 
-//   //cudaProfilerStart();
-//     #pragma omp barrier
-//     tmp_time = get_time();
+  //   tmp_time = get_time();
+  //   cudaMemcpyAsync(pcsrGPU[dev_id].drowPtr, pcsrGPU[dev_id].rowPtr, (pcsrGPU[dev_id].m + 1) * sizeof(int), cudaMemcpyHostToDevice, stream);
+  //   //cudaMemcpyAsync(dev_csrRowPtr, host_csrRowPtr, (dev_m + 1) * sizeof(int), cudaMemcpyHostToDevice, stream);
+  //   cudaDeviceSynchronize();
+  //   tmp_time = get_time();
+  //   calcCsrRowPtr(pcsrGPU[dev_id].drowPtr, pcsrGPU[dev_id].m, pcsrGPU[dev_id].startIdx, pcsrGPU[dev_id].nnz, stream);
+  //   //calcCsrRowPtr(dev_csrRowPtr, dev_m, start_idx, dev_nnz, stream);
+  //   cudaDeviceSynchronize();
+  //   printf("dev_id %d, part_kernel_time = %f\n", dev_id, get_time() - tmp_time);
+  //   part_time += get_time() - tmp_time;  
+  //   printf("dev_id %d, part_time = %f\n", dev_id, part_time); 
+  // //cudaProfilerStart();
+  //   #pragma omp barrier
+  //   tmp_time = get_time();
 
-//     //cudaMemcpyAsync(dev_csrRowPtr, host_csrRowPtr, (dev_m + 1) * sizeof(int), cudaMemcpyHostToDevice, stream);
+  //   //cudaMemcpyAsync(dev_csrRowPtr, host_csrRowPtr, (dev_m + 1) * sizeof(int), cudaMemcpyHostToDevice, stream);
 
-//     cudaMemcpyAsync(pcsrGPU[dev_id].dcolIdx, pcsrGPU[dev_id].colIdx, pcsrGPU[dev_id].nnz * sizeof(int), cudaMemcpyHostToDevice, stream); 
-//     cudaMemcpyAsync(pcsrGPU[dev_id].dval, pcsrGPU[dev_id].val, pcsrGPU[dev_id].nnz * sizeof(double), cudaMemcpyHostToDevice, stream); 
-//     cudaMemcpyAsync(pcsrGPU[dev_id].dy, pcsrGPU[dev_id].y, pcsrGPU[dev_id].m*sizeof(double),  cudaMemcpyHostToDevice, stream); 
-//     cudaMemcpyAsync(pcsrGPU[dev_id].dx, pcsrGPU[dev_id].x, pcsrGPU[dev_id].n*sizeof(double), cudaMemcpyHostToDevice, stream); 
+  //   cudaMemcpyAsync(pcsrGPU[dev_id].dcolIdx, pcsrGPU[dev_id].colIdx, pcsrGPU[dev_id].nnz * sizeof(int), cudaMemcpyHostToDevice, stream); 
+  //   cudaMemcpyAsync(pcsrGPU[dev_id].dval, pcsrGPU[dev_id].val, pcsrGPU[dev_id].nnz * sizeof(double), cudaMemcpyHostToDevice, stream); 
+  //   cudaMemcpyAsync(pcsrGPU[dev_id].dy, pcsrGPU[dev_id].y, pcsrGPU[dev_id].m*sizeof(double),  cudaMemcpyHostToDevice, stream); 
+  //   cudaMemcpyAsync(pcsrGPU[dev_id].dx, pcsrGPU[dev_id].x, pcsrGPU[dev_id].n*sizeof(double), cudaMemcpyHostToDevice, stream); 
 
 
-//     // cudaMemcpyAsync(dev_csrColIndex, host_csrColIndex, dev_nnz * sizeof(int), cudaMemcpyHostToDevice, stream); 
-//     // cudaMemcpyAsync(dev_csrVal, host_csrVal, dev_nnz * sizeof(double), cudaMemcpyHostToDevice, stream); 
-//     // cudaMemcpyAsync(dev_y, host_y, dev_m*sizeof(double),  cudaMemcpyHostToDevice, stream); 
-//     // cudaMemcpyAsync(dev_x, host_x, dev_n*sizeof(double), cudaMemcpyHostToDevice, stream); 
+  //   // cudaMemcpyAsync(dev_csrColIndex, host_csrColIndex, dev_nnz * sizeof(int), cudaMemcpyHostToDevice, stream); 
+  //   // cudaMemcpyAsync(dev_csrVal, host_csrVal, dev_nnz * sizeof(double), cudaMemcpyHostToDevice, stream); 
+  //   // cudaMemcpyAsync(dev_y, host_y, dev_m*sizeof(double),  cudaMemcpyHostToDevice, stream); 
+  //   // cudaMemcpyAsync(dev_x, host_x, dev_n*sizeof(double), cudaMemcpyHostToDevice, stream); 
     
-//     time_comm = get_time() - curr_time;
-//     curr_time = get_time();
-//     err = 0;
-//     if (kernel == 1) {
+  //   time_comm = get_time() - curr_time;
+  //   curr_time = get_time();
+  //   err = 0;
+  //   if (kernel == 1) {
 
-//     cudaDeviceSynchronize();
-//     //print_vec_gpu(dev_csrRowPtr, 5, "csrRowPtr"+to_string(dev_id));
-//     //print_vec_gpu(dev_csrVal, 5, "csrVal"+to_string(dev_id));
-//     //print_vec_gpu(dev_csrColIndex, 5, "csrColIndex"+to_string(dev_id));
-//     //print_vec_gpu(dev_x, 5, "x"+to_string(dev_id));
-//     //print_vec_gpu(dev_y, 5, "y_before"+to_string(dev_id));
-//     //printf("dev_id %d, alpha %f, beta %f\n", dev_id, *alpha, *beta);
+  //   cudaDeviceSynchronize();
+  //   //print_vec_gpu(dev_csrRowPtr, 5, "csrRowPtr"+to_string(dev_id));
+  //   //print_vec_gpu(dev_csrVal, 5, "csrVal"+to_string(dev_id));
+  //   //print_vec_gpu(dev_csrColIndex, 5, "csrColIndex"+to_string(dev_id));
+  //   //print_vec_gpu(dev_x, 5, "x"+to_string(dev_id));
+  //   //print_vec_gpu(dev_y, 5, "y_before"+to_string(dev_id));
+  //   //printf("dev_id %d, alpha %f, beta %f\n", dev_id, *alpha, *beta);
 
 
-//     //calcCsrRowPtr(dev_csrRowPtr, dev_m, start_idx, dev_nnz, stream);
-//     //cudaDeviceSynchronize();
+  //   //calcCsrRowPtr(dev_csrRowPtr, dev_m, start_idx, dev_nnz, stream);
+  //   //cudaDeviceSynchronize();
   
       
-//     //print_vec_gpu(dev_x, dev_n, "x"+to_string(dev_id));
+  //   //print_vec_gpu(dev_x, dev_n, "x"+to_string(dev_id));
   
-//     status = cusparseDcsrmv(handle,CUSPARSE_OPERATION_NON_TRANSPOSE, 
-//                               pcsrGPU[dev_id].m, pcsrGPU[dev_id].n, pcsrGPU[dev_id].nnz, 
-//                               alpha, descr, pcsrGPU[dev_id].dval, 
-//                               pcsrGPU[dev_id].drowPtr, pcsrGPU[dev_id].dcolIdx, 
-//                               pcsrGPU[dev_id].dx, beta, pcsrGPU[dev_id].dy);
+  //   status = cusparseDcsrmv(handle,CUSPARSE_OPERATION_NON_TRANSPOSE, 
+  //                             pcsrGPU[dev_id].m, pcsrGPU[dev_id].n, pcsrGPU[dev_id].nnz, 
+  //                             alpha, descr, pcsrGPU[dev_id].dval, 
+  //                             pcsrGPU[dev_id].drowPtr, pcsrGPU[dev_id].dcolIdx, 
+  //                             pcsrGPU[dev_id].dx, beta, pcsrGPU[dev_id].dy);
 
-//     // status = cusparseDcsrmv(handle,CUSPARSE_OPERATION_NON_TRANSPOSE, 
-//     //                           dev_m, dev_n, dev_nnz, 
-//     //                           alpha, descr, dev_csrVal, 
-//     //                           dev_csrRowPtr, dev_csrColIndex, 
-//     //                           dev_x, beta, dev_y);
+  //   // status = cusparseDcsrmv(handle,CUSPARSE_OPERATION_NON_TRANSPOSE, 
+  //   //                           dev_m, dev_n, dev_nnz, 
+  //   //                           alpha, descr, dev_csrVal, 
+  //   //                           dev_csrRowPtr, dev_csrColIndex, 
+  //   //                           dev_x, beta, dev_y);
       
   
  
-//     } else if (kernel == 2) {
-//         // status = cusparseDcsrmv_mp(handle,CUSPARSE_OPERATION_NON_TRANSPOSE, 
-//         //                            dev_m, dev_n, dev_nnz, 
-//         //                            alpha, descr, dev_csrVal, 
-//         //                            dev_csrRowPtr, dev_csrColIndex, 
-//         //                            dev_x,  beta, dev_y); 
-//     } else if (kernel == 3) {
-//         // err = csr5_kernel(dev_m, dev_n, dev_nnz, 
-//         //                   alpha, dev_csrVal, 
-//         //                   dev_csrRowPtr, dev_csrColIndex, 
-//         //                   dev_x, beta, dev_y, stream); 
-//     }
+  //   } else if (kernel == 2) {
+  //       // status = cusparseDcsrmv_mp(handle,CUSPARSE_OPERATION_NON_TRANSPOSE, 
+  //       //                            dev_m, dev_n, dev_nnz, 
+  //       //                            alpha, descr, dev_csrVal, 
+  //       //                            dev_csrRowPtr, dev_csrColIndex, 
+  //       //                            dev_x,  beta, dev_y); 
+  //   } else if (kernel == 3) {
+  //       // err = csr5_kernel(dev_m, dev_n, dev_nnz, 
+  //       //                   alpha, dev_csrVal, 
+  //       //                   dev_csrRowPtr, dev_csrColIndex, 
+  //       //                   dev_x, beta, dev_y, stream); 
+  //   }
 
-//     cudaDeviceSynchronize();
-//     if (status != CUSPARSE_STATUS_SUCCESS) printf("dev_id %d: exec error\n", dev_id);
-//     //print_vec_gpu(dev_y, 5, "y"+to_string(dev_id));
-//     printf("omp thread %d, time %f\n", dev_id, get_time() - tmp_time);
-//     core_time = get_time() - tmp_time;
-//     // GPU based merge
-//     tmp_time = get_time();
-//     double * dev_y_no_overlap = pcsrGPU[dev_id].dy;
-//     int dev_m_no_overlap = pcsrGPU[dev_id].m;
-//     int start_row_no_overlap = pcsrNuma[numa_id].startRow + pcsrGPU[dev_id].startRow;
+  //   cudaDeviceSynchronize();
+  //   if (status != CUSPARSE_STATUS_SUCCESS) printf("dev_id %d: exec error\n", dev_id);
+  //   //print_vec_gpu(dev_y, 5, "y"+to_string(dev_id));
+  //   printf("omp thread %d, time %f\n", dev_id, get_time() - tmp_time);
+  //   core_time = get_time() - tmp_time;
+  //   // GPU based merge
+  //   tmp_time = get_time();
+  //   double * dev_y_no_overlap = pcsrGPU[dev_id].dy;
+  //   int dev_m_no_overlap = pcsrGPU[dev_id].m;
+  //   int start_row_no_overlap = pcsrNuma[numa_id].startRow + pcsrGPU[dev_id].startRow;
 
-//     // double * dev_y_no_overlap = dev_y;
-//     // int dev_m_no_overlap = dev_m;
-//     // int start_row_no_overlap = numa_start_row[numa_id] + start_row;
-//     //int start_row_no_overlap = start_row;
-//     if (pcsrGPU[dev_id].startFlag) {
-//       dev_y_no_overlap += 1;
-//       start_row_no_overlap += 1;
-//       dev_m_no_overlap -= 1;
-//       cudaMemcpyAsync(start_element+dev_id, pcsrGPU[dev_id].dy, sizeof(double), cudaMemcpyDeviceToHost, stream);
-//       //cudaMemcpyAsync(start_element+dev_id, dev_y, sizeof(double), cudaMemcpyDeviceToHost, stream);
-//     }
-//     cudaMemcpyAsync(y+start_row_no_overlap, dev_y_no_overlap, dev_m_no_overlap*sizeof(double),  cudaMemcpyDeviceToHost, stream);
-//     cudaDeviceSynchronize();
-//     #pragma omp barrier
-//     if (dev_id == 0) {
-//       for (int i = 0; i < ngpu; i++) {
-//         if (pcsrGPU[i].startFlag) {
-//           y[pcsrNuma[numaContext.numaMapping[i]].startRow + pcsrGPU[i].startRow] += (start_element[i] - (*beta) * pcsrGPU[i].org_y); 
-//           //y[start_rows[i]] += (start_element[i] - (*beta) * org_y[i]);
-//         } 
+  //   // double * dev_y_no_overlap = dev_y;
+  //   // int dev_m_no_overlap = dev_m;
+  //   // int start_row_no_overlap = numa_start_row[numa_id] + start_row;
+  //   //int start_row_no_overlap = start_row;
+  //   if (pcsrGPU[dev_id].startFlag) {
+  //     dev_y_no_overlap += 1;
+  //     start_row_no_overlap += 1;
+  //     dev_m_no_overlap -= 1;
+  //     cudaMemcpyAsync(start_element+dev_id, pcsrGPU[dev_id].dy, sizeof(double), cudaMemcpyDeviceToHost, stream);
+  //     //cudaMemcpyAsync(start_element+dev_id, dev_y, sizeof(double), cudaMemcpyDeviceToHost, stream);
+  //   }
+  //   cudaMemcpyAsync(y+start_row_no_overlap, dev_y_no_overlap, dev_m_no_overlap*sizeof(double),  cudaMemcpyDeviceToHost, stream);
+  //   cudaDeviceSynchronize();
+  //   #pragma omp barrier
+  //   if (dev_id == 0) {
+  //     for (int i = 0; i < ngpu; i++) {
+  //       if (pcsrGPU[i].startFlag) {
+  //         y[pcsrNuma[numaContext.numaMapping[i]].startRow + pcsrGPU[i].startRow] += (start_element[i] - (*beta) * pcsrGPU[i].org_y); 
+  //         //y[start_rows[i]] += (start_element[i] - (*beta) * org_y[i]);
+  //       } 
 
-//         // if (start_flags[i]) {
-//         //   y[numa_start_row[numa_mapping[i]] + start_rows[i]] += (start_element[i] - (*beta) * org_y[i]); 
-//         //   //y[start_rows[i]] += (start_element[i] - (*beta) * org_y[i]);
-//         // } 
-//       }
-//     }
+  //       // if (start_flags[i]) {
+  //       //   y[numa_start_row[numa_mapping[i]] + start_rows[i]] += (start_element[i] - (*beta) * org_y[i]); 
+  //       //   //y[start_rows[i]] += (start_element[i] - (*beta) * org_y[i]);
+  //       // } 
+  //     }
+    // }
 
 
 
-//     /* CPU based merge
-//     cudaMemcpyAsync(host_y, dev_y, dev_m*sizeof(double),  cudaMemcpyDeviceToHost, stream);
+    //  CPU based merge
+    // cudaMemcpyAsync(host_y, dev_y, dev_m*sizeof(double),  cudaMemcpyDeviceToHost, stream);
 
-//     cudaDeviceSynchronize();
+    // cudaDeviceSynchronize();
     
     
-//     //printf("thread %d time: %f\n", dev_id,  get_time() - tmp_time);
-//     #pragma omp critical
-//     {
-//       double tmp = 0.0;
+    // //printf("thread %d time: %f\n", dev_id,  get_time() - tmp_time);
+    // #pragma omp critical
+    // {
+    //   double tmp = 0.0;
       
-//       if (start_flag) {
-//         tmp = y[start_row];
-//       }
+    //   if (start_flag) {
+    //     tmp = y[start_row];
+    //   }
 
-//       for (int i = 0; i < dev_m; i++) y[start_row + i] = host_y[i];
+    //   for (int i = 0; i < dev_m; i++) y[start_row + i] = host_y[i];
 
-//       if (start_flag) {
-//         y[start_row] += tmp;
-//         y[start_row] -= y2 * (*beta);
-//       }
-//     }
-//     */
+    //   if (start_flag) {
+    //     y[start_row] += tmp;
+    //     y[start_row] -= y2 * (*beta);
+    //   }
+    // }
+    
   
-//     merg_time = get_time() - tmp_time;
+    // merg_time = get_time() - tmp_time;
 
-//     //cudaProfilerStop();
+    // //cudaProfilerStop();
 
-//     cudaFree(pcsrGPU[dev_id].dval);
-//     cudaFree(pcsrGPU[dev_id].drowPtr);
-//     cudaFree(pcsrGPU[dev_id].dcolIdx);
-//     cudaFree(pcsrGPU[dev_id].dx);
-//     cudaFree(pcsrGPU[dev_id].dy);
+    // cudaFree(pcsrGPU[dev_id].dval);
+    // cudaFree(pcsrGPU[dev_id].drowPtr);
+    // cudaFree(pcsrGPU[dev_id].dcolIdx);
+    // cudaFree(pcsrGPU[dev_id].dx);
+    // cudaFree(pcsrGPU[dev_id].dy);
           
-//     //cudaFreeHost(host_csrRowPtr);
-//     //cudaFreeHost(host_csrVal);
-//     //cudaFreeHost(host_csrColIndex);
-//     //cudaFreeHost(host_x);
-//     //cudaFreeHost(host_y);
+    // //cudaFreeHost(host_csrRowPtr);
+    // //cudaFreeHost(host_csrVal);
+    // //cudaFreeHost(host_csrColIndex);
+    // //cudaFreeHost(host_x);
+    // //cudaFreeHost(host_y);
 
-//     cusparseDestroyMatDescr(descr);
-//     cusparseDestroy(handle);
-//     cudaStreamDestroy(stream);
+    // cusparseDestroyMatDescr(descr);
+    // cusparseDestroy(handle);
+    // cudaStreamDestroy(stream);
 
-//     }
+    }
 
     printf("end part time: %f\n", part_time);
     //cout << "time_parse = " << time_parse << ", time_comm = " << time_comm << ", time_comp = "<< time_comp <<", time_post = " << time_post << endl;

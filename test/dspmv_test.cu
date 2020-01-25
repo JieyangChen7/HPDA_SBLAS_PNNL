@@ -925,7 +925,7 @@ int main(int argc, char *argv[]) {
               correct_baseline = false;
             }
             if (abs(y_verify[i] - y_v1k1[i]) > E) {
-							cout << "error at: " << i <<" : " << y_verify[i] << " - "<< y_v1k1[i] << endl;
+							// cout << "error at: " << i <<" : " << y_verify[i] << " - "<< y_v1k1[i] << endl;
               correct_v1k1 = false;
             }
             if (abs(y_verify[i] - y_v1k2[i]) > E) {
