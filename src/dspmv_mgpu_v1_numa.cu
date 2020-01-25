@@ -432,7 +432,7 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
       pcsrGPU[dev_id].startFlag = true;
       //start_flag = true;
       //y2 = y[start_row];
-      // pcsrGPU[dev_id].org_y = pcsrNuma[numa_id].y[pcsrGPU[dev_id].startIdx];
+      pcsrGPU[dev_id].org_y = pcsrNuma[numa_id].y[pcsrGPU[dev_id].startRow];
       //org_y[dev_id] = y[start_row]; //use dev_id for global merge
       //start_rows[dev_id] = start_row;
     } else {
