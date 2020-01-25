@@ -317,6 +317,18 @@ int main(int argc, char *argv[]) {
   struct spmv_ret ret_baseline_coo;
   struct spmv_ret ret_static_coo;
   struct spmv_ret ret_dynamic_coo;
+
+  ret_baseline_csr.init();
+  ret_static_csr.init();
+  ret_dynamic_csr.init();
+
+  ret_baseline_csc.init();
+  ret_static_csc.init();
+  ret_dynamic_csc.init();
+
+  ret_baseline_coo.init();
+  ret_static_coo.init();
+  ret_dynamic_coo.init();
   
   cout << "Compute CPU version" << endl;
   for (int i = 0; i < m; i++) y_verify[i] = 0.0;
@@ -526,12 +538,12 @@ int main(int argc, char *argv[]) {
       y_static_coo[i] = 0.0;
       y_dynamic_coo[i] = 0.0;
     }
-    // ret = spMV_mgpu_baseline(m, n, nnz, &ALPHA,
-    //                         csrVal, csrRowPtr, csrColIdx, 
-    //                         x, &BETA,
-    //                         y_baseline_csr,
-    //                         ngpu);
-    // ret_baseline_csr.add(ret);
+    ret = spMV_mgpu_baseline(m, n, nnz, &ALPHA,
+                            csrVal, csrRowPtr, csrColIdx, 
+                            x, &BETA,
+                            y_baseline_csr,
+                            ngpu);
+    ret_baseline_csr.add(ret);
 
     // ret = spMV_mgpu_v1_numa(m, n, nnz, &ALPHA,
     //                         csrVal, csrRowPtr, csrColIdx,
@@ -599,19 +611,20 @@ int main(int argc, char *argv[]) {
       if (abs(y_verify[i] - y_dynamic_coo[i]) > E) {
         correct_dynamic_coo = false;
       }
-    
-      if (correct_baseline_csr) pass_baseline_csr++;
-      if (correct_static_csr) pass_static_csr++;
-      if (correct_dynamic_csr) pass_dynamic_csr++;
-
-      if (correct_baseline_csc) pass_baseline_csc++;
-      if (correct_static_csc) pass_static_csc++;
-      if (correct_dynamic_csc) pass_dynamic_csc++;
-
-      if (correct_baseline_coo) pass_baseline_coo++;
-      if (correct_static_coo) pass_static_coo++;
-      if (correct_dynamic_coo) pass_dynamic_coo++;
     }
+
+    if (correct_baseline_csr) pass_baseline_csr++;
+    if (correct_static_csr) pass_static_csr++;
+    if (correct_dynamic_csr) pass_dynamic_csr++;
+
+    if (correct_baseline_csc) pass_baseline_csc++;
+    if (correct_static_csc) pass_static_csc++;
+    if (correct_dynamic_csc) pass_dynamic_csc++;
+
+    if (correct_baseline_coo) pass_baseline_coo++;
+    if (correct_static_coo) pass_static_coo++;
+    if (correct_dynamic_coo) pass_dynamic_coo++;
+    
 
     ret_baseline_csr.avg(repeat_test);
     ret_static_csr.avg(repeat_test);
