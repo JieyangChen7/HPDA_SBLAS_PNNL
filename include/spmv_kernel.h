@@ -184,6 +184,14 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
           int kernel,
           int * numa_mapping);
 
+spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
+          double * cscVal, int * cscColPtr, int * cscRowIndex, 
+          double * x, double * beta,
+          double * y,
+          int ngpu, 
+          int kernel,
+          int * numa_mapping);
+
 spmv_ret spMV_mgpu_v2(int m, int n, int nnz, double * alpha,
           double * csrVal, int * csrRowPtr, int * csrColIndex, 
           double * x, double * beta,

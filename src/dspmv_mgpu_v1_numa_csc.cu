@@ -18,7 +18,7 @@ using namespace std;
 
 
 spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
-          double * cscVal, long long * cscColPtr, int * cscRowIndex, 
+          double * cscVal, int * cscColPtr, int * cscRowIndex, 
           double * x, double * beta,
           double * y,
           int ngpu, 
@@ -110,7 +110,7 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
       pcscNuma[numa_id].colPtr[0] = 0;
       pcscNuma[numa_id].colPtr[pcscNuma[numa_id].n] = pcscNuma[numa_id].nnz;
       for (int j = 1; j < pcscNuma[numa_id].n; j++) {
-        pcscNuma[numa_id].colPtr[j] = pcscNuma[pcscNuma[numa_id].startCol + j] - pcscNuma[numa_id].startIdx;
+        pcscNuma[numa_id].colPtr[j] = cscColPtr[pcscNuma[numa_id].startCol + j] - pcscNuma[numa_id].startIdx;
       }
 
       for (int i = pcscNuma[numa_id].startIdx; i <= pcscNuma[numa_id].endIdx; i++) {
@@ -459,10 +459,10 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
 
     //cout << "time_parse = " << time_parse << ", time_comm = " << time_comm << ", time_comp = "<< time_comp <<", time_post = " << time_post << endl;
                 spmv_ret ret;
-                ret.comp_time = core_time;
-                ret.comm_time = 0.0;
-                ret.part_time = part_time;
-                ret.merg_time = merg_time;
+                // ret.comp_time = core_time;
+                // ret.comm_time = 0.0;
+                // ret.part_time = part_time;
+                // ret.merg_time = merg_time;
     return ret;
   }
 

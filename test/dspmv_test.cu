@@ -80,7 +80,7 @@ int main(int argc, char *argv[]) {
     int * cooRowIndex;
     int * cooColIndex;
     double * cooVal;
-    int * csrRowPtr;
+    
 
     char * csv_output = argv[5];
     //cout << "csv_output" << csv_output << endl;
@@ -220,6 +220,9 @@ int main(int argc, char *argv[]) {
   }
 
   // Convert COO to CSR
+  int * csrVal;
+  int * csrRowPtr;
+  int * csrColIdx;
   cudaMallocHost((void **)&csrVal, nnz * sizeof(int));
   cudaMallocHost((void **)&csrRowPtr, (m+1) * sizeof(int));
   cudaMallocHost((void **)&csrColIdx, nnz * sizeof(int));

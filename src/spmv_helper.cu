@@ -229,7 +229,7 @@ void coo2csr_gpu(int m, int n, int nnz,
 
 
   size_t buffer_size;
-  checkCudaErrors(cusparseXcoosort_bufferSizeExt(handle, m, n, nnz
+  checkCudaErrors(cusparseXcoosort_bufferSizeExt(handle, m, n, nnz,
                                                  cooRowIdx, cooColIdx,
                                                  &buffer_size));
 
@@ -241,7 +241,7 @@ void coo2csr_gpu(int m, int n, int nnz,
                                         cooRowIdx, cooColIdx,
                                         P, buffer));
   checkCudaErrors(cusparseXcoo2csr(handle,
-                                   cooRowIdx, nnz, m, 
+                                   cooRowIdx, nnz, m, csrRowPtr,
                                    CUSPARSE_INDEX_BASE_ZERO));
   checkCudaErrors(cudaMemcpy(csrVal, cooVal, nnz * sizeof(double), 
                               cudaMemcpyDeviceToDevice));
