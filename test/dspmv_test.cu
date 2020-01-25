@@ -248,29 +248,21 @@ int main(int argc, char *argv[]) {
     csrRowPtr[i] = csrRowPtr[i - 1] + counter[i - 1];
   }
 
+  csrVal = cooVal;
+  csrColIdx = cooColIndex;
 
-  // print_vec(csrRowPtr, m+1, "org convert:");
-  // csrVal = cooVal;
-  // csrColIdx = cooColIndex;
+  // CSR to CSC
+  double * cscVal;
+  int * cscColPtr;
+  int * cscRowIdx;
+  cudaMallocHost((void **)&cscVal, nnz * sizeof(double));
+  cudaMallocHost((void **)&cscColPtr, (n+1) * sizeof(int));
+  cudaMallocHost((void **)&cscRowIdx, nnz * sizeof(int));
 
-  int * csrRowPtr2;
-  cudaMallocHost((void **)&csrRowPtr2, (m+1) * sizeof(int));
+  csr2csc_gpu(m, n, nnz,
+              csrVal, csrRowPtr, csrColIdx,
+              cscVal, cscColPtr, cscRowIdx);
 
-  coo2csr(m, n, nnz,
-          cooVal, cooRowIndex, cooColIndex,
-          csrVal, csrRowPtr2, csrColIdx);
-  for (int i = 1; i < nnz; i++) {
-    if (cooRowIndex[i] < cooRowIndex[i - 1]) {
-      printf("rowPtr error\n");
-    }
-  }
-  // for (int i = 0; i < m+1; i++) {
-  //   if (csrRowPtr2[i] != csrRowPtr[i]) {
-  //     printf("rowPtr error[%d]: %d - %d\n", i,csrRowPtr[i], csrRowPtr2[i]);
-  //   }
-  // }
-
-  // print_vec(csrRowPtr, m+1, "gpu convert:");
 
   double * x;
 
@@ -565,23 +557,23 @@ int main(int argc, char *argv[]) {
                             ngpu);
     ret_baseline_csr.add(ret);
 
-    // ret = spMV_mgpu_v1_numa(m, n, nnz, &ALPHA,
-    //                         csrVal, csrRowPtr, csrColIdx,
-    //                         x, &BETA,
-    //                         y_static_csr,
-    //                         ngpu,
-    //                         1,
-    //                         numa_mapping); //kernel 1
-    // ret_static_csr.add(ret);
+    ret = spMV_mgpu_v1_numa(m, n, nnz, &ALPHA,
+                            csrVal, csrRowPtr, csrColIdx,
+                            x, &BETA,
+                            y_static_csr,
+                            ngpu,
+                            1,
+                            numa_mapping); //kernel 1
+    ret_static_csr.add(ret);
 
-    // ret = spMV_mgpu_v1_numa_csc(m, n, nnz, &ALPHA,
-    //                             csrVal, csrRowPtr, csrColIdx,
-    //                             x, &BETA,
-    //                             y_static_csr,
-    //                             ngpu,
-    //                             1,
-    //                             numa_mapping); //kernel 1
-    // ret_static_csc.add(ret);
+    ret = spMV_mgpu_v1_numa_csc(m, n, nnz, &ALPHA,
+                                cscVal, cscColPtr, cscRowIdx,
+                                x, &BETA,
+                                y_static_csr,
+                                ngpu,
+                                1,
+                                numa_mapping); //kernel 1
+    ret_static_csc.add(ret);
 
     
 

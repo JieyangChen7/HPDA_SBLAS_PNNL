@@ -232,22 +232,12 @@ double get_time();
 
 double get_gpu_availble_mem(int ngpu);
 
-void coo2csr(int m, int n, int nnz,
-       double * cooVal, int * cooRowIdx, int * cooColIdx,
-       double * csrVal, int * csrRowPtr, int * csrColIdx);
-
-void coo2csc(int m, int n, int nnz,
-       double * cooVal, int * cooRowIdx, int * cooColIdx,
-       double * cscVal, int * cscColPtr, int * cscRowIdx);
-
-void coo2csr_gpu(int m, int n, int nnz,
-         double * cooVal, int * cooRowIdx, int * cooColIdx,
-         double * csrVal, int * csrRowPtr, int * csrColIdx);
-
-void csc2csr_gpu(int m, int n, int nnz,
-         double * cscVal, int * cscColPtr, int * cscRowIdx,
-         double * csrVal, int * csrRowPtr, int * csrColIdx);
-
+void csr2csc_gpu(int m, int n, int nnz,
+                 double * csrVal, int * csrRowPtr, int * csrColIdx,
+                 double * cscVal, int * cscColPtr, int * cscRowIdx);
+void csr2csc(int m, int n, int nnz,
+             double * csrVal, int * csrRowPtr, int * csrColIdx,
+             double * cscVal, int * cscColPtr, int * cscRowIdx);
 
 
 #endif /* SPMV_KERNEL */
