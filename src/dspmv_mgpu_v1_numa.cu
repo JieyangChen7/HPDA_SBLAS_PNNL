@@ -701,39 +701,39 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     //print_vec_gpu(dev_y, 5, "y"+to_string(dev_id));
     printf("omp thread %d, time %f\n", dev_id, get_time() - tmp_time);
     core_time = get_time() - tmp_time;
-  //   // GPU based merge
-  //   tmp_time = get_time();
-  //   double * dev_y_no_overlap = pcsrGPU[dev_id].dy;
-  //   int dev_m_no_overlap = pcsrGPU[dev_id].m;
-  //   int start_row_no_overlap = pcsrNuma[numa_id].startRow + pcsrGPU[dev_id].startRow;
+    // GPU based merge
+    tmp_time = get_time();
+    double * dev_y_no_overlap = pcsrGPU[dev_id].dy;
+    int dev_m_no_overlap = pcsrGPU[dev_id].m;
+    int start_row_no_overlap = pcsrNuma[numa_id].startRow + pcsrGPU[dev_id].startRow;
 
-  //   // double * dev_y_no_overlap = dev_y;
-  //   // int dev_m_no_overlap = dev_m;
-  //   // int start_row_no_overlap = numa_start_row[numa_id] + start_row;
-  //   //int start_row_no_overlap = start_row;
-  //   if (pcsrGPU[dev_id].startFlag) {
-  //     dev_y_no_overlap += 1;
-  //     start_row_no_overlap += 1;
-  //     dev_m_no_overlap -= 1;
-  //     cudaMemcpyAsync(start_element+dev_id, pcsrGPU[dev_id].dy, sizeof(double), cudaMemcpyDeviceToHost, stream);
-  //     //cudaMemcpyAsync(start_element+dev_id, dev_y, sizeof(double), cudaMemcpyDeviceToHost, stream);
-  //   }
-  //   cudaMemcpyAsync(y+start_row_no_overlap, dev_y_no_overlap, dev_m_no_overlap*sizeof(double),  cudaMemcpyDeviceToHost, stream);
-  //   cudaDeviceSynchronize();
-  //   #pragma omp barrier
-  //   if (dev_id == 0) {
-  //     for (int i = 0; i < ngpu; i++) {
-  //       if (pcsrGPU[i].startFlag) {
-  //         y[pcsrNuma[numaContext.numaMapping[i]].startRow + pcsrGPU[i].startRow] += (start_element[i] - (*beta) * pcsrGPU[i].org_y); 
-  //         //y[start_rows[i]] += (start_element[i] - (*beta) * org_y[i]);
-  //       } 
+    // double * dev_y_no_overlap = dev_y;
+    // int dev_m_no_overlap = dev_m;
+    // int start_row_no_overlap = numa_start_row[numa_id] + start_row;
+    //int start_row_no_overlap = start_row;
+    if (pcsrGPU[dev_id].startFlag) {
+      dev_y_no_overlap += 1;
+      start_row_no_overlap += 1;
+      dev_m_no_overlap -= 1;
+      cudaMemcpyAsync(start_element+dev_id, pcsrGPU[dev_id].dy, sizeof(double), cudaMemcpyDeviceToHost, stream);
+      //cudaMemcpyAsync(start_element+dev_id, dev_y, sizeof(double), cudaMemcpyDeviceToHost, stream);
+    }
+    cudaMemcpyAsync(y+start_row_no_overlap, dev_y_no_overlap, dev_m_no_overlap*sizeof(double),  cudaMemcpyDeviceToHost, stream);
+    cudaDeviceSynchronize();
+    #pragma omp barrier
+    if (dev_id == 0) {
+      for (int i = 0; i < ngpu; i++) {
+        if (pcsrGPU[i].startFlag) {
+          y[pcsrNuma[numaContext.numaMapping[i]].startRow + pcsrGPU[i].startRow] += (start_element[i] - (*beta) * pcsrGPU[i].org_y); 
+          //y[start_rows[i]] += (start_element[i] - (*beta) * org_y[i]);
+        } 
 
-  //       // if (start_flags[i]) {
-  //       //   y[numa_start_row[numa_mapping[i]] + start_rows[i]] += (start_element[i] - (*beta) * org_y[i]); 
-  //       //   //y[start_rows[i]] += (start_element[i] - (*beta) * org_y[i]);
-  //       // } 
-  //     }
-    // }
+        // if (start_flags[i]) {
+        //   y[numa_start_row[numa_mapping[i]] + start_rows[i]] += (start_element[i] - (*beta) * org_y[i]); 
+        //   //y[start_rows[i]] += (start_element[i] - (*beta) * org_y[i]);
+        // } 
+      }
+    }
 
 
 
@@ -761,25 +761,25 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     // }
     
   
-    // merg_time = get_time() - tmp_time;
+    merg_time = get_time() - tmp_time;
 
-    // //cudaProfilerStop();
+    //cudaProfilerStop();
 
-    // cudaFree(pcsrGPU[dev_id].dval);
-    // cudaFree(pcsrGPU[dev_id].drowPtr);
-    // cudaFree(pcsrGPU[dev_id].dcolIdx);
-    // cudaFree(pcsrGPU[dev_id].dx);
-    // cudaFree(pcsrGPU[dev_id].dy);
+    cudaFree(pcsrGPU[dev_id].dval);
+    cudaFree(pcsrGPU[dev_id].drowPtr);
+    cudaFree(pcsrGPU[dev_id].dcolIdx);
+    cudaFree(pcsrGPU[dev_id].dx);
+    cudaFree(pcsrGPU[dev_id].dy);
           
-    // //cudaFreeHost(host_csrRowPtr);
-    // //cudaFreeHost(host_csrVal);
-    // //cudaFreeHost(host_csrColIndex);
-    // //cudaFreeHost(host_x);
-    // //cudaFreeHost(host_y);
+    //cudaFreeHost(host_csrRowPtr);
+    //cudaFreeHost(host_csrVal);
+    //cudaFreeHost(host_csrColIndex);
+    //cudaFreeHost(host_x);
+    //cudaFreeHost(host_y);
 
-    // cusparseDestroyMatDescr(descr);
-    // cusparseDestroy(handle);
-    // cudaStreamDestroy(stream);
+    cusparseDestroyMatDescr(descr);
+    cusparseDestroy(handle);
+    cudaStreamDestroy(stream);
 
     }
 
