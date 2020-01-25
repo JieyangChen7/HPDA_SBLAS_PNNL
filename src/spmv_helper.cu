@@ -142,7 +142,7 @@ void csr2csrNcsc(int m, int n, int nnz,
       if (A[i * m + j] != 0) {
         csrVal[p] = A[i * m + j];
         csrColIdx[p] = j;
-        p++
+        p++;
       }
     }
     csrRowPtr[i + 1] = p;
@@ -155,7 +155,7 @@ void csr2csrNcsc(int m, int n, int nnz,
       if (A[i * m + j] != 0) {
         cscVal[p] = A[i * m + j];
         cscRowIdx[p] = i;
-        p++
+        p++;
       }
     }
     csrColPtr[j + 1] = p;
