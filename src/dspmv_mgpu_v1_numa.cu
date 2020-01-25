@@ -711,7 +711,7 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     // int dev_m_no_overlap = dev_m;
     // int start_row_no_overlap = numa_start_row[numa_id] + start_row;
     //int start_row_no_overlap = start_row;
-    if (start_flag) {
+    if (pcsrGPU[dev_id].startFlag) {
       dev_y_no_overlap += 1;
       start_row_no_overlap += 1;
       dev_m_no_overlap -= 1;
@@ -723,7 +723,7 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     #pragma omp barrier
     if (dev_id == 0) {
       for (int i = 0; i < ngpu; i++) {
-        if (pcsrGPU[dev_id].startFlag) {
+        if (pcsrGPU[i].startFlag) {
           y[pcsrNuma[numaContext.numaMapping[i]].startRow + pcsrGPU[i].startRow] += (start_element[i] - (*beta) * pcsrGPU[i].org_y); 
           //y[start_rows[i]] += (start_element[i] - (*beta) * org_y[i]);
         } 
