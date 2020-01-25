@@ -644,63 +644,63 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     cudaMemcpyAsync(pcsrGPU[dev_id].dx, pcsrGPU[dev_id].x, pcsrGPU[dev_id].n*sizeof(double), cudaMemcpyHostToDevice, stream); 
 
 
-  //   // cudaMemcpyAsync(dev_csrColIndex, host_csrColIndex, dev_nnz * sizeof(int), cudaMemcpyHostToDevice, stream); 
-  //   // cudaMemcpyAsync(dev_csrVal, host_csrVal, dev_nnz * sizeof(double), cudaMemcpyHostToDevice, stream); 
-  //   // cudaMemcpyAsync(dev_y, host_y, dev_m*sizeof(double),  cudaMemcpyHostToDevice, stream); 
-  //   // cudaMemcpyAsync(dev_x, host_x, dev_n*sizeof(double), cudaMemcpyHostToDevice, stream); 
+    // cudaMemcpyAsync(dev_csrColIndex, host_csrColIndex, dev_nnz * sizeof(int), cudaMemcpyHostToDevice, stream); 
+    // cudaMemcpyAsync(dev_csrVal, host_csrVal, dev_nnz * sizeof(double), cudaMemcpyHostToDevice, stream); 
+    // cudaMemcpyAsync(dev_y, host_y, dev_m*sizeof(double),  cudaMemcpyHostToDevice, stream); 
+    // cudaMemcpyAsync(dev_x, host_x, dev_n*sizeof(double), cudaMemcpyHostToDevice, stream); 
     
-  //   time_comm = get_time() - curr_time;
-  //   curr_time = get_time();
-  //   err = 0;
-  //   if (kernel == 1) {
+    time_comm = get_time() - curr_time;
+    curr_time = get_time();
+    err = 0;
+    if (kernel == 1) {
 
-  //   cudaDeviceSynchronize();
-  //   //print_vec_gpu(dev_csrRowPtr, 5, "csrRowPtr"+to_string(dev_id));
-  //   //print_vec_gpu(dev_csrVal, 5, "csrVal"+to_string(dev_id));
-  //   //print_vec_gpu(dev_csrColIndex, 5, "csrColIndex"+to_string(dev_id));
-  //   //print_vec_gpu(dev_x, 5, "x"+to_string(dev_id));
-  //   //print_vec_gpu(dev_y, 5, "y_before"+to_string(dev_id));
-  //   //printf("dev_id %d, alpha %f, beta %f\n", dev_id, *alpha, *beta);
+    cudaDeviceSynchronize();
+    //print_vec_gpu(dev_csrRowPtr, 5, "csrRowPtr"+to_string(dev_id));
+    //print_vec_gpu(dev_csrVal, 5, "csrVal"+to_string(dev_id));
+    //print_vec_gpu(dev_csrColIndex, 5, "csrColIndex"+to_string(dev_id));
+    //print_vec_gpu(dev_x, 5, "x"+to_string(dev_id));
+    //print_vec_gpu(dev_y, 5, "y_before"+to_string(dev_id));
+    //printf("dev_id %d, alpha %f, beta %f\n", dev_id, *alpha, *beta);
 
 
-  //   //calcCsrRowPtr(dev_csrRowPtr, dev_m, start_idx, dev_nnz, stream);
-  //   //cudaDeviceSynchronize();
+    //calcCsrRowPtr(dev_csrRowPtr, dev_m, start_idx, dev_nnz, stream);
+    //cudaDeviceSynchronize();
   
       
-  //   //print_vec_gpu(dev_x, dev_n, "x"+to_string(dev_id));
+    //print_vec_gpu(dev_x, dev_n, "x"+to_string(dev_id));
   
-  //   status = cusparseDcsrmv(handle,CUSPARSE_OPERATION_NON_TRANSPOSE, 
-  //                             pcsrGPU[dev_id].m, pcsrGPU[dev_id].n, pcsrGPU[dev_id].nnz, 
-  //                             alpha, descr, pcsrGPU[dev_id].dval, 
-  //                             pcsrGPU[dev_id].drowPtr, pcsrGPU[dev_id].dcolIdx, 
-  //                             pcsrGPU[dev_id].dx, beta, pcsrGPU[dev_id].dy);
+    status = cusparseDcsrmv(handle,CUSPARSE_OPERATION_NON_TRANSPOSE, 
+                              pcsrGPU[dev_id].m, pcsrGPU[dev_id].n, pcsrGPU[dev_id].nnz, 
+                              alpha, descr, pcsrGPU[dev_id].dval, 
+                              pcsrGPU[dev_id].drowPtr, pcsrGPU[dev_id].dcolIdx, 
+                              pcsrGPU[dev_id].dx, beta, pcsrGPU[dev_id].dy);
 
-  //   // status = cusparseDcsrmv(handle,CUSPARSE_OPERATION_NON_TRANSPOSE, 
-  //   //                           dev_m, dev_n, dev_nnz, 
-  //   //                           alpha, descr, dev_csrVal, 
-  //   //                           dev_csrRowPtr, dev_csrColIndex, 
-  //   //                           dev_x, beta, dev_y);
+    // status = cusparseDcsrmv(handle,CUSPARSE_OPERATION_NON_TRANSPOSE, 
+    //                           dev_m, dev_n, dev_nnz, 
+    //                           alpha, descr, dev_csrVal, 
+    //                           dev_csrRowPtr, dev_csrColIndex, 
+    //                           dev_x, beta, dev_y);
       
   
  
-  //   } else if (kernel == 2) {
-  //       // status = cusparseDcsrmv_mp(handle,CUSPARSE_OPERATION_NON_TRANSPOSE, 
-  //       //                            dev_m, dev_n, dev_nnz, 
-  //       //                            alpha, descr, dev_csrVal, 
-  //       //                            dev_csrRowPtr, dev_csrColIndex, 
-  //       //                            dev_x,  beta, dev_y); 
-  //   } else if (kernel == 3) {
-  //       // err = csr5_kernel(dev_m, dev_n, dev_nnz, 
-  //       //                   alpha, dev_csrVal, 
-  //       //                   dev_csrRowPtr, dev_csrColIndex, 
-  //       //                   dev_x, beta, dev_y, stream); 
-  //   }
+    } else if (kernel == 2) {
+        // status = cusparseDcsrmv_mp(handle,CUSPARSE_OPERATION_NON_TRANSPOSE, 
+        //                            dev_m, dev_n, dev_nnz, 
+        //                            alpha, descr, dev_csrVal, 
+        //                            dev_csrRowPtr, dev_csrColIndex, 
+        //                            dev_x,  beta, dev_y); 
+    } else if (kernel == 3) {
+        // err = csr5_kernel(dev_m, dev_n, dev_nnz, 
+        //                   alpha, dev_csrVal, 
+        //                   dev_csrRowPtr, dev_csrColIndex, 
+        //                   dev_x, beta, dev_y, stream); 
+    }
 
-  //   cudaDeviceSynchronize();
-  //   if (status != CUSPARSE_STATUS_SUCCESS) printf("dev_id %d: exec error\n", dev_id);
-  //   //print_vec_gpu(dev_y, 5, "y"+to_string(dev_id));
-  //   printf("omp thread %d, time %f\n", dev_id, get_time() - tmp_time);
-  //   core_time = get_time() - tmp_time;
+    cudaDeviceSynchronize();
+    if (status != CUSPARSE_STATUS_SUCCESS) printf("dev_id %d: exec error\n", dev_id);
+    //print_vec_gpu(dev_y, 5, "y"+to_string(dev_id));
+    printf("omp thread %d, time %f\n", dev_id, get_time() - tmp_time);
+    core_time = get_time() - tmp_time;
   //   // GPU based merge
   //   tmp_time = get_time();
   //   double * dev_y_no_overlap = pcsrGPU[dev_id].dy;
