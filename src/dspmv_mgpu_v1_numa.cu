@@ -488,11 +488,11 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     // preparing data on host 
 
     //tmp_time = get_time();
-    // pcsrGPU[dev_id].val = &(pcsrNuma[numa_id].val[pcsrGPU[dev_id].startIdx]);
-    // pcsrGPU[dev_id].rowPtr = &(pcsrNuma[numa_id].rowPtr[pcsrGPU[dev_id].startRow]);
-    // pcsrGPU[dev_id].colIdx = &(pcsrNuma[numa_id].colIdx[pcsrGPU[dev_id].startIdx]);
-    // pcsrGPU[dev_id].x = pcsrNuma[numa_id].x;
-    // pcsrGPU[dev_id].y = &(pcsrNuma[numa_id].y[pcsrGPU[dev_id].startRow]);
+    pcsrGPU[dev_id].val = &(pcsrNuma[numa_id].val[pcsrGPU[dev_id].startIdx]);
+    pcsrGPU[dev_id].rowPtr = &(pcsrNuma[numa_id].rowPtr[pcsrGPU[dev_id].startRow]);
+    pcsrGPU[dev_id].colIdx = &(pcsrNuma[numa_id].colIdx[pcsrGPU[dev_id].startIdx]);
+    pcsrGPU[dev_id].x = pcsrNuma[numa_id].x;
+    pcsrGPU[dev_id].y = &(pcsrNuma[numa_id].y[pcsrGPU[dev_id].startRow]);
 
 
     // host_csrVal = &numa_csrVal[numa_id][start_idx];
@@ -586,34 +586,34 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
 */
     // end of original partition*********************************
 
-  //   cudaStreamCreate(&stream);
+    cudaStreamCreate(&stream);
 
-  //   status = cusparseCreate(&handle); 
-  //   if (status != CUSPARSE_STATUS_SUCCESS) 
-  //   { 
-  //     printf("CUSPARSE Library initialization failed");
-  //     //return 1; 
-  //   } 
-  //   status = cusparseSetStream(handle, stream);
-  //   if (status != CUSPARSE_STATUS_SUCCESS) 
-  //   { 
-  //     printf("Stream bindind failed");
-  //     //return 1;
-  //   } 
-  //   status = cusparseCreateMatDescr(&descr);
-  //   if (status != CUSPARSE_STATUS_SUCCESS) 
-  //   { 
-  //     printf("Matrix descriptor initialization failed");
-  //     //return 1;
-  //   }   
-  //   cusparseSetMatType(descr,CUSPARSE_MATRIX_TYPE_GENERAL); 
-  //   cusparseSetMatIndexBase(descr,CUSPARSE_INDEX_BASE_ZERO);
+    status = cusparseCreate(&handle); 
+    if (status != CUSPARSE_STATUS_SUCCESS) 
+    { 
+      printf("CUSPARSE Library initialization failed");
+      //return 1; 
+    } 
+    status = cusparseSetStream(handle, stream);
+    if (status != CUSPARSE_STATUS_SUCCESS) 
+    { 
+      printf("Stream bindind failed");
+      //return 1;
+    } 
+    status = cusparseCreateMatDescr(&descr);
+    if (status != CUSPARSE_STATUS_SUCCESS) 
+    { 
+      printf("Matrix descriptor initialization failed");
+      //return 1;
+    }   
+    cusparseSetMatType(descr,CUSPARSE_MATRIX_TYPE_GENERAL); 
+    cusparseSetMatIndexBase(descr,CUSPARSE_INDEX_BASE_ZERO);
 
-  //   cudaMalloc((void**)&(pcsrGPU[dev_id].dval),    pcsrGPU[dev_id].nnz     * sizeof(double));
-  //   cudaMalloc((void**)&(pcsrGPU[dev_id].drowPtr), (pcsrGPU[dev_id].m + 1) * sizeof(int)   );
-  //   cudaMalloc((void**)&(pcsrGPU[dev_id].dcolIdx), pcsrGPU[dev_id].nnz     * sizeof(int)   );
-  //   cudaMalloc((void**)&(pcsrGPU[dev_id].dx),      pcsrGPU[dev_id].n       * sizeof(double)); 
-  //   cudaMalloc((void**)&(pcsrGPU[dev_id].dy),      pcsrGPU[dev_id].m       * sizeof(double)); 
+    cudaMalloc((void**)&(pcsrGPU[dev_id].dval),    pcsrGPU[dev_id].nnz     * sizeof(double));
+    cudaMalloc((void**)&(pcsrGPU[dev_id].drowPtr), (pcsrGPU[dev_id].m + 1) * sizeof(int)   );
+    cudaMalloc((void**)&(pcsrGPU[dev_id].dcolIdx), pcsrGPU[dev_id].nnz     * sizeof(int)   );
+    cudaMalloc((void**)&(pcsrGPU[dev_id].dx),      pcsrGPU[dev_id].n       * sizeof(double)); 
+    cudaMalloc((void**)&(pcsrGPU[dev_id].dy),      pcsrGPU[dev_id].m       * sizeof(double)); 
     
   //   // cudaMalloc((void**)&dev_csrVal,      dev_nnz     * sizeof(double));
   //   // cudaMalloc((void**)&dev_csrRowPtr,   (dev_m + 1) * sizeof(int)   );
