@@ -19,13 +19,13 @@ struct spmv_ret {
   double comp_time;
   double comm_time;
   double merg_time;
-  spmv_ret () {
-    numa_part_time = 0.0;
-    part_time = 0.0;
-    comp_time = 0.0;
-    comm_time = 0.0;
-    merg_time = 0.0;
-  }
+  // spmv_ret () {
+  //   numa_part_time = 0.0;
+  //   part_time = 0.0;
+  //   comp_time = 0.0;
+  //   comm_time = 0.0;
+  //   merg_time = 0.0;
+  // }
   void add(struct spmv_ret other) {
     this->numa_part_time += other.numa_part_time;
     this->part_time += other.part_time;
