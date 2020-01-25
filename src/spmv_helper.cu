@@ -195,12 +195,23 @@ void csr2csc_gpu(int m, int n, int nnz,
   checkCudaErrors(cusparseSetMatType(descr,CUSPARSE_MATRIX_TYPE_GENERAL)); 
   checkCudaErrors(cusparseSetMatIndexBase(descr,CUSPARSE_INDEX_BASE_ZERO));
 
+  double * A;
+  int lda = m;
+  checkCudaErrors(cudaMalloc((void**)&A, lda * n * sizeof(double)));
 
-  checkCudaErrors(cusparseDcsr2csc(handle, m, n, nnz,
-                                    csrVal, csrRowPtr, csrColIdx,
-                                    cscVal, cscColPtr, cscRowIdx,
-                                    CUSPARSE_ACTION_NUMERIC,
-                                    CUSPARSE_INDEX_BASE_ZERO));
+  checkCudaErrors(cusparseDcsr2dense(handle, m, n, descr,
+                                     csrVal, csrRowPtr, csrColIdx,
+                                     A, lda));
+
+  checkCudaErrors(cusparseDdense2csc(handle, m, n, descr, 
+                                     A, lda,
+                                     cscVal, cscColPtr, cscRowIdx));
+
+  // checkCudaErrors(cusparseDcsr2csc(handle, m, n, nnz,
+  //                                   csrVal, csrRowPtr, csrColIdx,
+  //                                   cscVal, cscColPtr, cscRowIdx,
+  //                                   CUSPARSE_ACTION_NUMERIC,
+  //                                   CUSPARSE_INDEX_BASE_ZERO));
 
   checkCudaErrors(cudaDeviceSynchronize());
   // checkCudaErrors(cudaFree(buffer));
