@@ -119,63 +119,103 @@ void print_vec_gpu(int * a, int n, string s) {
 }
 
 
-void csr2csc(int m, int n, int nnz,
+void csr2csrNcsc(int m, int n, int nnz,
+             double * cooVal, int * cooRowIdx, int * cooColIdx,
              double * csrVal, int * csrRowPtr, int * csrColIdx,
              double * cscVal, int * cscColPtr, int * cscRowIdx) {
 
-  double * dcsrVal;
-  int * dcsrRowPtr;
-  int * dcsrColIdx;
-  double * dcscVal;
-  int * dcscColPtr;
-  int * dcscRowIdx;
+  double * A = new double[m * n];
+  for (int i = 0; i < m; i++) {
+    for (int j = 0; j < n; j++) {
+      A[i * m + j] = 0.0;
+    }
+  }
+
+  for (int i = 0; i < nnz; i++) {
+    A[cooRowIdx[i] * m + cooColIdx[i]] = cooVal[i];
+  }
+
+  int p = 0;
+  csrRowPtr[0] = 0;
+  for (int i = 0; i < m; i++) {
+    for (int j = 0; j < n; j++) {
+      if (A[i * m + j] != 0) {
+        csrVal[p] = A[i * m + j];
+        csrColIdx[p] = j;
+        p++
+      }
+    }
+    csrRowPtr[i + 1] = p;
+  }
+
+  p = 0;
+  cscColPtr[0] = 0;
+  for (int j = 0; j < n; j++) {
+    for (int i = 0; i < m; i++) {
+      if (A[i * m + j] != 0) {
+        cscVal[p] = A[i * m + j];
+        cscRowIdx[p] = i;
+        p++
+      }
+    }
+    csrColPtr[j + 1] = p;
+  }
 
 
-  checkCudaErrors(cudaMalloc((void**)&dcsrVal, nnz * sizeof(double)));
-  checkCudaErrors(cudaMalloc((void**)&dcsrRowPtr, (m+1) * sizeof(int)));
-  checkCudaErrors(cudaMalloc((void**)&dcsrColIdx, nnz * sizeof(int)));
 
-  checkCudaErrors(cudaMalloc((void**)&dcscVal, nnz * sizeof(double)));
-  checkCudaErrors(cudaMalloc((void**)&dcscColPtr, (n+1) * sizeof(int)));
-  checkCudaErrors(cudaMalloc((void**)&dcscRowIdx, nnz * sizeof(int)));
+  // double * dcsrVal;
+  // int * dcsrRowPtr;
+  // int * dcsrColIdx;
+  // double * dcscVal;
+  // int * dcscColPtr;
+  // int * dcscRowIdx;
 
-  checkCudaErrors(cudaMemcpy(dcsrVal, csrVal, nnz * sizeof(double),
-                              cudaMemcpyHostToDevice));
-  checkCudaErrors(cudaMemcpy(dcsrRowPtr, csrRowPtr, (m+1) * sizeof(int),
-                              cudaMemcpyHostToDevice));
-  checkCudaErrors(cudaMemcpy(dcsrColIdx, csrColIdx, nnz * sizeof(int),
-                              cudaMemcpyHostToDevice));
-  checkCudaErrors(cudaMemcpy(dcscVal, cscVal, nnz * sizeof(double),
-                              cudaMemcpyHostToDevice));
-  checkCudaErrors(cudaMemcpy(dcscColPtr, cscColPtr, (n+1) * sizeof(int),
-                              cudaMemcpyHostToDevice));
-  checkCudaErrors(cudaMemcpy(dcscRowIdx, cscRowIdx, nnz * sizeof(int),
-                              cudaMemcpyHostToDevice));
 
-  csr2csc_gpu(m, n, nnz,
-              dcsrVal, dcsrRowPtr, dcsrColIdx,
-              dcscVal, dcscColPtr, dcscRowIdx);
+  // checkCudaErrors(cudaMalloc((void**)&dcsrVal, nnz * sizeof(double)));
+  // checkCudaErrors(cudaMalloc((void**)&dcsrRowPtr, (m+1) * sizeof(int)));
+  // checkCudaErrors(cudaMalloc((void**)&dcsrColIdx, nnz * sizeof(int)));
+
+  // checkCudaErrors(cudaMalloc((void**)&dcscVal, nnz * sizeof(double)));
+  // checkCudaErrors(cudaMalloc((void**)&dcscColPtr, (n+1) * sizeof(int)));
+  // checkCudaErrors(cudaMalloc((void**)&dcscRowIdx, nnz * sizeof(int)));
+
+  // checkCudaErrors(cudaMemcpy(dcsrVal, csrVal, nnz * sizeof(double),
+  //                             cudaMemcpyHostToDevice));
+  // checkCudaErrors(cudaMemcpy(dcsrRowPtr, csrRowPtr, (m+1) * sizeof(int),
+  //                             cudaMemcpyHostToDevice));
+  // checkCudaErrors(cudaMemcpy(dcsrColIdx, csrColIdx, nnz * sizeof(int),
+  //                             cudaMemcpyHostToDevice));
+  // checkCudaErrors(cudaMemcpy(dcscVal, cscVal, nnz * sizeof(double),
+  //                             cudaMemcpyHostToDevice));
+  // checkCudaErrors(cudaMemcpy(dcscColPtr, cscColPtr, (n+1) * sizeof(int),
+  //                             cudaMemcpyHostToDevice));
+  // checkCudaErrors(cudaMemcpy(dcscRowIdx, cscRowIdx, nnz * sizeof(int),
+  //                             cudaMemcpyHostToDevice));
+
+  // csr2csc_gpu(m, n, nnz,
+  //             dcsrVal, dcsrRowPtr, dcsrColIdx,
+  //             dcscVal, dcscColPtr, dcscRowIdx);
 
   
-  checkCudaErrors(cudaMemcpy(csrVal, dcsrVal, nnz * sizeof(double),
-                              cudaMemcpyDeviceToHost));
-  checkCudaErrors(cudaMemcpy(csrRowPtr, dcsrRowPtr, (m+1) * sizeof(int),
-                              cudaMemcpyDeviceToHost));
-  checkCudaErrors(cudaMemcpy(csrColIdx, dcsrColIdx, nnz * sizeof(int),
-                              cudaMemcpyDeviceToHost));
-  checkCudaErrors(cudaMemcpy(dcscVal, cscVal, nnz * sizeof(double),
-                              cudaMemcpyDeviceToHost));
-  checkCudaErrors(cudaMemcpy(dcscColPtr, cscColPtr, (n+1) * sizeof(int),
-                              cudaMemcpyDeviceToHost));
-  checkCudaErrors(cudaMemcpy(dcscRowIdx, cscRowIdx, nnz * sizeof(int),
-                              cudaMemcpyDeviceToHost));
+  // checkCudaErrors(cudaMemcpy(csrVal, dcsrVal, nnz * sizeof(double),
+  //                             cudaMemcpyDeviceToHost));
+  // checkCudaErrors(cudaMemcpy(csrRowPtr, dcsrRowPtr, (m+1) * sizeof(int),
+  //                             cudaMemcpyDeviceToHost));
+  // checkCudaErrors(cudaMemcpy(csrColIdx, dcsrColIdx, nnz * sizeof(int),
+  //                             cudaMemcpyDeviceToHost));
+  // checkCudaErrors(cudaMemcpy(dcscVal, cscVal, nnz * sizeof(double),
+  //                             cudaMemcpyDeviceToHost));
+  // checkCudaErrors(cudaMemcpy(dcscColPtr, cscColPtr, (n+1) * sizeof(int),
+  //                             cudaMemcpyDeviceToHost));
+  // checkCudaErrors(cudaMemcpy(dcscRowIdx, cscRowIdx, nnz * sizeof(int),
+  //                             cudaMemcpyDeviceToHost));
 
-  checkCudaErrors(cudaFree(dcsrVal));
-  checkCudaErrors(cudaFree(dcsrRowPtr));
-  checkCudaErrors(cudaFree(dcsrColIdx));
-  checkCudaErrors(cudaFree(dcscVal));
-  checkCudaErrors(cudaFree(dcscColPtr));
-  checkCudaErrors(cudaFree(dcscRowIdx));
+  // checkCudaErrors(cudaFree(dcsrVal));
+  // checkCudaErrors(cudaFree(dcsrRowPtr));
+  // checkCudaErrors(cudaFree(dcsrColIdx));
+  // checkCudaErrors(cudaFree(dcscVal));
+  // checkCudaErrors(cudaFree(dcscColPtr));
+  // checkCudaErrors(cudaFree(dcscRowIdx));
 
 }
 
