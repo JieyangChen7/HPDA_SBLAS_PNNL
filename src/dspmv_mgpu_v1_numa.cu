@@ -427,22 +427,22 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     //start_row = get_row_from_index(numa_m[numa_id], numa_csrRowPtr[numa_id], start_idx);
     // Mark imcomplete rows
     // True: imcomplete
-    if (pcsrGPU[dev_id].startIdx > pcsrNuma[numa_id].rowPtr[pcsrGPU[dev_id].startRow]) {
-    //if (start_idx > numa_csrRowPtr[numa_id][start_row]) {
-      pcsrGPU[dev_id].startFlag = true;
-      //start_flag = true;
-      //y2 = y[start_row];
-      pcsrGPU[dev_id].org_y = pcsrNuma[numa_id].y[pcsrGPU[dev_id].startIdx];
-      //org_y[dev_id] = y[start_row]; //use dev_id for global merge
-      //start_rows[dev_id] = start_row;
-    } else {
-      pcsrGPU[dev_id].startFlag = false;
-      //start_flag = false;
-    }
+    // if (pcsrGPU[dev_id].startIdx > pcsrNuma[numa_id].rowPtr[pcsrGPU[dev_id].startRow]) {
+    // //if (start_idx > numa_csrRowPtr[numa_id][start_row]) {
+    //   pcsrGPU[dev_id].startFlag = true;
+    //   //start_flag = true;
+    //   //y2 = y[start_row];
+    //   pcsrGPU[dev_id].org_y = pcsrNuma[numa_id].y[pcsrGPU[dev_id].startIdx];
+    //   //org_y[dev_id] = y[start_row]; //use dev_id for global merge
+    //   //start_rows[dev_id] = start_row;
+    // } else {
+    //   pcsrGPU[dev_id].startFlag = false;
+    //   //start_flag = false;
+    // }
 
-    if (local_dev_id == 0) {
-      pcsrGPU[dev_id].startFlag = pcsrNuma[numa_id].startFlag; // see if numa block is complete
-    }
+    // if (local_dev_id == 0) {
+    //   pcsrGPU[dev_id].startFlag = pcsrNuma[numa_id].startFlag; // see if numa block is complete
+    // }
   
     // if (local_dev_id == 0) {
     //   start_flag = numa_start_flag[numa_id]; // see if numa block is complete
