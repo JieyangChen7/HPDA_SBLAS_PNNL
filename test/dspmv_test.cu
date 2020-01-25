@@ -259,9 +259,9 @@ int main(int argc, char *argv[]) {
   cudaMallocHost((void **)&cscColPtr, (n+1) * sizeof(int));
   cudaMallocHost((void **)&cscRowIdx, nnz * sizeof(int));
 
-  csr2csc_gpu(m, n, nnz,
-              csrVal, csrRowPtr, csrColIdx,
-              cscVal, cscColPtr, cscRowIdx);
+  csr2csc(m, n, nnz,
+          csrVal, csrRowPtr, csrColIdx,
+          cscVal, cscColPtr, cscRowIdx);
 
 
   double * x;
