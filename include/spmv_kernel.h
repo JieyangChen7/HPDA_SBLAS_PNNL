@@ -77,7 +77,7 @@ struct NumaContext {
     printf("# of NUMA nodes: %d\n", num_numa_nodes);
     printf("Representive threads: ");
     bool * representive_threads = new bool[ngpu];
-    for (int i = 0; i < ngpu; i++) representive_threads = false;
+    for (int i = 0; i < ngpu; i++) representive_threads[i] = false;
     for (int i = 0; i < num_numa_nodes; i++) {
       for (int j = 0; j < ngpu; j++) {
         if (numaMapping[j] == i) {
@@ -120,9 +120,6 @@ struct NumaContext {
   }
 };
 
-
-
-}
 int csr5_kernel(int m, int n, int nnz, double * alpha,
           double * csrVal, int * csrRowPtr, int * csrColIndex, 
           double * x, double * beta,
