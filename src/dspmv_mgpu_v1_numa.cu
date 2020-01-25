@@ -208,39 +208,39 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
       int tmp1 = numaContext.workload[numa_id] * nnz;
       int tmp2 = numaContext.workload[numa_id + 1] * nnz;
 
-      pcsrNuma[num_id].startIdx = floor((double)tmp1 / ngpu);
-      pcsrNuma[num_id].endIdx = floor((double)tmp2 / ngpu) - 1;
+      pcsrNuma[numa_id].startIdx = floor((double)tmp1 / ngpu);
+      pcsrNuma[numa_id].endIdx = floor((double)tmp2 / ngpu) - 1;
       // numa_start_idx[numa_id] = floor((double)tmp1 / ngpu);
       // numa_end_idx[numa_id]   = floor((double)tmp2 / ngpu) - 1;
 
 
 
       // Calculate the start and end row
-      pcsrNuma[num_id].startRow = get_row_from_index(m+1, csrRowPtr, pcsrNuma[num_id].startIdx);
+      pcsrNuma[numa_id].startRow = get_row_from_index(m+1, csrRowPtr, pcsrNuma[numa_id].startIdx);
       //numa_start_row[numa_id] = get_row_from_index(m+1, csrRowPtr, numa_start_idx[numa_id]);
       // Mark imcomplete rows
       // True: imcomplete
-      if (pcsrNuma[num_id].startIdx > csrRowPtr[csrNuma[num_id].startRow]) {
+      if (pcsrNuma[numa_id].startIdx > csrRowPtr[csrNuma[numa_id].startRow]) {
       //if (numa_start_idx[numa_id] > csrRowPtr[numa_start_row[numa_id]]) {
-        pcsrNuma[num_id].startFlag = true;
+        pcsrNuma[numa_id].startFlag = true;
         //numa_start_flag[numa_id] = true;
-        pcsrNuma[num_id].org_y = y[pcsrNuma[num_id].startRow];
+        pcsrNuma[numa_id].org_y = y[pcsrNuma[numa_id].startRow];
         //numa_org_y[numa_id] = y[numa_start_row[numa_id]];
       } else {
-        pcsrNuma[num_id].startFlag = false;
+        pcsrNuma[numa_id].startFlag = false;
         //numa_start_flag[numa_id] = false;
       }
 
-      pcsrNuma[num_id].endRow = get_row_from_index(m+1, csrRowPtr, pcsrNuma[num_id].endIdx);
+      pcsrNuma[numa_id].endRow = get_row_from_index(m+1, csrRowPtr, pcsrNuma[numa_id].endIdx);
       //numa_end_row[numa_id] = get_row_from_index(m+1, csrRowPtr, numa_end_idx[numa_id]);
       // Mark imcomplete rows
       // True: imcomplete
-      if (pcsrNuma[num_id].endIdx < csrRowPtr[pcsrNuma[num_id].endRow + 1] - 1)  {
+      if (pcsrNuma[numa_id].endIdx < csrRowPtr[pcsrNuma[numa_id].endRow + 1] - 1)  {
       //if (numa_end_idx[numa_id] < csrRowPtr[numa_end_row[numa_id] + 1] - 1)  {
-        pcsrNuma[num_id].endFlag = true;
+        pcsrNuma[numa_id].endFlag = true;
         //numa_end_flag[numa_id] = true;
       } else {
-        pcsrNuma[num_id].endFlag = false;
+        pcsrNuma[numa_id].endFlag = false;
         //numa_end_flag[numa_id] = false;
       }
 
@@ -248,26 +248,26 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
 
       // Cacluclate dimensions
 
-      pcsrNuma[num_id].m = pcsrNuma[num_id].endRow - pcsrNuma[num_id].startRow + 1;
-      pcsrNuma[num_id].n = n;
-      pcsrNuma[num_id].nnz  = pcsrNuma[num_id].endIdx - pcsrNuma[num_id].startIdx + 1;
+      pcsrNuma[numa_id].m = pcsrNuma[numa_id].endRow - pcsrNuma[numa_id].startRow + 1;
+      pcsrNuma[numa_id].n = n;
+      pcsrNuma[numa_id].nnz  = pcsrNuma[numa_id].endIdx - pcsrNuma[numa_id].startIdx + 1;
 
       // numa_m[numa_id] = numa_end_row[numa_id] - numa_start_row[numa_id] + 1;
       // numa_n[numa_id] = n;
       // numa_nnz[numa_id]   = (int)(numa_end_idx[numa_id] - numa_start_idx[numa_id] + 1);
 
-      printf("numa_id %d, numa_start_idx %d, numa_end_idx %d\n",numa_id, pcsrNuma[num_id].startIdx, pcsrNuma[num_id].endIdx);
-      printf("numa_id %d, numa_start_row %d, numa_end_row %d\n",numa_id, pcsrNuma[num_id].startRow, pcsrNuma[num_id].endRow);
+      printf("numa_id %d, numa_start_idx %d, numa_end_idx %d\n",numa_id, pcsrNuma[numa_id].startIdx, pcsrNuma[numa_id].endIdx);
+      printf("numa_id %d, numa_start_row %d, numa_end_row %d\n",numa_id, pcsrNuma[numa_id].startRow, pcsrNuma[numa_id].endRow);
     
 
       numa_part_time += get_time() - tmp_time;
 
       // preparing data on host 
-      cudaMallocHost((void**)&(pcsrNuma[num_id].val), pcsrNuma[num_id].nnz * sizeof(double));
-      cudaMallocHost((void**)&(pcsrNuma[num_id].rowPtr), (pcsrNuma[num_id].m + 1)*sizeof(int));
-      cudaMallocHost((void**)&(pcsrNuma[num_id].colIdx), pcsrNuma[num_id].nnz * sizeof(int));
-      cudaMallocHost((void**)&(pcsrNuma[num_id].x), pcsrNuma[num_id].n * sizeof(double));
-      cudaMallocHost((void**)&(pcsrNuma[num_id].y), pcsrNuma[num_id].m * sizeof(double));
+      cudaMallocHost((void**)&(pcsrNuma[numa_id].val), pcsrNuma[numa_id].nnz * sizeof(double));
+      cudaMallocHost((void**)&(pcsrNuma[numa_id].rowPtr), (pcsrNuma[numa_id].m + 1)*sizeof(int));
+      cudaMallocHost((void**)&(pcsrNuma[numa_id].colIdx), pcsrNuma[numa_id].nnz * sizeof(int));
+      cudaMallocHost((void**)&(pcsrNuma[numa_id].x), pcsrNuma[numa_id].n * sizeof(double));
+      cudaMallocHost((void**)&(pcsrNuma[numa_id].y), pcsrNuma[numa_id].m * sizeof(double));
 
 
       // cudaMallocHost((void**)&numa_csrVal[numa_id], numa_nnz[numa_id] * sizeof(double));
@@ -279,8 +279,8 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
       tmp_time = get_time();
 
 
-      for (int i = pcsrNuma[num_id].startIdx; i <= pcsrNuma[num_id].endIdx; i++) {
-        pcsrNuma[num_id].val[i - pcsrNuma[num_id].startIdx] = csrVal[i];
+      for (int i = pcsrNuma[numa_id].startIdx; i <= pcsrNuma[numa_id].endIdx; i++) {
+        pcsrNuma[numa_id].val[i - pcsrNuma[numa_id].startIdx] = csrVal[i];
       }
 
       // for (int i = numa_start_idx[numa_id]; i <= numa_end_idx[numa_id]; i++) {
@@ -288,10 +288,10 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
       // }
 
 
-      pcsrNuma[num_id].rowPtr[0] = 0;
-      pcsrNuma[num_id].rowPtr[pcsrNuma[num_id].m] = pcsrNuma[num_id].nnz;
-      for (int j = 1; j < pcsrNuma[num_id].m; j++) {
-        pcsrNuma[num_id].rowPtr[j] = csrRowPtr[pcsrNuma[num_id].startRow + j] - pcsrNuma[num_id].startIdx;
+      pcsrNuma[numa_id].rowPtr[0] = 0;
+      pcsrNuma[numa_id].rowPtr[pcsrNuma[numa_id].m] = pcsrNuma[numa_id].nnz;
+      for (int j = 1; j < pcsrNuma[numa_id].m; j++) {
+        pcsrNuma[numa_id].rowPtr[j] = csrRowPtr[pcsrNuma[numa_id].startRow + j] - pcsrNuma[numa_id].startIdx;
       }
 
       // numa_csrRowPtr[numa_id][0] = 0;
@@ -303,16 +303,16 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
       //print_vec(csrRowPtr, nnz+1, "org rowptr");
       //print_vec(numa_csrRowPtr[numa_id], numa_nnz[numa_id], "numa rowptr " + to_string(numa_id)); 
   
-      for (int i = pcsrNuma[num_id].startIdx; i <= pcsrNuma[num_id].endIdx; i++) {
-        pcsrNuma[num_id].colIdx[i - pcsrNuma[num_id].startIdx] = csrColIndex[i];
+      for (int i = pcsrNuma[numa_id].startIdx; i <= pcsrNuma[numa_id].endIdx; i++) {
+        pcsrNuma[numa_id].colIdx[i - pcsrNuma[numa_id].startIdx] = csrColIndex[i];
       }
 
       // for (int i = numa_start_idx[numa_id]; i <= numa_end_idx[numa_id]; i++) {
       //   numa_csrColIndex[numa_id][i - numa_start_idx[numa_id]] = csrColIndex[i];
       // }
 
-      for (int i = 0; i < pcsrNuma[num_id].n; i++) {
-        pcsrNuma[num_id].x[i] = x[i];
+      for (int i = 0; i < pcsrNuma[numa_id].n; i++) {
+        pcsrNuma[numa_id].x[i] = x[i];
       }
 
 
@@ -320,8 +320,8 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
       //   numa_x[numa_id][i] = x[i];
       // }
     
-      for (int i = 0; i < pcsrNuma[num_id].m; i++) {
-        pcsrNuma[num_id].y[i] = y[pcsrNuma[num_id].startRow + i];
+      for (int i = 0; i < pcsrNuma[numa_id].m; i++) {
+        pcsrNuma[numa_id].y[i] = y[pcsrNuma[numa_id].startRow + i];
       }
 
       // for (int i = 0; i < numa_m[numa_id]; i++) {
@@ -432,7 +432,7 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
       pcsrGPU[dev_id].startFlag = true;
       //start_flag = true;
       //y2 = y[start_row];
-      pcsrGPU[dev_id].org_y = pcsrNuma[num_id].y[pcsrGPU[dev_id].startIdx];
+      pcsrGPU[dev_id].org_y = pcsrNuma[numa_id].y[pcsrGPU[dev_id].startIdx];
       //org_y[dev_id] = y[start_row]; //use dev_id for global merge
       //start_rows[dev_id] = start_row;
     } else {
@@ -488,11 +488,11 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     // preparing data on host 
 
     //tmp_time = get_time();
-    pcsrGPU[dev_id].val = &pcsrNuma[numa_id].val[pcsrGPU[dev_id].startIdx];
-    pcsrGPU[dev_id].rowPtr = &pcsrNuma[numa_id]rowPtr[pcsrGPU[dev_id].startRow];
-    pcsrGPU[dev_id].colIdx = &pcsrNuma[numa_id]colIdx[pcsrGPU[dev_id].startIdx];
+    pcsrGPU[dev_id].val = &(pcsrNuma[numa_id].val[pcsrGPU[dev_id].startIdx]);
+    pcsrGPU[dev_id].rowPtr = &(pcsrNuma[numa_id].rowPtr[pcsrGPU[dev_id].startRow]);
+    pcsrGPU[dev_id].colIdx = &(pcsrNuma[numa_id].colIdx[pcsrGPU[dev_id].startIdx]);
     pcsrGPU[dev_id].x = pcsrNuma[numa_id].x;
-    pcsrGPU[dev_id].y = &pcsrNuma[numa_id].y[pcsrGPU[dev_id].startRow];
+    pcsrGPU[dev_id].y = &(pcsrNuma[numa_id].y[pcsrGPU[dev_id].startRow]);
 
 
     // host_csrVal = &numa_csrVal[numa_id][start_idx];
@@ -704,7 +704,7 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     // GPU based merge
     tmp_time = get_time();
     double * dev_y_no_overlap = pcsrGPU[dev_id].dy;
-    int dev_m_no_overlap = pcsrGPU[dev_id].dm;
+    int dev_m_no_overlap = pcsrGPU[dev_id].m;
     int start_row_no_overlap = pcsrNuma.startRow + pcsrGPU.startRow;
 
     // double * dev_y_no_overlap = dev_y;
@@ -724,7 +724,7 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     if (dev_id == 0) {
       for (int i = 0; i < ngpu; i++) {
         if (pcsrGPU[dev_id].startFlag) {
-          y[pcsrNuma[numaContext.numaMapping[i]].startRow + pcsrGPU[i].startRows] += (start_element[i] - (*beta) * pcsrGPU[i].org_y); 
+          y[pcsrNuma[numaContext.numaMapping[i]].startRow + pcsrGPU[i].startRow] += (start_element[i] - (*beta) * pcsrGPU[i].org_y); 
           //y[start_rows[i]] += (start_element[i] - (*beta) * org_y[i]);
         } 
 
@@ -765,11 +765,11 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
 
     //cudaProfilerStop();
 
-    cudaFree(pcsrGPU[i].dval);
-    cudaFree(pcsrGPU[i].drowPtr);
-    cudaFree(pcsrGPU[i].dcolIdx);
-    cudaFree(pcsrGPU[i].dx);
-    cudaFree(pcsrGPU[i].dy);
+    cudaFree(pcsrGPU[dev_id].dval);
+    cudaFree(pcsrGPU[dev_id].drowPtr);
+    cudaFree(pcsrGPU[dev_id].dcolIdx);
+    cudaFree(pcsrGPU[dev_id].dx);
+    cudaFree(pcsrGPU[dev_id].dy);
           
     //cudaFreeHost(host_csrRowPtr);
     //cudaFreeHost(host_csrVal);

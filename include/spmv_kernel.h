@@ -6,6 +6,11 @@
 
 using namespace std;
 
+void print_vec(double * a, int n, string s);
+void print_vec(int * a, int n, string s);
+void print_vec_gpu(double * a, int n, string s);
+void print_vec_gpu(int * a, int n, string s);
+
 struct spmv_ret {
   double numa_part_time;
   double part_time;
@@ -20,7 +25,7 @@ struct pCSR {
   int * colIdx;
   double * x;
   double * y;
-  
+
   double * dval;
   int * drowPtr;
   int * dcolIdx;
@@ -56,7 +61,7 @@ struct pCSC {
 };
 
 struct NumaContext {
-  int * numaMapping
+  int * numaMapping;
   int numNumaNodes;
   bool * representiveThreads;
   int * numGPUs;
@@ -64,8 +69,8 @@ struct NumaContext {
   NumaContext(int * numaMapping) {
     int num_numa_nodes = 0;
     for (int i = 0; i < ngpu; i++) {
-      if (numa_mapping[i] > num_numa_nodes) {
-        num_numa_nodes = numa_mapping[i];
+      if (numaMapping[i] > num_numa_nodes) {
+        num_numa_nodes = numaMapping[i];
       }
     }
     num_numa_nodes += 1;
@@ -75,13 +80,13 @@ struct NumaContext {
     for (int i = 0; i < ngpu; i++) representive_threads = false;
     for (int i = 0; i < num_numa_nodes; i++) {
       for (int j = 0; j < ngpu; j++) {
-        if (numa_mapping[j] == i) {
+        if (numaMapping[j] == i) {
           //representive_threads[i] = j;
           representive_threads[j] = true;
           break;
         }
+        printf("%d ", j);
       }
-      printf("%d ", j);
     }
     printf("\n");
 
@@ -91,7 +96,7 @@ struct NumaContext {
       num_gpus[j] = 0;
     }
     for (int j = 0; j < ngpu; j++) {
-      num_gpus[numa_mapping[j]]++;
+      num_gpus[numaMapping[j]]++;
     }
     for (int i = 0; i < num_numa_nodes; i++) {
       printf("%d ", num_gpus[i]);
@@ -184,9 +189,6 @@ double get_time();
 
 double get_gpu_availble_mem(int ngpu);
 
-void print_vec(double * a, int n, string s);
-void print_vec(int * a, int n, string s);
-void print_vec_gpu(double * a, int n, string s);
-void print_vec_gpu(int * a, int n, string s);
+
 
 #endif /* SPMV_KERNEL */
