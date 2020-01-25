@@ -10,28 +10,32 @@
 //#include "anonymouslib_cuda.h"
 #include "spmv_kernel.h"
 #include <limits>
-
+#include <sstream>
+#include <string>
 using namespace std;
 
-int get_row_from_index(int n, long long * a, long long idx) {
+int get_row_from_index(int n, int * a, int idx) {
 	int l = 0;
 	int r = n;
-	while (l < r - 1 ) {
+  int m = l + (r - l) / 2;
+	while (l < r - 1) {
 		//cout << "l = " << l <<endl;
 		//cout << "r = " << r <<endl;
 		int m = l + (r - l) / 2;
 		//cout << "m = " << m <<endl;
 		if (idx < a[m]) {
 			r = m;
-		} else if (idx > a[m]) {
+		} else if (idx >= a[m]) {
 			l = m;
-		} else {
-			return m;
-		}
+		} 
+		//else {
+		//	cout << "1st return: " << m << endl;
+		//	return m;
+		//}
 	}
-	// cout << "a[" << l << "] = " <<  a[l];
-	// cout << " a[" << r << "] = " << a[r];
-	// cout << " idx = " << idx << endl;
+	//cout << "a[" << l << "] = " <<  a[l] << endl;
+	//cout << " a[" << r << "] = " << a[r] << endl;
+	//cout << " idx = " << idx << endl;
 	if (idx == a[l]) return l;
 	if (idx == a[r]) return r;
 	return l;
@@ -74,3 +78,43 @@ double get_gpu_availble_mem(int ngpu) {
 
 	return min_mem;
 }
+
+void print_vec(double * a, int n, string s) {
+	ostringstream ss;
+	ss << s << ": ";
+	for (int i = 0; i < n ; i++) {
+		ss << a[i] << " ";
+	}
+	ss << endl;
+	string res = ss.str();
+	cout << res;
+}
+
+void print_vec(int * a, int n, string s) {
+  ostringstream ss;
+  ss << s << ": ";
+  for (int i = 0; i < n ; i++) {
+    ss << a[i] << " ";
+  }
+  ss << endl;
+  string res = ss.str();
+  cout << res;
+}
+
+
+
+void print_vec_gpu(double * a, int n, string s) {
+	double * ha = new double[n]; 
+	cudaMemcpy(ha, a, n*sizeof(double), cudaMemcpyDeviceToHost);
+	print_vec(ha, n, s);
+	delete [] ha;
+}
+
+void print_vec_gpu(int * a, int n, string s) {
+  int * ha = new int[n];
+  cudaMemcpy(ha, a, n*sizeof(int), cudaMemcpyDeviceToHost);
+  print_vec(ha, n, s);
+  delete [] ha;
+}
+
+

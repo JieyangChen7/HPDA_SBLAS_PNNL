@@ -2,8 +2,8 @@
 #define COMMON_CUDA_H
 
 #include <cuda_runtime.h>
-#include <helper_functions.h>
-#include <helper_cuda.h>
+#include "helper_functions.h"
+#include "helper_cuda.h"
 
 #include "../common.h"
 #include "../utils.h"

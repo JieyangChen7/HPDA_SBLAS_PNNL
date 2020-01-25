@@ -14,11 +14,11 @@ using namespace std;
 
 void * spmv_worker(void * arg);
 
-void generate_tasks(int m, int n, int nnz, double * alpha,
-				    double * csrVal, int * csrRowPtr, int * csrColIndex, 
+void generate_tasks(int m, int n, long long nnz, double * alpha,
+				    double * csrVal, long long * csrRowPtr, int * csrColIndex, 
 				  	double * x, double * beta,
 				  	double * y,
-				  	int nb,
+				  	long long nb,
 				  	vector<spmv_task *> * spmv_task_pool_ptr);
 
 void assign_task(spmv_task * t, int dev_id, cudaStream_t stream);
@@ -32,23 +32,23 @@ void gather_results(vector<spmv_task *> * spmv_task_completed, double * y, doubl
 void print_task_info(spmv_task * t);
 
 
-spmv_ret spMspV_mgpu_v2(int m, int n, int nnz, double * alpha,
-                                  double * csrVal, int * csrRowPtr, int * csrColIndex,
+spmv_ret spMspV_mgpu_v2_num(int m, int n, long long nnz, double * alpha,
+                                  double * csrVal, long long * csrRowPtr, int * csrColIndex,
                                   double * x, double * beta,
                                   double * y,
                                   int ngpu,
                                   int kernel,
-                                  int nb,
+                                  long long nb,
                                   int q) {
   //cout << "start1\n";
-  int nnz_reduced = 0;
+  long long nnz_reduced = 0;
   vector<double> * csrVal_reduced = new vector<double>();
-  vector<int> * csrRowPtr_reduced = new vector<int>();
+  vector<long long> * csrRowPtr_reduced = new vector<long long>();
   vector<int> * csrColIndex_reduced = new vector<int>();
 
   // cout << "start2\n";
   double * csrVal_reduced_pin;
-  int * csrRowPtr_reduced_pin;
+  long long * csrRowPtr_reduced_pin;
   int * csrColIndex_reduced_pin;
  
   // cout << "start3\n";
@@ -67,12 +67,12 @@ spmv_ret spMspV_mgpu_v2(int m, int n, int nnz, double * alpha,
 
   // cout << "start4\n";
   cudaMallocHost((void **)&csrVal_reduced_pin, nnz_reduced * sizeof(double));
-  cudaMallocHost((void **)&csrRowPtr_reduced_pin, (m+1) * sizeof(int));
+  cudaMallocHost((void **)&csrRowPtr_reduced_pin, (m+1) * sizeof(long long));
   cudaMallocHost((void **)&csrColIndex_reduced_pin, nnz_reduced * sizeof(int));
   
   // cout << "start5\n";
   cudaMemcpy(csrVal_reduced_pin, csrVal_reduced->data(), nnz_reduced * sizeof(double), cudaMemcpyHostToHost);
-  cudaMemcpy(csrRowPtr_reduced_pin, csrRowPtr_reduced->data(), (m+1) * sizeof(int), cudaMemcpyHostToHost);
+  cudaMemcpy(csrRowPtr_reduced_pin, csrRowPtr_reduced->data(), (m+1) * sizeof(long long), cudaMemcpyHostToHost);
   cudaMemcpy(csrColIndex_reduced_pin, csrColIndex_reduced->data(), nnz_reduced * sizeof(int), cudaMemcpyHostToHost);
 
   // cout << "start6\n";
@@ -100,18 +100,19 @@ spmv_ret spMspV_mgpu_v2(int m, int n, int nnz, double * alpha,
 
 }
 
-spmv_ret spMV_mgpu_v2(int m, int n, int nnz, double * alpha,
-				  double * csrVal, int * csrRowPtr, int * csrColIndex, 
+spmv_ret spMV_mgpu_v2_numa(int m, int n, long long nnz, double * alpha,
+				  double * csrVal, long long * csrRowPtr, int * csrColIndex, 
 				  double * x, double * beta,
 				  double * y,
 				  int ngpu, 
 				  int kernel,
-				  int nb,
-				  int q)
+				  long long nb,
+				  int q,
+					int * numa_mapping)
 {
 
 	
-	nb = min(nb, (int )(0.8*16*1e9/(double)(sizeof(double) + sizeof(int) + sizeof(int)))/q ); 
+	nb = min(nb, (long long )(0.8*16*1e9/(double)(sizeof(double) + sizeof(int) + sizeof(int)))/q ); 
 	//if (nb <= 0 || ngpu == 0 || q == 0) {
 //		cout << "nb = " << nb << endl;
 //		cout << "ngpu = " << ngpu << endl;
@@ -127,21 +128,47 @@ spmv_ret spMV_mgpu_v2(int m, int n, int nnz, double * alpha,
 
 	curr_time = get_time();
 
-	vector<spmv_task *> * spmv_task_pool = new vector<spmv_task *>();
-	vector<spmv_task *> * spmv_task_completed = new vector<spmv_task *>();
+	// figure out the number of numa nodes
+	int num_numa_nodes = 0;
+	for (int i = 0; i < ngpu; i++) {
+		if (numa_mapping[i] > num_numa_nodes) {
+			num_numa_nodes = numa_mapping[i];
+		}
+	}
+	num_numa_nodes += 1; 
+	int * representive_threads = new int [num_numa_nodes];
+	for (int i = 0; i < num_numa_nodes; i++) {
+		for (int j = 0; j < ngpu; j++) {
+			if (numa_mapping[j] == i) {
+				representive_threads[i] = j;
+				break;
+			}
+		}
+	}
 
-	generate_tasks(m, n, nnz, alpha,
-				  csrVal, csrRowPtr, csrColIndex, 
-				  x, beta, y, nb,
-				  spmv_task_pool);
+	vector<spmv_task *> ** spmv_task_pool = new new vector<spmv_task *>*[num_numa_nodes];
+	vector<spmv_task *> ** spmv_task_completed = new new vector<spmv_task *>*[num_numa_nodes];
 
-	int num_of_tasks = (*spmv_task_pool).size();
+	for (int i = 0; i < num_numa_nodes; i++) {
+		spmv_task_pool[i] = new vector<spmv_task *>();
+		spmv_task_completed[i] = new vector<spmv_task *>();
+	}
 
-	(*spmv_task_completed).reserve(num_of_tasks);
+	//vector<spmv_task *> * spmv_task_pool = new vector<spmv_task *>();
+	//vector<spmv_task *> * spmv_task_completed = new vector<spmv_task *>();
 
-	time_parse = get_time() - curr_time;
+	//generate_tasks(m, n, nnz, alpha,
+	//			  csrVal, csrRowPtr, csrColIndex, 
+	//			  x, beta, y, nb,
+	//			  spmv_task_pool);
 
-	curr_time = get_time();
+	//int num_of_tasks = (*spmv_task_pool).size();
+
+	//(*spmv_task_completed).reserve(num_of_tasks);
+
+	//time_parse = get_time() - curr_time;
+
+	//curr_time = get_time();
 
 	//cudaProfilerStart();
 	//cout << "starting " << ngpu << " GPUs." << endl;
@@ -151,9 +178,23 @@ spmv_ret spMV_mgpu_v2(int m, int n, int nnz, double * alpha,
 	double core_time;
 	#pragma omp parallel default (shared) reduction(max:core_time)
 	{
-		
+
+
+
 		int c;
 		unsigned int dev_id = omp_get_thread_num();
+
+		// generate tasks on each NUMA node
+    for (int i = 0; i < num_numa_nodes; i++) {
+      if (representive_threads[i] == dev) {
+				long long  start_idx, end_idx;
+					
+
+			}
+
+    }
+
+
 		//cout << "thread " << dev_id <<"/" << omp_get_num_threads() << "started" << endl;
 		cudaSetDevice(dev_id);
 		
@@ -161,7 +202,7 @@ spmv_ret spMV_mgpu_v2(int m, int n, int nnz, double * alpha,
 		cudaStream_t stream[q];
 		cusparseHandle_t handle[q];
 
-
+		
 
 		double ** dev_csrVal = new double * [q];
 		int ** dev_csrRowPtr = new int    * [q];
@@ -188,17 +229,17 @@ spmv_ret spMV_mgpu_v2(int m, int n, int nnz, double * alpha,
 			cudaMalloc((void**)&(dev_csrRowPtr[c]),   (m + 1) * sizeof(int)   );
 			cudaMalloc((void**)&(dev_csrColIndex[c]), nb      * sizeof(int)   );
 			cudaMalloc((void**)&(dev_x[c]),           n       * sizeof(double));
-		    	cudaMalloc((void**)&(dev_y[c]),           m       * sizeof(double));
+		  cudaMalloc((void**)&(dev_y[c]),           m       * sizeof(double));
 
-    		}
+    }
 
-   		c = 0; 
+   	c = 0; 
     	
-    		//cout << "GPU " << dev_id << " entering loop" << endl;
+    //cout << "GPU " << dev_id << " entering loop" << endl;
 
 
-    		int num_of_assigned_task = 0;
-    		int num_of_to_be_assigned_task = num_of_tasks * (dev_id + 1) /  omp_get_num_threads() - 
+    int num_of_assigned_task = 0;
+    int num_of_to_be_assigned_task = num_of_tasks * (dev_id + 1) /  omp_get_num_threads() - 
     									 num_of_tasks * (dev_id) /  omp_get_num_threads();
 		//cudaProfilerStart();
 	
@@ -308,11 +349,11 @@ spmv_ret spMV_mgpu_v2(int m, int n, int nnz, double * alpha,
 
 
 
-void generate_tasks(int m, int n, int nnz, double * alpha,
-				    double * csrVal, int * csrRowPtr, int * csrColIndex, 
+void generate_tasks(int m, int n, long long nnz, double * alpha,
+				    double * csrVal, long long * csrRowPtr, int * csrColIndex, 
 				  	double * x, double * beta,
 				  	double * y,
-				  	int nb,
+				  	long long nb,
 				  	vector<spmv_task *> * spmv_task_pool_ptr) {
 
 	int num_of_tasks = (int)((nnz + nb - 1) / nb);
@@ -326,8 +367,8 @@ void generate_tasks(int m, int n, int nnz, double * alpha,
 
 	// Calculate the start and end index
 	for (t = 0; t < num_of_tasks; t++) {
-		int tmp1 = t * nnz;
-		int tmp2 = (t + 1) * nnz;
+		long long tmp1 = t * nnz;
+		long long tmp2 = (t + 1) * nnz;
 
 		double tmp3 = (double)(tmp1 / num_of_tasks);
 		double tmp4 = (double)(tmp2 / num_of_tasks);

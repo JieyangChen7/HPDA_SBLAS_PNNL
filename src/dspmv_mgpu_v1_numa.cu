@@ -1,0 +1,666 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctime>
+#include <sys/time.h>
+#include <cuda_runtime.h>
+#include "cusparse.h"
+#include <iostream>
+#include <cmath>
+#include <float.h>
+//#include "anonymouslib_cuda.h"
+#include "spmv_kernel.h"
+#include <vector>
+#include <cuda_profiler_api.h>
+#include <omp.h>
+#include <sched.h>
+#include <library_types.h>
+#include <string>
+using namespace std;
+
+__global__ void
+_calcCsrRowPtr(int * csrRowPrt, int m, int offset, int nnz) {
+	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	for (int i = idx; i < m; i += blockDim.x * gridDim.x) {
+		csrRowPrt[i] -= offset; 
+		//printf("thread %d: %d - %d\n", idx, csrRowPrt[i], offset);
+	}
+	if (idx == 0) {
+		csrRowPrt[0] = 0;
+		csrRowPrt[m] = nnz;
+	}
+}
+
+void calcCsrRowPtr(int * csrRowPrt, int m, int offset, int nnz, cudaStream_t stream) {
+	int thread_per_block = 256;
+	int block_per_grid = ceil((float)m / thread_per_block); 
+	_calcCsrRowPtr<<<block_per_grid, thread_per_block, 0, stream>>>(csrRowPrt, m, offset, nnz);
+}
+
+spmv_ret spMspV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
+                                  double * csrVal, int * csrRowPtr, int * csrColIndex,
+                                  double * x, double * beta,
+                                  double * y,
+                                  int ngpu,
+                                  int kernel) {
+  double start = get_time();	 
+  int nnz_reduced = 0;
+  vector<double> * csrVal_reduced = new vector<double>();
+  vector<int> * csrRowPtr_reduced = new vector<int>();
+  vector<int> * csrColIndex_reduced = new vector<int>();
+
+  double * csrVal_reduced_pin;
+  int * csrRowPtr_reduced_pin;
+  int * csrColIndex_reduced_pin;
+
+  csrRowPtr_reduced->push_back(0);
+  for (int i = 0; i < m; i++) {
+    for (int j = csrRowPtr[i]; j < csrRowPtr[i+1]; j++) {
+      if (x[csrColIndex[j]] != 0.0) {
+	csrVal_reduced->push_back(csrVal[j]);
+        csrColIndex_reduced->push_back(csrColIndex[j]);
+	nnz_reduced ++;
+      }
+    }
+    csrRowPtr_reduced->push_back(nnz_reduced);
+  }
+
+
+  double convert_time = get_time() - start;
+
+  cudaMallocHost((void **)&csrVal_reduced_pin, nnz_reduced * sizeof(double));
+  cudaMallocHost((void **)&csrRowPtr_reduced_pin, (m+1) * sizeof(int));
+  cudaMallocHost((void **)&csrColIndex_reduced_pin, nnz_reduced * sizeof(int));
+
+  cudaMemcpy(csrVal_reduced_pin, csrVal_reduced->data(), nnz_reduced * sizeof(double), cudaMemcpyHostToHost);
+  cudaMemcpy(csrRowPtr_reduced_pin, csrRowPtr_reduced->data(), (m+1) * sizeof(int), cudaMemcpyHostToHost);
+  cudaMemcpy(csrColIndex_reduced_pin, csrColIndex_reduced->data(), nnz_reduced * sizeof(int), cudaMemcpyHostToHost);
+
+  delete csrVal_reduced;
+  delete csrRowPtr_reduced;
+  delete csrColIndex_reduced;
+
+  cout << "spMspV_mgpu_v1: nnz reduced from " << nnz << " to " << nnz_reduced << std::endl;
+
+	int numa_mapping[6] = {0,0,0,1,1,1};
+
+  spmv_ret ret =  spMV_mgpu_v1_numa(m, n, nnz_reduced, alpha,
+               csrVal_reduced_pin,
+               csrRowPtr_reduced_pin, 
+               csrColIndex_reduced_pin,
+               x, beta, y, ngpu, kernel, numa_mapping);
+  cudaFreeHost(csrVal_reduced_pin);
+  cudaFreeHost(csrRowPtr_reduced_pin);
+  cudaFreeHost(csrColIndex_reduced_pin);
+
+  return ret;
+}
+
+spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
+				  double * csrVal, int * csrRowPtr, int * csrColIndex, 
+				  double * x, double * beta,
+				  double * y,
+				  int ngpu, 
+				  int kernel,
+					int * numa_mapping){
+
+  double curr_time = 0.0;
+  double time_comm = 0.0;
+  double time_comp = 0.0;
+	
+	
+
+  // figure out the number of numa nodes
+  int num_numa_nodes = 0;
+  for (int i = 0; i < ngpu; i++) {
+    if (numa_mapping[i] > num_numa_nodes) {
+      num_numa_nodes = numa_mapping[i];
+    }
+  }
+  num_numa_nodes += 1;
+  printf("# of NUMA nodes: %d\n", num_numa_nodes);
+	printf("Representive threads: ");
+	int * representive_threads = new int [num_numa_nodes];
+	for (int i = 0; i < num_numa_nodes; i++) {
+    for (int j = 0; j < ngpu; j++) {
+      if (numa_mapping[j] == i) {
+        representive_threads[i] = j;
+        break;
+      }
+    }
+		printf("%d ", representive_threads[i]);
+  }
+	printf("\n");
+
+	printf("# of GPU distribution: ");
+	int * num_gpus = new int [num_numa_nodes];
+	for (int j = 0; j < num_numa_nodes; j++) {
+		num_gpus[j] = 0;
+	}
+	for (int j = 0; j < ngpu; j++) {
+		num_gpus[numa_mapping[j]]++;
+	}
+	for (int i = 0; i < num_numa_nodes; i++) {
+		printf("%d ", num_gpus[i]);
+	}
+	printf("\n");
+
+	int * workload = new int [num_numa_nodes+1];
+  workload[0] = 0;
+	workload[1] = num_gpus[0];			
+	for (int i = 2; i < num_numa_nodes+1; i++) {
+		workload[i] = workload[i-1] + num_gpus[i-1];
+	}
+	print_vec(workload, num_numa_nodes+1, "workload: "); 
+
+	double ** numa_csrVal = new double*[num_numa_nodes];
+	int ** numa_csrRowPtr = new int*[num_numa_nodes]; 
+	int ** numa_csrColIndex = new int*[num_numa_nodes];
+	int * numa_m = new int[num_numa_nodes];
+	int * numa_n = new int[num_numa_nodes];
+	int * numa_nnz = new int[num_numa_nodes];
+
+  int * numa_start_idx = new int[num_numa_nodes];
+	int * numa_end_idx = new int[num_numa_nodes];
+		
+	int * numa_start_row = new int[num_numa_nodes];
+	int * numa_end_row = new int[num_numa_nodes];
+
+	bool * numa_start_flag = new bool[num_numa_nodes];
+	bool * numa_end_flag = new bool[num_numa_nodes];
+
+	double ** numa_x = new double*[num_numa_nodes];
+	double ** numa_y = new double*[num_numa_nodes];
+	
+	double * numa_org_y = new double[num_numa_nodes];
+	
+	double numa_part_time;
+	
+	omp_set_num_threads(ngpu);
+	#pragma omp parallel default (shared) reduction(max:numa_part_time)
+	{
+		string s;
+		unsigned int dev_id = omp_get_thread_num();
+    unsigned int hwthread = sched_getcpu();
+		bool is_represetative = false;
+		int numa_id;
+		for (int i = 0; i < num_numa_nodes; i++) {
+			if (representive_threads[i] == dev_id)	{
+				is_represetative = true;
+				numa_id = i;
+			}
+		}
+	
+		numa_part_time = 0;
+	
+		
+
+		if (is_represetative) {
+			printf("represent thread %d hw thread %d\n", dev_id, hwthread);
+
+			double tmp_time = get_time();
+
+			int tmp1 = workload[numa_id] * nnz;
+			int tmp2 = workload[numa_id + 1] * nnz;
+
+			numa_start_idx[numa_id] = floor((double)tmp1 / ngpu);
+			numa_end_idx[numa_id]   = floor((double)tmp2 / ngpu) - 1;
+
+			// Calculate the start and end row
+			numa_start_row[numa_id] = get_row_from_index(m+1, csrRowPtr, numa_start_idx[numa_id]);
+			// Mark imcomplete rows
+			// True: imcomplete
+			if (numa_start_idx[numa_id] > csrRowPtr[numa_start_row[numa_id]]) {
+			  numa_start_flag[numa_id] = true;
+				numa_org_y[numa_id] = y[numa_start_row[numa_id]];
+			} else {
+				numa_start_flag[numa_id] = false;
+			}
+
+			numa_end_row[numa_id] = get_row_from_index(m+1, csrRowPtr, numa_end_idx[numa_id]);
+			// Mark imcomplete rows
+			// True: imcomplete
+			if (numa_end_idx[numa_id] < csrRowPtr[numa_end_row[numa_id] + 1] - 1)  {
+				numa_end_flag[numa_id] = true;
+			} else {
+				numa_end_flag[numa_id] = false;
+			}
+
+			//print_vec(csrRowPtr+m+1-5, 5, "last" + to_string(numa_id));
+
+			// Cacluclate dimensions
+			numa_m[numa_id] = numa_end_row[numa_id] - numa_start_row[numa_id] + 1;
+			numa_n[numa_id] = n;
+			numa_nnz[numa_id]   = (int)(numa_end_idx[numa_id] - numa_start_idx[numa_id] + 1);
+
+			printf("numa_id %d, numa_start_idx %d, numa_end_idx %d\n",numa_id, numa_start_idx[numa_id], numa_end_idx[numa_id]);
+			printf("numa_id %d, numa_start_row %d, numa_end_row %d\n",numa_id, numa_start_row[numa_id], numa_end_row[numa_id]);
+		
+
+			numa_part_time += get_time() - tmp_time;
+
+			// preparing data on host 
+			cudaMallocHost((void**)&numa_csrVal[numa_id], numa_nnz[numa_id] * sizeof(double));
+			cudaMallocHost((void**)&numa_csrRowPtr[numa_id], (numa_m[numa_id] + 1)*sizeof(int));
+			cudaMallocHost((void**)&numa_csrColIndex[numa_id], numa_nnz[numa_id] * sizeof(int));
+			cudaMallocHost((void**)&numa_x[numa_id], numa_n[numa_id] * sizeof(double));
+			cudaMallocHost((void**)&numa_y[numa_id], numa_m[numa_id] * sizeof(double));
+
+			tmp_time = get_time();
+
+			for (int i = numa_start_idx[numa_id]; i <= numa_end_idx[numa_id]; i++) {
+			  numa_csrVal[numa_id][i - numa_start_idx[numa_id]] = csrVal[i];
+			}
+
+
+			numa_csrRowPtr[numa_id][0] = 0;
+			numa_csrRowPtr[numa_id][numa_m[numa_id]] = numa_nnz[numa_id];
+			for (int j = 1; j < numa_m[numa_id]; j++) {
+				numa_csrRowPtr[numa_id][j] = (int)(csrRowPtr[numa_start_row[numa_id] + j] - numa_start_idx[numa_id]);
+			}
+
+			//print_vec(csrRowPtr, nnz+1, "org rowptr");
+			//print_vec(numa_csrRowPtr[numa_id], numa_nnz[numa_id], "numa rowptr " + to_string(numa_id));	
+	
+
+			for (int i = numa_start_idx[numa_id]; i <= numa_end_idx[numa_id]; i++) {
+			  numa_csrColIndex[numa_id][i - numa_start_idx[numa_id]] = csrColIndex[i];
+			}
+
+
+			for (int i = 0; i < numa_n[numa_id]; i++) {
+			  numa_x[numa_id][i] = x[i];
+			}
+		
+			
+
+			for (int i = 0; i < numa_m[numa_id]; i++) {
+			  numa_y[numa_id][i] = y[numa_start_row[numa_id] + i];
+			}
+			numa_part_time += get_time() - tmp_time;
+
+		}
+	}
+	
+
+
+
+
+
+  
+  
+
+  double * start_element = new double[ngpu];
+	double * end_element = new double[ngpu];
+	bool * start_flags = new bool[ngpu];
+	bool * end_flags = new bool[ngpu];
+	double * org_y = new double[ngpu];
+	int * start_rows = new int[ngpu];
+
+	omp_set_num_threads(ngpu);
+
+	double core_time;
+	double part_time;
+  double merg_time;
+	#pragma omp parallel default (shared) reduction(max:core_time) reduction(max:part_time) reduction(max:merg_time)
+	{
+		unsigned int dev_id = omp_get_thread_num();
+		cudaSetDevice(dev_id);
+		unsigned int hwthread = sched_getcpu();
+
+		int numa_id = numa_mapping[dev_id];
+		int local_dev_id = 0;
+		for (int i = 0; i < ngpu; i++) {
+			if (i == dev_id) break;
+			if (numa_id == numa_mapping[i]) local_dev_id++;
+		}
+
+
+		printf("omp thread %d, hw thread %d, numa_id %d, local_id %d\n", dev_id, hwthread, numa_id, local_dev_id);	
+
+		int start_idx, end_idx;
+		int start_row, end_row;
+		bool start_flag, end_flag; 
+
+
+		double * host_csrVal;
+		int    * host_csrRowPtr;
+		int    * host_csrColIndex;
+	  double * host_x;
+	  double * host_y;
+
+		double * dev_csrVal;
+		int    * dev_csrRowPtr;
+		int    * dev_csrColIndex;
+
+		int    dev_nnz, dev_m, dev_n;
+
+	  
+		double * dev_x;
+		double * dev_y;
+		double y2;
+
+		cudaStream_t stream;
+		cusparseStatus_t status;
+		cusparseHandle_t handle;
+		cusparseMatDescr_t descr;
+		int err;
+
+
+    double tmp_time = get_time();
+
+		// Calculate the start and end index
+		int tmp1 = local_dev_id * numa_nnz[numa_id];
+		int tmp2 = (local_dev_id + 1) * numa_nnz[numa_id];
+
+		start_idx = floor((double)tmp1 / num_gpus[numa_id]);
+		end_idx   = floor((double)tmp2 / num_gpus[numa_id]) - 1;
+	
+		// Calculate the start and end row
+	  start_row = get_row_from_index(numa_m[numa_id], numa_csrRowPtr[numa_id], start_idx);
+		// Mark imcomplete rows
+		// True: imcomplete
+		if (start_idx > numa_csrRowPtr[numa_id][start_row]) {
+			start_flag = true;
+			y2 = y[start_row];
+			org_y[dev_id] = y[start_row]; //use dev_id for global merge
+			start_rows[dev_id] = start_row;
+		} else {
+			start_flag = false;
+		}
+    if (local_dev_id == 0) {
+			start_flag = numa_start_flag[numa_id]; // see if numa block is complete
+		}
+		start_flags[dev_id] = start_flag;		
+
+		end_row = get_row_from_index(numa_m[numa_id], numa_csrRowPtr[numa_id], end_idx);
+		// Mark imcomplete rows
+		// True: imcomplete
+		if (end_idx < numa_csrRowPtr[numa_id][end_row + 1] - 1)  {
+			end_flag = true;
+		} else {
+			end_flag = false;
+		}
+
+		if (local_dev_id+1 == num_gpus[numa_id]) {
+			end_flag = numa_end_flag[numa_id];
+		}
+		
+		// Cacluclate dimensions
+		dev_m = end_row - start_row + 1;
+		dev_n = n;
+    dev_nnz   = (int)(end_idx - start_idx + 1);
+
+		printf("omp thread %d, dev_m %d, dev_n %d, dev_nnz %d, start_idx %d, end_idx %d, start_row %d, end_row %d\n", dev_id, dev_m, dev_n, dev_nnz, start_idx, end_idx, start_row, end_row);
+
+
+		// preparing data on host 
+
+    //tmp_time = get_time();
+    host_csrVal = &numa_csrVal[numa_id][start_idx];
+		host_csrRowPtr = &numa_csrRowPtr[numa_id][start_row];
+    host_csrColIndex = &numa_csrColIndex[numa_id][start_idx];
+    host_x = numa_x[numa_id];
+    host_y = &numa_y[numa_id][start_row];
+		part_time = get_time() - tmp_time;  
+
+
+		// original partition*******************************************
+/*		int tmp1 = dev_id * nnz;
+    int tmp2 = (dev_id + 1) * nnz;
+
+    start_idx = floor((double)tmp1 / ngpu);
+    end_idx   = floor((double)tmp2 / ngpu) - 1;
+
+    // Calculate the start and end row
+    start_row = get_row_from_index(m, csrRowPtr, start_idx);
+    // Mark imcomplete rows
+    // True: imcomplete
+    if (start_idx > csrRowPtr[start_row]) {
+      start_flag = true;
+      y2 = y[start_row];
+      org_y[dev_id] = y[start_row]; //use dev_id for global merge
+      start_rows[dev_id] = start_row;
+    } else {
+      start_flag = false;
+    }
+    start_flags[dev_id] = start_flag;
+
+    end_row = get_row_from_index(m, csrRowPtr, end_idx);
+    // Mark imcomplete rows
+    // True: imcomplete
+    if (end_idx < csrRowPtr[end_row + 1] - 1)  {
+      end_flag = true;
+    } else {
+      end_flag = false;
+    }
+		
+		// Cacluclate dimensions
+    dev_m = end_row - start_row + 1;
+    dev_n = n;
+    dev_nnz   = (int)(end_idx - start_idx + 1);
+
+
+		
+
+		part_time = get_time() - tmp_time;	
+
+		printf("omp thread %d, dev_m %d, dev_n %d, dev_nnz %d, start_idx %d, end_idx %d, start_row %d, end_row %d\n", dev_id, dev_m, dev_n, dev_nnz, start_idx, end_idx, start_row, end_row);
+
+		// preparing data on host	
+		cudaMallocHost((void**)&host_csrVal, dev_nnz * sizeof(double));
+		cudaMallocHost((void**)&host_csrRowPtr, (dev_m + 1)*sizeof(int));
+		cudaMallocHost((void**)&host_csrColIndex, dev_nnz * sizeof(int));
+		cudaMallocHost((void**)&host_x, dev_n * sizeof(double));
+		cudaMallocHost((void**)&host_y, dev_m * sizeof(double));
+
+		tmp_time = get_time();
+		for (int i = start_idx; i <= end_idx; i++) {
+			host_csrVal[i - start_idx] = csrVal[i];
+		}
+    //host_csrVal = &numa_csrVal[numa_id][start_idx];
+
+		host_csrRowPtr[0] = 0;
+		host_csrRowPtr[dev_m] = dev_nnz;
+		for (int j = 1; j < dev_m; j++) {
+			host_csrRowPtr[j] = (int)(csrRowPtr[start_row + j] - start_idx);
+		}
+    //host_csrRowPtr = &numa_csrRowPtr[numa_id][start_row];
+
+		printf("dev %d: %d %d %d %d %d\n", host_csrRowPtr[0],host_csrRowPtr[1],host_csrRowPtr[2],host_csrRowPtr[3],host_csrRowPtr[4]);
+
+		for (int i = start_idx; i <= end_idx; i++) {
+      host_csrColIndex[i - start_idx] = csrColIndex[i];
+    }
+    //host_csrColIndex = &numa_csrColIndex[numa_id][start_idx];
+
+		for (int i = 0; i < dev_n; i++) {
+			host_x[i] = x[i];
+		}
+    //host_x = numa_x[numa_id];
+
+    for (int i = 0; i < dev_m; i++) {
+      host_y[i] = y[start_row + i];
+    }
+    //host_y = &numa_y[numa_id][start_row];
+
+		part_time += get_time() - tmp_time;
+*/
+		// end of original partition*********************************
+
+ 		cudaStreamCreate(&stream);
+
+		status = cusparseCreate(&handle); 
+		if (status != CUSPARSE_STATUS_SUCCESS) 
+		{ 
+			printf("CUSPARSE Library initialization failed");
+			//return 1; 
+		} 
+		status = cusparseSetStream(handle, stream);
+		if (status != CUSPARSE_STATUS_SUCCESS) 
+		{ 
+			printf("Stream bindind failed");
+			//return 1;
+		} 
+		status = cusparseCreateMatDescr(&descr);
+		if (status != CUSPARSE_STATUS_SUCCESS) 
+		{ 
+			printf("Matrix descriptor initialization failed");
+			//return 1;
+		} 	
+		cusparseSetMatType(descr,CUSPARSE_MATRIX_TYPE_GENERAL); 
+		cusparseSetMatIndexBase(descr,CUSPARSE_INDEX_BASE_ZERO);
+		
+		cudaMalloc((void**)&dev_csrVal,      dev_nnz     * sizeof(double));
+		cudaMalloc((void**)&dev_csrRowPtr,   (dev_m + 1) * sizeof(int)   );
+		cudaMalloc((void**)&dev_csrColIndex, dev_nnz     * sizeof(int)   );
+		cudaMalloc((void**)&dev_x,           dev_n       * sizeof(double)); 
+		cudaMalloc((void**)&dev_y,           dev_m       * sizeof(double)); 
+
+	  tmp_time = get_time();
+		cudaMemcpyAsync(dev_csrRowPtr, host_csrRowPtr, (dev_m + 1) * sizeof(int), cudaMemcpyHostToDevice, stream);
+		cudaDeviceSynchronize();
+		tmp_time = get_time();
+		calcCsrRowPtr(dev_csrRowPtr, dev_m, start_idx, dev_nnz, stream);
+    cudaDeviceSynchronize();
+		printf("dev_id %d, part_kernel_time = %f\n", dev_id, get_time() - tmp_time);
+		part_time += get_time() - tmp_time;  
+	  printf("dev_id %d, part_time = %f\n", dev_id, part_time);	
+  //cudaProfilerStart();
+		#pragma omp barrier
+		tmp_time = get_time();
+
+		//cudaMemcpyAsync(dev_csrRowPtr, host_csrRowPtr, (dev_m + 1) * sizeof(int), cudaMemcpyHostToDevice, stream);
+		cudaMemcpyAsync(dev_csrColIndex, host_csrColIndex, dev_nnz * sizeof(int), cudaMemcpyHostToDevice, stream); 
+		cudaMemcpyAsync(dev_csrVal, host_csrVal, dev_nnz * sizeof(double), cudaMemcpyHostToDevice, stream); 
+		cudaMemcpyAsync(dev_y, host_y, dev_m*sizeof(double),  cudaMemcpyHostToDevice, stream); 
+		cudaMemcpyAsync(dev_x, host_x, dev_n*sizeof(double), cudaMemcpyHostToDevice, stream); 
+		
+		time_comm = get_time() - curr_time;
+		curr_time = get_time();
+		err = 0;
+		if (kernel == 1) {
+
+		cudaDeviceSynchronize();
+		//print_vec_gpu(dev_csrRowPtr, 5, "csrRowPtr"+to_string(dev_id));
+		//print_vec_gpu(dev_csrVal, 5, "csrVal"+to_string(dev_id));
+		//print_vec_gpu(dev_csrColIndex, 5, "csrColIndex"+to_string(dev_id));
+		//print_vec_gpu(dev_x, 5, "x"+to_string(dev_id));
+		//print_vec_gpu(dev_y, 5, "y_before"+to_string(dev_id));
+		//printf("dev_id %d, alpha %f, beta %f\n", dev_id, *alpha, *beta);
+
+
+    //calcCsrRowPtr(dev_csrRowPtr, dev_m, start_idx, dev_nnz, stream);
+		//cudaDeviceSynchronize();
+	
+			
+		//print_vec_gpu(dev_x, dev_n, "x"+to_string(dev_id));
+	
+		status = cusparseDcsrmv(handle,CUSPARSE_OPERATION_NON_TRANSPOSE, 
+															dev_m, dev_n, dev_nnz, 
+															alpha, descr, dev_csrVal, 
+															dev_csrRowPtr, dev_csrColIndex, 
+															dev_x, beta, dev_y);
+		  
+	
+ 
+		} else if (kernel == 2) {
+		    status = cusparseDcsrmv_mp(handle,CUSPARSE_OPERATION_NON_TRANSPOSE, 
+																	 dev_m, dev_n, dev_nnz, 
+																	 alpha, descr, dev_csrVal, 
+																	 dev_csrRowPtr, dev_csrColIndex, 
+																	 dev_x,  beta, dev_y); 
+		} else if (kernel == 3) {
+		    err = csr5_kernel(dev_m, dev_n, dev_nnz, 
+													alpha, dev_csrVal, 
+													dev_csrRowPtr, dev_csrColIndex, 
+													dev_x, beta, dev_y, stream); 
+		}
+
+		cudaDeviceSynchronize();
+		if (status != CUSPARSE_STATUS_SUCCESS) printf("dev_id %d: exec error\n", dev_id);
+		//print_vec_gpu(dev_y, 5, "y"+to_string(dev_id));
+		printf("omp thread %d, time %f\n", dev_id, get_time() - tmp_time);
+		core_time = get_time() - tmp_time;
+		// GPU based merge
+		tmp_time = get_time();
+		double * dev_y_no_overlap = dev_y;
+		int dev_m_no_overlap = dev_m;
+		int start_row_no_overlap = numa_start_row[numa_id] + start_row;
+		//int start_row_no_overlap = start_row;
+		if (start_flag) {
+			dev_y_no_overlap += 1;
+			start_row_no_overlap += 1;
+			dev_m_no_overlap -= 1;
+			cudaMemcpyAsync(start_element+dev_id, dev_y, sizeof(double), cudaMemcpyDeviceToHost, stream);
+		}
+		cudaMemcpyAsync(y+start_row_no_overlap, dev_y_no_overlap, dev_m_no_overlap*sizeof(double),  cudaMemcpyDeviceToHost, stream);
+		cudaDeviceSynchronize();
+		#pragma omp barrier
+		if (dev_id == 0) {
+			for (int i = 0; i < ngpu; i++) {
+				if (start_flags[i]) {
+					y[numa_start_row[numa_mapping[i]] + start_rows[i]] += (start_element[i] - (*beta) * org_y[i]); 
+					//y[start_rows[i]] += (start_element[i] - (*beta) * org_y[i]);
+				}	
+			}
+		}
+
+
+
+		/* CPU based merge
+		cudaMemcpyAsync(host_y, dev_y, dev_m*sizeof(double),  cudaMemcpyDeviceToHost, stream);
+
+		cudaDeviceSynchronize();
+		
+		
+		//printf("thread %d time: %f\n", dev_id,  get_time() - tmp_time);
+		#pragma omp critical
+		{
+		  double tmp = 0.0;
+			
+		  if (start_flag) {
+		    tmp = y[start_row];
+		  }
+
+      for (int i = 0; i < dev_m; i++) y[start_row + i] = host_y[i];
+
+		  if (start_flag) {
+		    y[start_row] += tmp;
+	      y[start_row] -= y2 * (*beta);
+		  }
+		}
+		*/
+	
+		merg_time = get_time() - tmp_time;
+
+		//cudaProfilerStop();
+
+		cudaFree(dev_csrVal);
+		cudaFree(dev_csrRowPtr);
+		cudaFree(dev_csrColIndex);
+		cudaFree(dev_x);
+		cudaFree(dev_y);
+					
+    //cudaFreeHost(host_csrRowPtr);
+		//cudaFreeHost(host_csrVal);
+		//cudaFreeHost(host_csrColIndex);
+		//cudaFreeHost(host_x);
+		//cudaFreeHost(host_y);
+
+		cusparseDestroyMatDescr(descr);
+	  cusparseDestroy(handle);
+		cudaStreamDestroy(stream);
+
+		}
+
+		printf("end part time: %f\n", part_time);
+		//cout << "time_parse = " << time_parse << ", time_comm = " << time_comm << ", time_comp = "<< time_comp <<", time_post = " << time_post << endl;
+                spmv_ret ret;
+                ret.comp_time = core_time;
+                ret.comm_time = 0.0;
+								ret.part_time = part_time;
+								ret.merg_time = merg_time;
+								ret.numa_part_time = numa_part_time;
+		return ret;
+	}
+

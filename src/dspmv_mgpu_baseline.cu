@@ -11,8 +11,8 @@
 #include "spmv_kernel.h"
 using namespace std;
 
-int spMV_mgpu_baseline(int m, int n, long long nnz, double * alpha,
-				 		double * csrVal, long long * csrRowPtr, int * csrColIndex, 
+spmv_ret spMV_mgpu_baseline(int m, int n, int nnz, double * alpha,
+				 		double * csrVal, int * csrRowPtr, int * csrColIndex, 
 				 		double * x, double * beta,
 				 		double * y,
 				 		int ngpu){
@@ -54,8 +54,9 @@ int spMV_mgpu_baseline(int m, int n, long long nnz, double * alpha,
 	double ** dev_x = new double * [ngpu];
 	double ** dev_y = new double * [ngpu];
 
-	
 
+	
+	curr_time = get_time();
 
 	for (int d = 0; d < ngpu; d++){
 
@@ -67,21 +68,34 @@ int spMV_mgpu_baseline(int m, int n, long long nnz, double * alpha,
 		dev_m[d]   = end_row[d] - start_row[d] + 1;
 		dev_n[d]   = n;
 
-		long long nnz_ll = csrRowPtr[end_row[d] + 1] - csrRowPtr[start_row[d]];
-		long long matrix_data_space = nnz_ll * sizeof(double) + 
+		int nnz_ll = csrRowPtr[end_row[d] + 1] - csrRowPtr[start_row[d]];
+		/*int matrix_data_space = nnz_ll * sizeof(double) + 
 										nnz_ll * sizeof(int) + 
-										(long long)(dev_m[d]+1) * sizeof(int) + 
-										(long long)dev_n[d] * sizeof(double) +
-										(long long)dev_m[d] * sizeof(double);
+										(int)(dev_m[d]+1) * sizeof(int) + 
+										(int)dev_n[d] * sizeof(double) +
+										(int)dev_m[d] * sizeof(double);
 		double matrix_size_in_gb = (double)matrix_data_space / 1e9;
-		/*
+		
                 if ( matrix_size_in_gb > 0.8 * get_gpu_availble_mem(ngpu)) {
 			return -1;
 		}
 		*/
 
 		dev_nnz[d] = (int)(csrRowPtr[end_row[d] + 1] - csrRowPtr[start_row[d]]);
-		host_csrRowPtr[d] = new int[dev_m[d] + 1];
+
+		}
+
+	time_parse += get_time() - curr_time;
+	
+	for (int d = 0; d < ngpu; d++) {
+    cudaMallocHost((void**)& host_csrRowPtr[d], (dev_m[d]+1) * sizeof(int));
+  }
+
+	curr_time = get_time();
+
+	for (int d = 0; d < ngpu; d++){
+
+	
 		for (int i = 0; i < dev_m[d] + 1; i++) {
 			host_csrRowPtr[d][i] = (int)(csrRowPtr[start_row[d] + i] - csrRowPtr[start_row[d]]);
 		}
@@ -89,8 +103,8 @@ int spMV_mgpu_baseline(int m, int n, long long nnz, double * alpha,
 	}
 
 
-	time_parse = get_time() - curr_time;
-	curr_time = get_time();
+	time_parse += get_time() - curr_time;
+	//curr_time = get_time();
 
 	for (int d = 0; d < ngpu; d++){
 		cudaSetDevice(d);
@@ -101,19 +115,19 @@ int spMV_mgpu_baseline(int m, int n, long long nnz, double * alpha,
 		if (status[d] != CUSPARSE_STATUS_SUCCESS) 
 		{ 
 			printf("CUSPARSE Library initialization failed");
-			return 1; 
+//			return 1; 
 		} 
 		status[d] = cusparseSetStream(handle[d], stream[d]);
 		if (status[d] != CUSPARSE_STATUS_SUCCESS) 
 		{ 
 			printf("Stream bindind failed");
-			return 1;
+//			return 1;
 		} 
 		status[d] = cusparseCreateMatDescr(&descr[d]);
 		if (status[d] != CUSPARSE_STATUS_SUCCESS) 
 		{ 
 			printf("Matrix descriptor initialization failed");
-			return 1;
+//			return 1;
 		} 	
 		cusparseSetMatType(descr[d],CUSPARSE_MATRIX_TYPE_GENERAL); 
 		cusparseSetMatIndexBase(descr[d],CUSPARSE_INDEX_BASE_ZERO); 
@@ -133,9 +147,11 @@ int spMV_mgpu_baseline(int m, int n, long long nnz, double * alpha,
 			(cudaStat5[d] != cudaSuccess)) 
 		{ 
 			printf("Device malloc failed");
-			return 1; 
+//			return 1; 
 		} 
 
+
+		curr_time = get_time();
 		//cout << "Start copy to GPUs...";
 		cudaStat1[d] = cudaMemcpy(dev_csrRowPtr[d],   host_csrRowPtr[d],                  (size_t)((dev_m[d] + 1) * sizeof(int)), cudaMemcpyHostToDevice);
 		cudaStat2[d] = cudaMemcpy(dev_csrColIndex[d], &csrColIndex[csrRowPtr[start_row[d]]], (size_t)(dev_nnz[d] * sizeof(int)),   cudaMemcpyHostToDevice); 
@@ -151,7 +167,7 @@ int spMV_mgpu_baseline(int m, int n, long long nnz, double * alpha,
 		    (cudaStat5[d] != cudaSuccess)) 
 		{ 
 			printf("Memcpy from Host to Device failed"); 
-			return 1; 
+//			return 1; 
 		} 
 
 	}
@@ -173,7 +189,7 @@ int spMV_mgpu_baseline(int m, int n, long long nnz, double * alpha,
 		cudaSetDevice(d);
 		cudaDeviceSynchronize();
 		if (status[d] != CUSPARSE_STATUS_SUCCESS) {
-			return -1;
+//			return -1;
 		}
 	}
 
@@ -210,7 +226,11 @@ int spMV_mgpu_baseline(int m, int n, long long nnz, double * alpha,
 	time_post = get_time() - curr_time;
 		
 	//cout << "time_parse = " << time_parse << ", time_comm = " << time_comm << ", time_comp = "<< time_comp <<", time_post = " << time_post << endl;
-
-	return 0;
+	
+	spmv_ret ret;
+				ret.part_time = time_parse;
+        ret.comp_time = time_comp;
+        ret.comm_time = time_comm;
+	return ret;
 
 }

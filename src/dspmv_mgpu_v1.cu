@@ -9,12 +9,72 @@
 #include <float.h>
 //#include "anonymouslib_cuda.h"
 #include "spmv_kernel.h"
+#include <vector>
+#include <cuda_profiler_api.h>
 
 using namespace std;
 
 
-int spMV_mgpu_v1(int m, int n, long long nnz, double * alpha,
-				  double * csrVal, long long * csrRowPtr, int * csrColIndex, 
+
+spmv_ret spMspV_mgpu_v1(int m, int n, int nnz, double * alpha,
+                                  double * csrVal, int * csrRowPtr, int * csrColIndex,
+                                  double * x, double * beta,
+                                  double * y,
+                                  int ngpu,
+                                  int kernel) {
+  double start = get_time();	 
+  int nnz_reduced = 0;
+  vector<double> * csrVal_reduced = new vector<double>();
+  vector<int> * csrRowPtr_reduced = new vector<int>();
+  vector<int> * csrColIndex_reduced = new vector<int>();
+
+  double * csrVal_reduced_pin;
+  int * csrRowPtr_reduced_pin;
+  int * csrColIndex_reduced_pin;
+
+  csrRowPtr_reduced->push_back(0);
+  for (int i = 0; i < m; i++) {
+    for (int j = csrRowPtr[i]; j < csrRowPtr[i+1]; j++) {
+      if (x[csrColIndex[j]] != 0.0) {
+	csrVal_reduced->push_back(csrVal[j]);
+        csrColIndex_reduced->push_back(csrColIndex[j]);
+	nnz_reduced ++;
+      }
+    }
+    csrRowPtr_reduced->push_back(nnz_reduced);
+  }
+
+
+  double convert_time = get_time() - start;
+
+  cudaMallocHost((void **)&csrVal_reduced_pin, nnz_reduced * sizeof(double));
+  cudaMallocHost((void **)&csrRowPtr_reduced_pin, (m+1) * sizeof(int));
+  cudaMallocHost((void **)&csrColIndex_reduced_pin, nnz_reduced * sizeof(int));
+
+  cudaMemcpy(csrVal_reduced_pin, csrVal_reduced->data(), nnz_reduced * sizeof(double), cudaMemcpyHostToHost);
+  cudaMemcpy(csrRowPtr_reduced_pin, csrRowPtr_reduced->data(), (m+1) * sizeof(int), cudaMemcpyHostToHost);
+  cudaMemcpy(csrColIndex_reduced_pin, csrColIndex_reduced->data(), nnz_reduced * sizeof(int), cudaMemcpyHostToHost);
+
+  delete csrVal_reduced;
+  delete csrRowPtr_reduced;
+  delete csrColIndex_reduced;
+
+  cout << "spMspV_mgpu_v1: nnz reduced from " << nnz << " to " << nnz_reduced << std::endl;
+
+  spmv_ret ret =  spMV_mgpu_v1(m, n, nnz_reduced, alpha,
+               csrVal_reduced_pin,
+               csrRowPtr_reduced_pin, 
+               csrColIndex_reduced_pin,
+               x, beta, y, ngpu, kernel);
+  cudaFreeHost(csrVal_reduced_pin);
+  cudaFreeHost(csrRowPtr_reduced_pin);
+  cudaFreeHost(csrColIndex_reduced_pin);
+
+  return ret;
+}
+
+spmv_ret spMV_mgpu_v1(int m, int n, int nnz, double * alpha,
+				  double * csrVal, int * csrRowPtr, int * csrColIndex, 
 				  double * x, double * beta,
 				  double * y,
 				  int ngpu, 
@@ -30,8 +90,8 @@ int spMV_mgpu_v1(int m, int n, long long nnz, double * alpha,
 		curr_time = get_time();
 
 
-		long long  * start_idx  = new long long[ngpu];
-		long long  * end_idx    = new long long[ngpu];
+		int  * start_idx  = new int[ngpu];
+		int  * end_idx    = new int[ngpu];
 		int        * start_row  = new int[ngpu];
 		int        * end_row    = new int[ngpu];
 		bool       * start_flag = new bool[ngpu];
@@ -59,8 +119,8 @@ int spMV_mgpu_v1(int m, int n, long long nnz, double * alpha,
 		// Calculate the start and end index
 		for (int i = 0; i < ngpu; i++) {
 
-			long long tmp1 = i * nnz;
-			long long tmp2 = (i + 1) * nnz;
+			int  tmp1 = i * nnz;
+			int tmp2 = (i + 1) * nnz;
 
 			double tmp3 = (double)(tmp1 / ngpu);
 			double tmp4 = (double)(tmp2 / ngpu);
@@ -68,7 +128,6 @@ int spMV_mgpu_v1(int m, int n, long long nnz, double * alpha,
 			start_idx[i] = floor((double)tmp1 / ngpu);
 			end_idx[i]   = floor((double)tmp2 / ngpu) - 1;
 		}
-
 		// Calculate the start and end row
 		for (int i = 0; i < ngpu; i++) {
 			start_row[i] = get_row_from_index(m, csrRowPtr, start_idx[i]);
@@ -81,7 +140,6 @@ int spMV_mgpu_v1(int m, int n, long long nnz, double * alpha,
 				start_flag[i] = false;
 			}
 		}
-
 		for (int i = 0; i < ngpu; i++) {
 			end_row[i] = get_row_from_index(m, csrRowPtr, end_idx[i]);
 			// Mark imcomplete rows
@@ -92,7 +150,6 @@ int spMV_mgpu_v1(int m, int n, long long nnz, double * alpha,
 				end_flag[i] = false;
 			}
 		}
-
 		// Cacluclate dimensions
 		for (int i = 0; i < ngpu; i++) {
 			dev_m[i] = end_row[i] - start_row[i] + 1;
@@ -104,13 +161,13 @@ int spMV_mgpu_v1(int m, int n, long long nnz, double * alpha,
 		}
 
 		for (int d = 0; d < ngpu; d++) {
-			long long nnz_ll = end_idx[d] - start_idx[d] + 1;
-			long long matrix_data_space = nnz_ll * sizeof(double) + 
-										nnz_ll * sizeof(int) + 
-										(long long)(dev_m[d]+1) * sizeof(int) + 
-										(long long)dev_n[d] * sizeof(double) +
-										(long long)dev_m[d] * sizeof(double);
-			double matrix_size_in_gb = (double)matrix_data_space / 1e9;
+			int nnz_ll = end_idx[d] - start_idx[d] + 1;
+			//int matrix_data_space = nnz_ll * sizeof(double) + 
+			//							nnz_ll * sizeof(int) + 
+			//							(long long)(dev_m[d]+1) * sizeof(int) + 
+		  //							(long long)dev_n[d] * sizeof(double) +
+			//							(long long)dev_m[d] * sizeof(double);
+			//double matrix_size_in_gb = (double)matrix_data_space / 1e9;
 			/*
 			if ( matrix_size_in_gb > 0.8 * get_gpu_availble_mem(ngpu)) {
 				return -1;
@@ -122,10 +179,11 @@ int spMV_mgpu_v1(int m, int n, long long nnz, double * alpha,
 		}
 
 
-		
 
 		for (int i = 0; i < ngpu; i++) {
-			host_csrRowPtr[i] = new int [dev_m[i] + 1];
+			
+ 			//host_csrRowPtr[i] = new int [dev_m[i] + 1];
+			cudaMallocHost((void**)&host_csrRowPtr[i], (dev_m[i] + 1)*sizeof(int));
 			host_csrRowPtr[i][0] = 0;
 			host_csrRowPtr[i][dev_m[i]] = dev_nnz[i];
 
@@ -143,19 +201,19 @@ int spMV_mgpu_v1(int m, int n, long long nnz, double * alpha,
 			if (status[d] != CUSPARSE_STATUS_SUCCESS) 
 			{ 
 				printf("CUSPARSE Library initialization failed");
-				return 1; 
+				//return 1; 
 			} 
 			status[d] = cusparseSetStream(handle[d], stream[d]);
 			if (status[d] != CUSPARSE_STATUS_SUCCESS) 
 			{ 
 				printf("Stream bindind failed");
-				return 1;
+				//return 1;
 			} 
 			status[d] = cusparseCreateMatDescr(&descr[d]);
 			if (status[d] != CUSPARSE_STATUS_SUCCESS) 
 			{ 
 				printf("Matrix descriptor initialization failed");
-				return 1;
+				//return 1;
 			} 	
 			cusparseSetMatType(descr[d],CUSPARSE_MATRIX_TYPE_GENERAL); 
 			cusparseSetMatIndexBase(descr[d],CUSPARSE_INDEX_BASE_ZERO);
@@ -167,10 +225,10 @@ int spMV_mgpu_v1(int m, int n, long long nnz, double * alpha,
 			cudaMalloc((void**)&dev_csrRowPtr[d],   (dev_m[d] + 1) * sizeof(int)   );
 			cudaMalloc((void**)&dev_csrColIndex[d], dev_nnz[d]     * sizeof(int)   );
 			cudaMalloc((void**)&dev_x[d],           dev_n[d]       * sizeof(double)); 
-		    cudaMalloc((void**)&dev_y[d],           dev_m[d]       * sizeof(double)); 
+		        cudaMalloc((void**)&dev_y[d],           dev_m[d]       * sizeof(double)); 
 		}
 
-
+	        //cudaProfilerStart();
 		time_parse = get_time() - curr_time;
 
 		curr_time = get_time();
@@ -184,67 +242,88 @@ int spMV_mgpu_v1(int m, int n, long long nnz, double * alpha,
 			cudaMemcpyAsync(dev_y[d], &y[start_row[d]], (size_t)(dev_m[d]*sizeof(double)),  cudaMemcpyHostToDevice, stream[d]); 
 			cudaMemcpyAsync(dev_x[d], x,                (size_t)(dev_n[d]*sizeof(double)),  cudaMemcpyHostToDevice, stream[d]); 
 		}
-
+		/*
 		for (int d = 0; d < ngpu; ++d) 
 		{
 			cudaSetDevice(d);
 			cudaDeviceSynchronize();
 		}
+		*/
+		
 		time_comm = get_time() - curr_time;
 		curr_time = get_time();
 
-
 		for (int d = 0; d < ngpu; ++d) 
 		{
-			err[d] = 0;
-			cudaSetDevice(d);
-			if (kernel == 1) {
-				status[d] = cusparseDcsrmv(handle[d],CUSPARSE_OPERATION_NON_TRANSPOSE, 
-											dev_m[d], dev_n[d], dev_nnz[d], 
-											alpha, descr[d], dev_csrVal[d], 
-											dev_csrRowPtr[d], dev_csrColIndex[d], 
-											dev_x[d],  beta, dev_y[d]); 
-			} else if (kernel == 2) {
-				status[d] = cusparseDcsrmv_mp(handle[d],CUSPARSE_OPERATION_NON_TRANSPOSE, 
-											dev_m[d], dev_n[d], dev_nnz[d], 
-											alpha, descr[d], dev_csrVal[d], 
-											dev_csrRowPtr[d], dev_csrColIndex[d], 
-											dev_x[d],  beta, dev_y[d]); 
-			} else if (kernel == 3) {
-				err[d] = csr5_kernel(dev_m[d], dev_n[d], dev_nnz[d], 
-							alpha, dev_csrVal[d], 
-							dev_csrRowPtr[d], dev_csrColIndex[d], 
-							dev_x[d],  beta, dev_y[d], stream[d]); 
-			}
+		  err[d] = 0;
+		  cudaSetDevice(d);
+		  if (kernel == 1) {
+		    status[d] = cusparseDcsrmv(handle[d],CUSPARSE_OPERATION_NON_TRANSPOSE, 
+					     dev_m[d], dev_n[d], dev_nnz[d], 
+					     alpha, descr[d], dev_csrVal[d], 
+					     dev_csrRowPtr[d], dev_csrColIndex[d], 
+					     dev_x[d],  beta, dev_y[d]); 
+		  } else if (kernel == 2) {
+		    status[d] = cusparseDcsrmv_mp(handle[d],CUSPARSE_OPERATION_NON_TRANSPOSE, 
+						dev_m[d], dev_n[d], dev_nnz[d], 
+						alpha, descr[d], dev_csrVal[d], 
+						dev_csrRowPtr[d], dev_csrColIndex[d], 
+						dev_x[d],  beta, dev_y[d]); 
+		  } else if (kernel == 3) {
+		    err[d] = csr5_kernel(dev_m[d], dev_n[d], dev_nnz[d], 
+					alpha, dev_csrVal[d], 
+					dev_csrRowPtr[d], dev_csrColIndex[d], 
+					dev_x[d],  beta, dev_y[d], stream[d]); 
+		  }
 		}
 
+		//for (int d = 0; d < ngpu; ++d){ 
+		//  cudaSetDevice(d);
+                //  cudaMemcpyAsync(&y[start_row[d]], dev_y[d], (size_t)(dev_m[d]*sizeof(double)),  cudaMemcpyDeviceToHost, stream[d]);
+		//}
+		
 		for (int d = 0; d < ngpu; ++d) 
 		{
-			cudaSetDevice(d);
-			cudaDeviceSynchronize();
-			if (status[d] != CUSPARSE_STATUS_SUCCESS || err[d] != 0 ) {
-				return -1;
-			}
-
+		  cudaSetDevice(d);
+		  cudaDeviceSynchronize();
+		  if (status[d] != CUSPARSE_STATUS_SUCCESS || err[d] != 0 ) {
+		    //return -1;
+		  }
 		}
+		
+		//cudaProfilerStop();
 
-		time_comp = get_time() - curr_time;
-		curr_time = get_time();
+		//time_comp = get_time() - curr_time;
+		//curr_time = get_time();
+
+		//for (int d = 0; d < ngpu; d++) {
+		//  cudaSetDevice(d);
+		//  cudaDeviceSynchronize();
+		//}
 
 		for (int d = 0; d < ngpu; d++) {
-			double tmp = 0.0;
+		  double tmp = 0.0;
 			
-			if (start_flag[d]) {
-				tmp = y[start_row[d]];
-			}
-	
-			cudaMemcpy(&y[start_row[d]], dev_y[d], (size_t)(dev_m[d]*sizeof(double)),  cudaMemcpyDeviceToHost); 
+		  if (start_flag[d]) {
+		    tmp = y[start_row[d]];
+		  }
+		  cudaMemcpy(&y[start_row[d]], dev_y[d], (size_t)(dev_m[d]*sizeof(double)),  cudaMemcpyDeviceToHost); 
 
-			if (start_flag[d]) {
-				y[start_row[d]] += tmp;
-				y[start_row[d]] -= y2[d] * (*beta);
-			}
+		  //cudaSetDevice(d);
+		  //cudaMemcpyAsync(&y[start_row[d]], dev_y[d], (size_t)(dev_m[d]*sizeof(double)),  cudaMemcpyDeviceToHost, stream[d]); 
+		  //cudaDeviceSynchronize();
+		  if (start_flag[d]) {
+		    y[start_row[d]] += tmp;
+	            y[start_row[d]] -= y2[d] * (*beta);
+		  }
 		}
+
+
+		//cudaProfilerStop();
+
+                time_comp = get_time() - curr_time;
+                curr_time = get_time();
+
 		for (int d = 0; d < ngpu; d++) {
 			cudaSetDevice(d);
 			cudaFree(dev_csrVal[d]);
@@ -253,14 +332,13 @@ int spMV_mgpu_v1(int m, int n, long long nnz, double * alpha,
 			cudaFree(dev_x[d]);
 			cudaFree(dev_y[d]);
 			delete [] host_y[d];
-			delete [] host_csrRowPtr[d];
+			cudaFreeHost(host_csrRowPtr[d]);
 			cusparseDestroyMatDescr(descr[d]);
 			cusparseDestroy(handle[d]);
 			cudaStreamDestroy(stream[d]);
 
 		}
 
-		
 
 		delete[] dev_csrVal;
 		delete[] dev_csrRowPtr;
@@ -275,6 +353,9 @@ int spMV_mgpu_v1(int m, int n, long long nnz, double * alpha,
 		time_post = get_time() - curr_time;
 
 		//cout << "time_parse = " << time_parse << ", time_comm = " << time_comm << ", time_comp = "<< time_comp <<", time_post = " << time_post << endl;
-		return 0;
+                spmv_ret ret;
+                ret.comp_time = time_comp;
+                ret.comm_time = time_comm;
+		return ret;
 	}
 
