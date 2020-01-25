@@ -153,7 +153,7 @@ void csr2csc(int m, int n, int nnz,
                               cudaMemcpyHostToDevice));
 
   csr2csc_gpu(m, n, nnz,
-              dcsrVal, dcooRowIdx, dcooColIdx,
+              dcsrVal, dcsrRowPtr, dcsrColIdx,
               dcscVal, dcscColPtr, dcscRowIdx);
 
   
@@ -209,43 +209,6 @@ void csr2csc_gpu(int m, int n, int nnz,
   checkCudaErrors(cusparseDestroyMatDescr(descr));
   checkCudaErrors(cusparseDestroy(handle));
   checkCudaErrors(cudaStreamDestroy(stream));
-
-  
-}
-
-void csr2csc_gpu(int m, int n, int nnz,
-                  double * csrVal, int * csrRowPtr, int * csrColIdx,
-                 double * cscVal, int * cscColPtr, int * cscRowIdx) {
-  cudaStream_t stream;
-  cusparseStatus_t status;
-  cusparseHandle_t handle;
-  cusparseMatDescr_t descr;
-  cudaStreamCreate(&stream);
-  status = cusparseCreate(&handle); 
-  if (status != CUSPARSE_STATUS_SUCCESS) 
-  { 
-    printf("CUSPARSE Library initialization failed");
-    return; 
-  } 
-  status = cusparseSetStream(handle, stream);
-  if (status != CUSPARSE_STATUS_SUCCESS) 
-  { 
-    printf("Stream bindind failed");
-    return;
-  } 
-  status = cusparseCreateMatDescr(&descr);
-  if (status != CUSPARSE_STATUS_SUCCESS) 
-  { 
-    printf("Matrix descriptor initialization failed");
-    return;
-  }   
-  cusparseSetMatType(descr,CUSPARSE_MATRIX_TYPE_GENERAL); 
-  cusparseSetMatIndexBase(descr,CUSPARSE_INDEX_BASE_ZERO);
-
-
-  cusparseDestroyMatDescr(descr);
-  cusparseDestroy(handle);
-  cudaStreamDestroy(stream);
 
   
 }
