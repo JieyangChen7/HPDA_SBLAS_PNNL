@@ -333,7 +333,20 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
   //   curr_time = get_time();
 
   //   err = 0;
-  //   if (kernel == 1) {
+    // if (kernel == 1) {
+
+    double * dev_csrVal;
+    int * dev_csrRowPtr;
+    int * dev_csrColIndex;
+    cudaMalloc((void**)&dev_csrVal,    pcscGPU[dev_id].nnz     * sizeof(double));
+    cudaMalloc((void**)&dev_csrRowPtr, (pcscGPU[dev_id].m + 1) * sizeof(int)   );
+    cudaMalloc((void**)&dev_csrColIndex, pcscGPU[dev_id].nnz     * sizeof(int)   );
+
+
+    csc2csr_gpu(m, n, nnz,
+                 pcscGPU[dev_id].dval, pcscGPU[dev_id].dcolPtr, pcscGPU[dev_id].drowIdx,
+                 dev_csrVal, dev_csrRowPtr, dev_csrColIndex);
+
 
   //     cusparseDcsc2dense(handle,
   //                        dev_m, dev_n,

@@ -347,5 +347,54 @@ void csr2csc_gpu(int m, int n, int nnz,
 }
 
 
+void csc2csr_gpu(int m, int n, int nnz,
+                 double * cscVal, int * cscColPtr, int * cscRowIdx,
+                 double * csrVal, int * csrRowPtr, int * csrColIdx,) {
+  cudaStream_t stream;
+  cusparseStatus_t status;
+  cusparseHandle_t handle;
+  cusparseMatDescr_t descr;
+  checkCudaErrors(cudaStreamCreate(&stream));
+  checkCudaErrors(cusparseCreate(&handle)); 
+  checkCudaErrors(cusparseSetStream(handle, stream));
+  checkCudaErrors(cusparseCreateMatDescr(&descr));
+  checkCudaErrors(cusparseSetMatType(descr,CUSPARSE_MATRIX_TYPE_GENERAL)); 
+  checkCudaErrors(cusparseSetMatIndexBase(descr,CUSPARSE_INDEX_BASE_ZERO));
+
+  double * A;
+  int lda = m;
+  checkCudaErrors(cudaMalloc((void**)&A, lda * n * sizeof(double)));
+
+  int * nnzPerCol = new int[n];
+  int * nnzTotalDevHostPtr = new int[1];
+  checkCudaErrors(cusparseDcsc2dense(handle, m, n, descr,
+                                     cscVal, cscRowIdx, cscColPtr,
+                                     A, lda));
+
+  checkCudaErrors(cusparseDnnz(handle, CUSPARSE_DIRECTION_COLUMN,
+                               m, n, descr, A, lda, nnzPerCol, nnzTotalDevHostPtr));
+
+  // checkCudaErrors(cusparseDdense2csc(handle, m, n, descr, 
+  //                                    A, lda, nnzPerCol,
+  //                                    cscVal, cscColPtr, cscRowIdx));
+
+  // checkCudaErrors(cusparseDcsr2csc(handle, m, n, nnz,
+  //                                   csrVal, csrRowPtr, csrColIdx,
+  //                                   cscVal, cscColPtr, cscRowIdx,
+  //                                   CUSPARSE_ACTION_NUMERIC,
+  //                                   CUSPARSE_INDEX_BASE_ZERO));
+
+  checkCudaErrors(cudaDeviceSynchronize());
+  // checkCudaErrors(cudaFree(buffer));
+  // delete [] P;
+
+  checkCudaErrors(cusparseDestroyMatDescr(descr));
+  checkCudaErrors(cusparseDestroy(handle));
+  checkCudaErrors(cudaStreamDestroy(stream));
+
+  
+}
+
+
 
 
