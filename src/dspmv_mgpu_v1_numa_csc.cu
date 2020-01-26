@@ -373,8 +373,8 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
     print_vec_gpu(dev_csrVal, pcscGPU[dev_id].nnz, "csrVal"+to_string(dev_id));
     print_vec_gpu(dev_csrRowPtr, pcscGPU[dev_id].m + 1, "csrRowPtr"+to_string(dev_id));
     print_vec_gpu(dev_csrColIndex, pcscGPU[dev_id].nnz, "csrColIndex"+to_string(dev_id));
-    print_vec_gpu(dev_x, pcscGPU[dev_id].n, "x"+to_string(dev_id));
-    print_vec_gpu(dev_y, pcscGPU[dev_id].m, "y_before"+to_string(dev_id));
+    print_vec_gpu(pcscGPU[dev_id].dx, pcscGPU[dev_id].n, "x"+to_string(dev_id));
+    print_vec_gpu(pcscGPU[dev_id].dy, pcscGPU[dev_id].m, "y_before"+to_string(dev_id));
     printf("dev_id %d, alpha %f, beta %f\n", dev_id, *alpha, *beta);
 
 
