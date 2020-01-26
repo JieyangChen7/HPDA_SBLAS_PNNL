@@ -128,27 +128,27 @@ void csr2csrNcsc(int m, int n, int nnz,
   double * A = new double[m * n];
   for (int i = 0; i < m; i++) {
     for (int j = 0; j < n; j++) {
-      //A[i * m + j] = 0.0;
+      A[i * n + j] = 0.0;
     }
   }
 
   for (int i = 0; i < nnz; i++) {
-    //A[cooRowIdx[i] * m + cooColIdx[i]] = cooVal[i];
+    A[cooRowIdx[i] * n + cooColIdx[i]] = cooVal[i];
   }
 
   int p = 0;
-  //csrRowPtr[0] = 0;
+  csrRowPtr[0] = 0;
   for (int i = 0; i < m; i++) {
     for (int j = 0; j < n; j++) {
-      //if (A[i * m + j] != 0) {
-        //csrVal[p] = A[i * m + j];
-        //csrColIdx[p] = j;
+      if (A[i * n + j] != 0) {
+        csrVal[p] = A[i * m + j];
+        csrColIdx[p] = j;
         //printf("add %f, %d\n", csrVal[p], csrColIdx[p]);
-        //p++;
-      //}
+        p++;
+      }
     }
     //printf("add to row %d\n", i+1);
-    //csrRowPtr[i + 1] = p;
+    csrRowPtr[i + 1] = p;
     //printf("row %d\n", p);
   }
 
