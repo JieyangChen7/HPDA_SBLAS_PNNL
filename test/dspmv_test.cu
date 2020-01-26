@@ -441,8 +441,7 @@ int main(int argc, char *argv[]) {
                                 cscVal, cscColPtr, cscRowIdx,
                                 x, &BETA,
                                 y_baseline_csc,
-                                ngpu,
-                                1); //kernel 1
+                                ngpu);
     ret_baseline_csc.add(ret);
 
     ret = spMV_mgpu_v1_numa_csc(m, n, nnz, &ALPHA,
