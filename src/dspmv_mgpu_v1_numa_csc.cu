@@ -275,12 +275,12 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
     pcscGPU[dev_id].y = pcscNuma[numa_id].y;
 
 
-    print_vec(pcscGPU[dev_id].val, pcscGPU[dev_id].nnz, "cscVal"+to_string(dev_id));
-    print_vec(pcscGPU[dev_id].colPtr, pcscGPU[dev_id].n + 1, "colPtr"+to_string(dev_id));
-    print_vec(pcscGPU[dev_id].rowIdx, pcscGPU[dev_id].nnz, "rowIdx"+to_string(dev_id));
-    print_vec(pcscGPU[dev_id].x, pcscGPU[dev_id].n, "x"+to_string(dev_id));
-    print_vec(pcscGPU[dev_id].y, pcscGPU[dev_id].m, "y_before"+to_string(dev_id));
-    printf("dev_id %d, alpha %f, beta %f\n", dev_id, *alpha, *beta);
+    // print_vec(pcscGPU[dev_id].val, pcscGPU[dev_id].nnz, "cscVal"+to_string(dev_id));
+    // print_vec(pcscGPU[dev_id].colPtr, pcscGPU[dev_id].n + 1, "colPtr"+to_string(dev_id));
+    // print_vec(pcscGPU[dev_id].rowIdx, pcscGPU[dev_id].nnz, "rowIdx"+to_string(dev_id));
+    // print_vec(pcscGPU[dev_id].x, pcscGPU[dev_id].n, "x"+to_string(dev_id));
+    // print_vec(pcscGPU[dev_id].y, pcscGPU[dev_id].m, "y_before"+to_string(dev_id));
+    // printf("dev_id %d, alpha %f, beta %f\n", dev_id, *alpha, *beta);
     // host_cscColPtr[0] = 0;
     // host_cscColPtr[dev_n] = dev_nnz;
     // for (int j = 1; j < dev_m; j++) {
@@ -324,14 +324,14 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
     cudaMalloc((void**)&pcscGPU[dev_id].dy,      pcscGPU[dev_id].m       * sizeof(double)); 
 
 
-    tmp_time = get_time();
-    cudaMemcpyAsync(pcscGPU[dev_id].dcolPtr, pcscGPU[dev_id].colPtr, (pcscGPU[dev_id].n + 1) * sizeof(int), cudaMemcpyHostToDevice, stream); 
-    cudaDeviceSynchronize();
-    calcCscColPtr(pcscGPU[dev_id].dcolPtr, pcscGPU[dev_id].n, pcscGPU[dev_id].startIdx, pcscGPU[dev_id].nnz, stream);
-    cudaDeviceSynchronize();
-    printf("dev_id %d, part_kernel_time = %f\n", dev_id, get_time() - tmp_time);
-    part_time += get_time() - tmp_time;  
-    printf("dev_id %d, part_time = %f\n", dev_id, part_time); 
+    // tmp_time = get_time();
+    // cudaMemcpyAsync(pcscGPU[dev_id].dcolPtr, pcscGPU[dev_id].colPtr, (pcscGPU[dev_id].n + 1) * sizeof(int), cudaMemcpyHostToDevice, stream); 
+    // cudaDeviceSynchronize();
+    // calcCscColPtr(pcscGPU[dev_id].dcolPtr, pcscGPU[dev_id].n, pcscGPU[dev_id].startIdx, pcscGPU[dev_id].nnz, stream);
+    // cudaDeviceSynchronize();
+    // printf("dev_id %d, part_kernel_time = %f\n", dev_id, get_time() - tmp_time);
+    // part_time += get_time() - tmp_time;  
+    // printf("dev_id %d, part_time = %f\n", dev_id, part_time); 
 
 
     #pragma omp barrier
@@ -344,12 +344,12 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
     cudaMemcpyAsync(pcscGPU[dev_id].dy,      pcscGPU[dev_id].y,      pcscGPU[dev_id].m * sizeof(double), cudaMemcpyHostToDevice, stream); 
     
     checkCudaErrors(cudaDeviceSynchronize());
-    // print_vec_gpu(pcscGPU[dev_id].dval, pcscGPU[dev_id].nnz, "cscVal"+to_string(dev_id));
-    // print_vec_gpu(pcscGPU[dev_id].dcolPtr, pcscGPU[dev_id].n + 1, "colPtr"+to_string(dev_id));
-    // print_vec_gpu(pcscGPU[dev_id].drowIdx, pcscGPU[dev_id].nnz, "rowIdx"+to_string(dev_id));
-    // print_vec_gpu(pcscGPU[dev_id].dx, pcscGPU[dev_id].n, "x"+to_string(dev_id));
-    // print_vec_gpu(pcscGPU[dev_id].dy, pcscGPU[dev_id].m, "y_before"+to_string(dev_id));
-    // printf("dev_id %d, alpha %f, beta %f\n", dev_id, *alpha, *beta);
+    print_vec_gpu(pcscGPU[dev_id].dval, pcscGPU[dev_id].nnz, "cscVal"+to_string(dev_id));
+    print_vec_gpu(pcscGPU[dev_id].dcolPtr, pcscGPU[dev_id].n + 1, "colPtr"+to_string(dev_id));
+    print_vec_gpu(pcscGPU[dev_id].drowIdx, pcscGPU[dev_id].nnz, "rowIdx"+to_string(dev_id));
+    print_vec_gpu(pcscGPU[dev_id].dx, pcscGPU[dev_id].n, "x"+to_string(dev_id));
+    print_vec_gpu(pcscGPU[dev_id].dy, pcscGPU[dev_id].m, "y_before"+to_string(dev_id));
+    printf("dev_id %d, alpha %f, beta %f\n", dev_id, *alpha, *beta);
 
     
   //   time_comm = get_time() - curr_time;
