@@ -136,19 +136,19 @@ void csr2csrNcsc(int m, int n, int nnz,
   }
 
   int p = 0;
-  csrRowPtr[0] = 0;
+  //csrRowPtr[0] = 0;
   for (int i = 0; i < m; i++) {
     for (int j = 0; j < n; j++) {
-      if (A[i * m + j] != 0) {
+      //if (A[i * m + j] != 0) {
         //csrVal[p] = A[i * m + j];
         //csrColIdx[p] = j;
-        printf("add %f, %d\n", csrVal[p], csrColIdx[p]);
+        //printf("add %f, %d\n", csrVal[p], csrColIdx[p]);
         p++;
       }
     }
-    printf("add to row %d\n", i+1);
+    //printf("add to row %d\n", i+1);
     //csrRowPtr[i + 1] = p;
-    printf("row %d\n", p);
+    //printf("row %d\n", p);
   }
 
   printf("done converting\n");
