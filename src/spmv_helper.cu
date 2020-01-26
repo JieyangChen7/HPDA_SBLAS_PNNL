@@ -176,7 +176,7 @@ void csr2csrNcsc(int m, int n, int nnz,
   // }
 
   // printf("done converting\n");
-  delete [] A;
+  //delete [] A;
 
   // double * dcsrVal;
   // int * dcsrRowPtr;
