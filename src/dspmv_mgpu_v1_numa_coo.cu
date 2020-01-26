@@ -386,13 +386,14 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
     //cudaDeviceSynchronize();
   
     //print_vec_gpu(dev_x, dev_n, "x"+to_string(dev_id));
-
+    #pragma omp barrier
     #pragma omp critical 
     {
     coo2csr_gpu(handle, stream, pcooGPU[dev_id].m, pcooGPU[dev_id].n, pcooGPU[dev_id].nnz,
                 pcooGPU[dev_id].val, pcooGPU[dev_id].rowIdx, pcooGPU[dev_id].colIdx,
                 dev_csrVal, dev_csrRowPtr, dev_csrColIdx);
     }
+    #pragma omp barrier
     // #pragma omp barrier
     // #pragma omp critical 
     // {
