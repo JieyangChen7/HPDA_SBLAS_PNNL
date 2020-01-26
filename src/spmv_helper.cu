@@ -353,7 +353,7 @@ void csc2csr_gpu(cusparseHandle_t handle, int m, int n, int nnz, double * A, int
   // cudaStream_t stream;
   // cusparseStatus_t status;
   // cusparseHandle_t handle;
-  // cusparseMatDescr_t descr;
+  cusparseMatDescr_t descr;
   // checkCudaErrors(cudaStreamCreate(&stream));
   // checkCudaErrors(cusparseCreate(&handle)); 
   // checkCudaErrors(cusparseSetStream(handle, stream));
