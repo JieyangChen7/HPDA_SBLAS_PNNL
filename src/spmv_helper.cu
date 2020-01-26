@@ -124,7 +124,8 @@ void csr2csrNcsc(int m, int n, int nnz,
              double * csrVal, int * csrRowPtr, int * csrColIdx,
              double * cscVal, int * cscColPtr, int * cscRowIdx) {
 
-  //double * A = new double[m * n];
+  printf("converting: %d, %d\n", m, n);
+  double * A = new double[m * n];
   for (int i = 0; i < m; i++) {
     for (int j = 0; j < n; j++) {
       //A[i * m + j] = 0.0;
@@ -152,7 +153,7 @@ void csr2csrNcsc(int m, int n, int nnz,
   }
 
   printf("done converting\n");
-  //delete [] A;
+  delete [] A;
 
   // p = 0;
   // cscColPtr[0] = 0;
