@@ -142,10 +142,12 @@ void csr2csrNcsc(int m, int n, int nnz,
       if (A[i * m + j] != 0) {
         csrVal[p] = A[i * m + j];
         csrColIdx[p] = j;
+        printf("add %f, %d\n", csrVal[p], csrColIdx[p]);
         p++;
       }
     }
     csrRowPtr[i + 1] = p;
+    printf("row %d\n", p);
   }
 
   // p = 0;
