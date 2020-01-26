@@ -118,8 +118,8 @@ int main(int argc, char *argv[]) {
     }
     nnz = nnz_int;
         
-    nnz = 9;
-     m = 11;
+    nnz = 100;
+     m = 10;
      n = 10;
 
     cout << "m: " << m << " n: " << n << " nnz: " << nnz << endl;
@@ -155,11 +155,20 @@ int main(int argc, char *argv[]) {
     // }
     
     // testing data
-    for (int i = 0; i < nnz; i++) {
-      cooVal[i] = i+1;
-      cooRowIndex[i] = i+1;
-      cooColIndex[i] = i;
+    int p = 0;
+    for (int i = 0; i < m; i++) {
+      for (int j = 0; j < n; j++) {
+        cooVal[p] = 1;
+        cooRowIndex[p] = i;
+        cooColIndex[p] = j;
+        p++;
+      }
     }
+    // for (int i = 0; i < nnz; i++) {
+    //   cooVal[i] = 1;
+    //   cooRowIndex[i] = ;
+    //   cooColIndex[i] = i;
+    // }
     
     cout << "Done loading data from file" << endl;
   } else if(input_type == 'g') { // generate data
