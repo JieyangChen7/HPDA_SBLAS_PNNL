@@ -272,11 +272,11 @@ int main(int argc, char *argv[]) {
   //            csrVal, csrRowPtr, csrColIdx,
   //            cscVal, cscColPtr, cscRowIdx);
 
-  coo2csr(m, n, nzz,
+  coo2csr(m, n, nnz,
           cooVal, cooRowIdx, cooColIdx,
           csrVal, csrRowPtr, csrColIdx);
 
-  coo2csc(m, n, nzz,
+  coo2csc(m, n, nnz,
           cooVal, cooRowIdx, cooColIdx,
           cscVal, cscColPtr, cscRowIdx);
 

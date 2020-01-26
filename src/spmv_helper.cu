@@ -418,15 +418,15 @@ void sortCOORowGPU(cusparseHandle_t handle, cudaStream_t stream,
   // checkCudaErrors(cudaMalloc((void**)&buffer, bufferSize ));
   // checkCudaErrors(cudaMalloc((void**)&P, nnz * sizeof(int)));
 
-  checkCudaErrors(cusparseCreateIdentityPermutation(handle, nnz, dP));
+  checkCudaErrors(cusparseCreateIdentityPermutation(handle, nnz, P));
   
   checkCudaErrors(cusparseXcoosortByRow(handle, m, n, nnz, 
                                         cooRowIdx, cooColIdx,
                                         P, buffer));
-  checkCudaErrors(cusparseDgthr(handle, nnz, cooVal, cooValSorted, dP,
+  checkCudaErrors(cusparseDgthr(handle, nnz, cooVal, cooValSorted, P,
                                 CUSPARSE_INDEX_BASE_ZERO));
 
-  checkCudaErrors(cudaMemcpyAsync(cooVal, dcooValSorted, nnz * sizeof(double), 
+  checkCudaErrors(cudaMemcpyAsync(cooVal, cooValSorted, nnz * sizeof(double), 
                                   cudaMemcpyDeviceToDevice, stream));
 
   // checkCudaErrors(cudaFree(dcooValSorted));
