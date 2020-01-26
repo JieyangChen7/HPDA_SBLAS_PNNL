@@ -370,7 +370,8 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
     curr_time = get_time();
     err = 0;
 
-    #pragma omp critical {
+    #pragma omp critical 
+    {
     cudaDeviceSynchronize();
     print_vec_gpu(pcooGPU[dev_id].dval, pcooGPU[dev_id].nnz, "dval"+to_string(dev_id));
     print_vec_gpu(pcooGPU[dev_id].drowIdx, pcooGPU[dev_id].nnz, "drowIdx"+to_string(dev_id));
@@ -390,7 +391,8 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
                 pcooGPU[dev_id].val, pcooGPU[dev_id].rowIdx, pcooGPU[dev_id].colIdx,
                 dev_csrVal, dev_csrRowPtr, dev_csrColIdx);
 
-    #pragma omp critical{
+    #pragma omp critical 
+    {
     checkCudaErrors(cudaDeviceSynchronize());
     print_vec_gpu(dev_csrVal, pcooGPU[dev_id].nnz, "dev_csrVal"+to_string(dev_id));
     print_vec_gpu(dev_csrRowPtr, pcooGPU[dev_id].m+1, "dev_csrRowPtr"+to_string(dev_id));
