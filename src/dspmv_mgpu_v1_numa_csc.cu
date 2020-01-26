@@ -152,12 +152,12 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
 
       numa_part_time += get_time() - tmp_time;
 
-      print_vec(pcscNuma[numa_id].val, pcscNuma[numa_id].nnz, "cscVal"+to_string(dev_id));
-      print_vec(pcscNuma[numa_id].colPtr, pcscNuma[numa_id].n + 1, "colPtr"+to_string(dev_id));
-      print_vec(pcscNuma[numa_id].rowIdx, pcscNuma[numa_id].nnz, "rowIdx"+to_string(dev_id));
-      print_vec(pcscNuma[numa_id].x, pcscNuma[numa_id].n, "x"+to_string(dev_id));
-      print_vec(pcscNuma[numa_id].y, pcscNuma[numa_id].m, "y_before"+to_string(dev_id));
-      printf("dev_id %d, alpha %f, beta %f\n", dev_id, *alpha, *beta);
+      // print_vec(pcscNuma[numa_id].val, pcscNuma[numa_id].nnz, "cscVal"+to_string(dev_id));
+      // print_vec(pcscNuma[numa_id].colPtr, pcscNuma[numa_id].n + 1, "colPtr"+to_string(dev_id));
+      // print_vec(pcscNuma[numa_id].rowIdx, pcscNuma[numa_id].nnz, "rowIdx"+to_string(dev_id));
+      // print_vec(pcscNuma[numa_id].x, pcscNuma[numa_id].n, "x"+to_string(dev_id));
+      // print_vec(pcscNuma[numa_id].y, pcscNuma[numa_id].m, "y_before"+to_string(dev_id));
+      // printf("dev_id %d, alpha %f, beta %f\n", dev_id, *alpha, *beta);
 
     }
   }
@@ -273,6 +273,14 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
     pcscGPU[dev_id].rowIdx = &(pcscNuma[numa_id].rowIdx[pcscGPU[dev_id].startIdx]);
     pcscGPU[dev_id].x = &(pcscNuma[numa_id].x[pcscGPU[dev_id].startCol]);
     pcscGPU[dev_id].y = pcscNuma[numa_id].y;
+
+
+    print_vec(pcscGPU[dev_id].val, pcscGPU[dev_id].nnz, "cscVal"+to_string(dev_id));
+    print_vec(pcscGPU[dev_id].colPtr, pcscGPU[dev_id].n + 1, "colPtr"+to_string(dev_id));
+    print_vec(pcscGPU[dev_id].rowIdx, pcscGPU[dev_id].nnz, "rowIdx"+to_string(dev_id));
+    print_vec(pcscGPU[dev_id].x, pcscGPU[dev_id].n, "x"+to_string(dev_id));
+    print_vec(pcscGPU[dev_id].y, pcscGPU[dev_id].m, "y_before"+to_string(dev_id));
+    printf("dev_id %d, alpha %f, beta %f\n", dev_id, *alpha, *beta);
     // host_cscColPtr[0] = 0;
     // host_cscColPtr[dev_n] = dev_nnz;
     // for (int j = 1; j < dev_m; j++) {
