@@ -403,10 +403,10 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
     if (dev_id == 0) {
       for (int d = 0; d < ngpu; d++) {
         for (int i = 0; i < m; i++) {
-          y[i] += pcscGPU[dev_id].py[i];
+          y[i] += pcscGPU[d].py[i];
         }
-        print_vec(pcscGPU[d].py, m, "py-after"+to_string(d));
-        print_vec(y, m, "y"+to_string(d));
+        // print_vec(pcscGPU[d].py, m, "py-after"+to_string(d));
+        // print_vec(y, m, "y"+to_string(d));
       }
     }
     merg_time = get_time() - tmp_time;
