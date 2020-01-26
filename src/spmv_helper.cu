@@ -141,7 +141,7 @@ void csr2csrNcsc(int m, int n, int nnz,
   for (int i = 0; i < m; i++) {
     for (int j = 0; j < n; j++) {
       if (A[i * n + j] != 0) {
-        csrVal[p] = A[i * m + j];
+        csrVal[p] = A[i * n + j];
         csrColIdx[p] = j;
         //printf("add %f, %d\n", csrVal[p], csrColIdx[p]);
         p++;
@@ -152,23 +152,23 @@ void csr2csrNcsc(int m, int n, int nnz,
     //printf("row %d\n", p);
   }
 
+  
+
+  p = 0;
+  cscColPtr[0] = 0;
+  for (int j = 0; j < n; j++) {
+    for (int i = 0; i < m; i++) {
+      if (A[i * n + j] != 0) {
+        cscVal[p] = A[i * n + j];
+        cscRowIdx[p] = i;
+        p++;
+      }
+    }
+    cscColPtr[j + 1] = p;
+  }
+
   printf("done converting\n");
   delete [] A;
-
-  // p = 0;
-  // cscColPtr[0] = 0;
-  // for (int j = 0; j < n; j++) {
-  //   for (int i = 0; i < m; i++) {
-  //     if (A[i * m + j] != 0) {
-  //       cscVal[p] = A[i * m + j];
-  //       cscRowIdx[p] = i;
-  //       p++;
-  //     }
-  //   }
-  //   cscColPtr[j + 1] = p;
-  // }
-
-
 
   // double * dcsrVal;
   // int * dcsrRowPtr;
