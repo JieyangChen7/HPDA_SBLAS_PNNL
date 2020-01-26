@@ -181,8 +181,8 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
 
     pcooGPU[dev_id].startIdx = floor((double)tmp1 / numaContext.numGPUs[numa_id]);
     pcooGPU[dev_id].endIdx   = floor((double)tmp2 / numaContext.numGPUs[numa_id]) - 1;
-    pcooGPU[dev_id].startRow = cooNuma[numa_id].rowIdx[pcooGPU[dev_id].startIdx];
-    pcooGPU[dev_id].endRow = cooNuma[numa_id].rowIdx[pcooGPU[dev_id].endIdx];
+    pcooGPU[dev_id].startRow = pcooNuma[numa_id].rowIdx[pcooGPU[dev_id].startIdx];
+    pcooGPU[dev_id].endRow = pcooNuma[numa_id].rowIdx[pcooGPU[dev_id].endIdx];
 
     pcooGPU[dev_id].m = pcooGPU[dev_id].endRow - pcooGPU[dev_id].startRow + 1;
     pcooGPU[dev_id].n = n;
@@ -333,7 +333,7 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
     checkCudaErrors(cusparseSetMatIndexBase(descr,CUSPARSE_INDEX_BASE_ZERO));
 
     checkCudaErrors(cudaMalloc((void**)&(pcooGPU[dev_id].dval),    pcooGPU[dev_id].nnz * sizeof(double)));
-    checkCudaErrors(cudaMalloc((void**)&(pcooGPU[dev_id].drowidx), pcooGPU[dev_id].nnz * sizeof(int)   ));
+    checkCudaErrors(cudaMalloc((void**)&(pcooGPU[dev_id].drowIdx), pcooGPU[dev_id].nnz * sizeof(int)   ));
     checkCudaErrors(cudaMalloc((void**)&(pcooGPU[dev_id].dcolIdx), pcooGPU[dev_id].nnz * sizeof(int)   ));
     checkCudaErrors(cudaMalloc((void**)&(pcooGPU[dev_id].dx),      pcooGPU[dev_id].n   * sizeof(double))); 
     checkCudaErrors(cudaMalloc((void**)&(pcooGPU[dev_id].dy),      pcooGPU[dev_id].m   * sizeof(double))); 
