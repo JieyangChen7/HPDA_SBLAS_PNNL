@@ -270,8 +270,8 @@ int main(int argc, char *argv[]) {
   printf("out of conversion function\n");
 
   print_vec(csrVal, nnz, "csrVal:");
-  print_vec(csrRowPtr, m+1, "csrRowPtr:");
-  print_vec(csrColIdx, nnz, "csrColIdx:");
+  // print_vec(csrRowPtr, m+1, "csrRowPtr:");
+  // print_vec(csrColIdx, nnz, "csrColIdx:");
 
   // print_vec(cscVal, nnz, "cscVal:");
   // print_vec(cscColPtr, n+1, "cscColPtr:");
