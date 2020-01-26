@@ -232,6 +232,11 @@ double get_time();
 
 double get_gpu_availble_mem(int ngpu);
 
+void csr2csrNcsc(int m, int n, int nnz,
+             double * cooVal, int * cooRowIdx, int * cooColIdx,
+             double * csrVal, int * csrRowPtr, int * csrColIdx,
+             double * cscVal, int * cscColPtr, int * cscRowIdx);
+
 void csr2csc_gpu(int m, int n, int nnz,
                  double * csrVal, int * csrRowPtr, int * csrColIdx,
                  double * cscVal, int * cscColPtr, int * cscRowIdx);
