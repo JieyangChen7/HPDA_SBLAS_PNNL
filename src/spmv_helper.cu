@@ -126,53 +126,56 @@ void csr2csrNcsc(int m, int n, int nnz,
 
   printf("converting: %d, %d\n", m, n);
 
-  double * A = new double[m * n];
-  for (int i = 0; i < m; i++) {
-    for (int j = 0; j < n; j++) {
-      A[i * n + j] = 0.0;
-    }
-  }
+  sortCOORow(m, n, nnz, cooVal, cooRowIdx, cooColIdx);
 
-  for (int i = 0; i < nnz; i++) {
-    A[cooRowIdx[i] * n + cooColIdx[i]] = cooVal[i];
-  }
 
-  for (int i = 0; i < m; i++) {
-    print_vec(&(A[i * n]), n, "A");
-  }
+  // double * A = new double[m * n];
+  // for (int i = 0; i < m; i++) {
+  //   for (int j = 0; j < n; j++) {
+  //     A[i * n + j] = 0.0;
+  //   }
+  // }
 
-  int p = 0;
-  csrRowPtr[0] = 0;
-  for (int i = 0; i < m; i++) {
-    for (int j = 0; j < n; j++) {
-      if (A[i * n + j] != 0) {
-        csrVal[p] = A[i * n + j];
-        csrColIdx[p] = j;
-        //printf("add %f, %d\n", csrVal[p], csrColIdx[p]);
-        p++;
-      }
-    }
-    //printf("add to row %d\n", i+1);
-    csrRowPtr[i + 1] = p;
-    //printf("row %d\n", p);
-  }
+  // for (int i = 0; i < nnz; i++) {
+  //   A[cooRowIdx[i] * n + cooColIdx[i]] = cooVal[i];
+  // }
+
+  // for (int i = 0; i < m; i++) {
+  //   print_vec(&(A[i * n]), n, "A");
+  // }
+
+  // int p = 0;
+  // csrRowPtr[0] = 0;
+  // for (int i = 0; i < m; i++) {
+  //   for (int j = 0; j < n; j++) {
+  //     if (A[i * n + j] != 0) {
+  //       csrVal[p] = A[i * n + j];
+  //       csrColIdx[p] = j;
+  //       //printf("add %f, %d\n", csrVal[p], csrColIdx[p]);
+  //       p++;
+  //     }
+  //   }
+  //   //printf("add to row %d\n", i+1);
+  //   csrRowPtr[i + 1] = p;
+  //   //printf("row %d\n", p);
+  // }
 
   
 
-  p = 0;
-  cscColPtr[0] = 0;
-  for (int j = 0; j < n; j++) {
-    for (int i = 0; i < m; i++) {
-      if (A[i * n + j] != 0) {
-        cscVal[p] = A[i * n + j];
-        cscRowIdx[p] = i;
-        p++;
-      }
-    }
-    cscColPtr[j + 1] = p;
-  }
+  // p = 0;
+  // cscColPtr[0] = 0;
+  // for (int j = 0; j < n; j++) {
+  //   for (int i = 0; i < m; i++) {
+  //     if (A[i * n + j] != 0) {
+  //       cscVal[p] = A[i * n + j];
+  //       cscRowIdx[p] = i;
+  //       p++;
+  //     }
+  //   }
+  //   cscColPtr[j + 1] = p;
+  // }
 
-  printf("done converting\n");
+  // printf("done converting\n");
   delete [] A;
 
   // double * dcsrVal;
@@ -232,138 +235,14 @@ void csr2csrNcsc(int m, int n, int nnz,
 }
 
 
-// void csr2csc(int m, int n, int nnz,
-//              double * csrVal, int * csrRowPtr, int * csrColIdx,
-//              double * cscVal, int * cscColPtr, int * cscRowIdx) {
-
-  
-
-
-
-//   double * dcsrVal;
-//   int * dcsrRowPtr;
-//   int * dcsrColIdx;
-//   double * dcscVal;
-//   int * dcscColPtr;
-//   int * dcscRowIdx;
-
-
-//   checkCudaErrors(cudaMalloc((void**)&dcsrVal, nnz * sizeof(double)));
-//   checkCudaErrors(cudaMalloc((void**)&dcsrRowPtr, (m+1) * sizeof(int)));
-//   checkCudaErrors(cudaMalloc((void**)&dcsrColIdx, nnz * sizeof(int)));
-
-//   checkCudaErrors(cudaMalloc((void**)&dcscVal, nnz * sizeof(double)));
-//   checkCudaErrors(cudaMalloc((void**)&dcscColPtr, (n+1) * sizeof(int)));
-//   checkCudaErrors(cudaMalloc((void**)&dcscRowIdx, nnz * sizeof(int)));
-
-//   checkCudaErrors(cudaMemcpy(dcsrVal, csrVal, nnz * sizeof(double),
-//                               cudaMemcpyHostToDevice));
-//   checkCudaErrors(cudaMemcpy(dcsrRowPtr, csrRowPtr, (m+1) * sizeof(int),
-//                               cudaMemcpyHostToDevice));
-//   checkCudaErrors(cudaMemcpy(dcsrColIdx, csrColIdx, nnz * sizeof(int),
-//                               cudaMemcpyHostToDevice));
-//   checkCudaErrors(cudaMemcpy(dcscVal, cscVal, nnz * sizeof(double),
-//                               cudaMemcpyHostToDevice));
-//   checkCudaErrors(cudaMemcpy(dcscColPtr, cscColPtr, (n+1) * sizeof(int),
-//                               cudaMemcpyHostToDevice));
-//   checkCudaErrors(cudaMemcpy(dcscRowIdx, cscRowIdx, nnz * sizeof(int),
-//                               cudaMemcpyHostToDevice));
-
-//   csr2csc_gpu(m, n, nnz,
-//               dcsrVal, dcsrRowPtr, dcsrColIdx,
-//               dcscVal, dcscColPtr, dcscRowIdx);
-
-  
-//   checkCudaErrors(cudaMemcpy(csrVal, dcsrVal, nnz * sizeof(double),
-//                               cudaMemcpyDeviceToHost));
-//   checkCudaErrors(cudaMemcpy(csrRowPtr, dcsrRowPtr, (m+1) * sizeof(int),
-//                               cudaMemcpyDeviceToHost));
-//   checkCudaErrors(cudaMemcpy(csrColIdx, dcsrColIdx, nnz * sizeof(int),
-//                               cudaMemcpyDeviceToHost));
-//   checkCudaErrors(cudaMemcpy(dcscVal, cscVal, nnz * sizeof(double),
-//                               cudaMemcpyDeviceToHost));
-//   checkCudaErrors(cudaMemcpy(dcscColPtr, cscColPtr, (n+1) * sizeof(int),
-//                               cudaMemcpyDeviceToHost));
-//   checkCudaErrors(cudaMemcpy(dcscRowIdx, cscRowIdx, nnz * sizeof(int),
-//                               cudaMemcpyDeviceToHost));
-
-//   checkCudaErrors(cudaFree(dcsrVal));
-//   checkCudaErrors(cudaFree(dcsrRowPtr));
-//   checkCudaErrors(cudaFree(dcsrColIdx));
-//   checkCudaErrors(cudaFree(dcscVal));
-//   checkCudaErrors(cudaFree(dcscColPtr));
-//   checkCudaErrors(cudaFree(dcscRowIdx));
-
-// }
-
-
-
-void csr2csc_gpu(int m, int n, int nnz,
-                 double * csrVal, int * csrRowPtr, int * csrColIdx,
-                 double * cscVal, int * cscColPtr, int * cscRowIdx) {
-  cudaStream_t stream;
-  cusparseStatus_t status;
-  cusparseHandle_t handle;
-  cusparseMatDescr_t descr;
-  checkCudaErrors(cudaStreamCreate(&stream));
-  checkCudaErrors(cusparseCreate(&handle)); 
-  checkCudaErrors(cusparseSetStream(handle, stream));
-  checkCudaErrors(cusparseCreateMatDescr(&descr));
-  checkCudaErrors(cusparseSetMatType(descr,CUSPARSE_MATRIX_TYPE_GENERAL)); 
-  checkCudaErrors(cusparseSetMatIndexBase(descr,CUSPARSE_INDEX_BASE_ZERO));
-
-  double * A;
-  int lda = m;
-  checkCudaErrors(cudaMalloc((void**)&A, lda * n * sizeof(double)));
-
-  int * nnzPerCol = new int[n];
-  int * nnzTotalDevHostPtr = new int[1];
-  checkCudaErrors(cusparseDcsr2dense(handle, m, n, descr,
-                                     csrVal, csrRowPtr, csrColIdx,
-                                     A, lda));
-
-  checkCudaErrors(cusparseDnnz(handle, CUSPARSE_DIRECTION_COLUMN,
-                               m, n, descr, A, lda, nnzPerCol, nnzTotalDevHostPtr));
-
-  checkCudaErrors(cusparseDdense2csc(handle, m, n, descr, 
-                                     A, lda, nnzPerCol,
-                                     cscVal, cscColPtr, cscRowIdx));
-
-  // checkCudaErrors(cusparseDcsr2csc(handle, m, n, nnz,
-  //                                   csrVal, csrRowPtr, csrColIdx,
-  //                                   cscVal, cscColPtr, cscRowIdx,
-  //                                   CUSPARSE_ACTION_NUMERIC,
-  //                                   CUSPARSE_INDEX_BASE_ZERO));
-
-  checkCudaErrors(cudaDeviceSynchronize());
-  // checkCudaErrors(cudaFree(buffer));
-  // delete [] P;
-
-  checkCudaErrors(cusparseDestroyMatDescr(descr));
-  checkCudaErrors(cusparseDestroy(handle));
-  checkCudaErrors(cudaStreamDestroy(stream));
-
-  
-}
-
-
 void csc2csr_gpu(cusparseHandle_t handle, int m, int n, int nnz, double * A, int lda, 
                  double * cscVal, int * cscColPtr, int * cscRowIdx,
                  double * csrVal, int * csrRowPtr, int * csrColIdx) {
-  // cudaStream_t stream;
-  // cusparseStatus_t status;
-  // cusparseHandle_t handle;
+  
   cusparseMatDescr_t descr;
-  // checkCudaErrors(cudaStreamCreate(&stream));
-  // checkCudaErrors(cusparseCreate(&handle)); 
-  // checkCudaErrors(cusparseSetStream(handle, stream));
   checkCudaErrors(cusparseCreateMatDescr(&descr));
   checkCudaErrors(cusparseSetMatType(descr,CUSPARSE_MATRIX_TYPE_GENERAL)); 
   checkCudaErrors(cusparseSetMatIndexBase(descr,CUSPARSE_INDEX_BASE_ZERO));
-
-  // double * A;
-  // int lda = m;
-  // checkCudaErrors(cudaMalloc((void**)&A, lda * n * sizeof(double)));
 
   int * nnzPerRow = new int[m];
   int * nnzTotalDevHostPtr = new int[1];
@@ -503,8 +382,96 @@ void sortCOOCol(int m, int n, int nnz,
 
 }
 
+void sortCOOGPUEx (cusparseHandle_t handle, int m, int n, int nnz,
+                      int * cooRowIdx, int * cooColIdx,
+                      double ** cooValSorted,  void ** buffer, int ** P) {
+  size_t bufferSize = 0;
+  checkCudaErrors(cusparseXcoosort_bufferSizeExt(handle, m, n, nnz, 
+                                                 cooRowIdx, cooColIdx,
+                                                 &bufferSize));
+
+
+  checkCudaErrors(cudaMalloc((void**)cooValSorted, nnz * sizeof(double)));
+  checkCudaErrors(cudaMalloc((void**)buffer, bufferSize ));
+  checkCudaErrors(cudaMalloc((void**)P, nnz * sizeof(int)));
+}
+
+
+
+
+void sortCOORowGPU(cusparseHandle_t handle, cudaStream_t stream,
+                    int m, int n, int nnz,
+                    double * cooVal, int * cooRowIdx, int * cooColIdx,
+                    double * cooValSorted,  void * buffer, int * P) {
+  
+
+  // double * cooValSorted;
+  // void * buffer;
+  // size_t bufferSize = 0;
+  // int * P;
+
+  // checkCudaErrors(cusparseXcoosort_bufferSizeExt(handle, m, n, nnz, 
+  //                                                 dcooRowIdx, dcooColIdx,
+  //                                                 &bufferSize));
+
+  // checkCudaErrors(cudaMalloc((void**)&cooValSorted, nnz * sizeof(double)));
+  // checkCudaErrors(cudaMalloc((void**)&buffer, bufferSize ));
+  // checkCudaErrors(cudaMalloc((void**)&P, nnz * sizeof(int)));
+
+  checkCudaErrors(cusparseCreateIdentityPermutation(handle, nnz, dP));
+  
+  checkCudaErrors(cusparseXcoosortByRow(handle, m, n, nnz, 
+                                        cooRowIdx, cooColIdx,
+                                        P, buffer));
+  checkCudaErrors(cusparseDgthr(handle, nnz, cooVal, cooValSorted, dP,
+                                CUSPARSE_INDEX_BASE_ZERO));
+
+  checkCudaErrors(cudaMemcpyAsync(cooVal, dcooValSorted, nnz * sizeof(double), 
+                                  cudaMemcpyDeviceToDevice, stream));
+
+  // checkCudaErrors(cudaFree(dcooValSorted));
+  // checkCudaErrors(cudaFree(buffer));
+  // checkCudaErrors(cudaFree(dP));
+
+}
+
+void sortCOOColGPU(cusparseHandle_t handle, cudaStream_t stream,
+                int m, int n, int nnz,
+                double * cooVal, int * cooRowIdx, int * cooColIdx,
+                double * cooValSorted, void * buffer, int * P) {
+ 
+  // double * cooValSorted;
+  // void * buffer;
+  // size_t bufferSize = 0;
+  // int * P;
+
+  // checkCudaErrors(cusparseXcoosort_bufferSizeExt(handle, m, n, nnz, 
+  //                                                 cooRowIdx, cooColIdx,
+  //                                                 &bufferSize));
+
+  // checkCudaErrors(cudaMalloc((void**)&dcooValSorted, nnz * sizeof(double)));
+  // checkCudaErrors(cudaMalloc((void**)&buffer, bufferSize ));
+  // checkCudaErrors(cudaMalloc((void**)&P, nnz * sizeof(int)));
+
+  checkCudaErrors(cusparseCreateIdentityPermutation(handle, nnz, P));
+  
+  checkCudaErrors(cusparseXcoosortByColumn(handle, m, n, nnz, 
+                                        cooRowIdx, cooColIdx,
+                                        P, buffer));
+  checkCudaErrors(cusparseDgthr(handle, nnz, cooVal, cooValSorted, P,
+                                CUSPARSE_INDEX_BASE_ZERO));
+
+  checkCudaErrors(cudaMemcpyAsync(cooVal, cooValSorted, nnz * sizeof(double), 
+                                  cudaMemcpyDeviceToDevice, stream));
+
+  // checkCudaErrors(cudaFree(dcooValSorted));
+  // checkCudaErrors(cudaFree(buffer));
+  // checkCudaErrors(cudaFree(dP));
+
+}
+
 //coo sorted by row
-void coo2csr_gpu(cusparseHandle_t handle, cudaStream_t stream, int m, int n, int nnz,
+void coo2csrGPU(cusparseHandle_t handle, cudaStream_t stream, int m, int n, int nnz,
                 double * cooVal, int * cooRowIdx, int * cooColIdx,
                 double * csrVal, int * csrRowPtr, int * csrColIdx) {
 
@@ -517,6 +484,143 @@ void coo2csr_gpu(cusparseHandle_t handle, cudaStream_t stream, int m, int n, int
   checkCudaErrors(cudaMemcpyAsync(csrVal, cooVal, nnz * sizeof(double), cudaMemcpyDeviceToDevice, stream));
   checkCudaErrors(cudaMemcpyAsync(csrColIdx, cooColIdx, nnz * sizeof(int), cudaMemcpyDeviceToDevice, stream));
 }
+
+
+void coo2csr(int m, int n, int nnz,
+             double * cooVal, int * cooRowIdx, int * cooColIdx,
+             double * csrVal, int * csrRowPtr, int * csrColIdx) {
+  cudaStream_t stream;
+  cusparseStatus_t status;
+  cusparseHandle_t handle;
+
+  checkCudaErrors(cudaStreamCreate(&stream));
+  checkCudaErrors(cusparseCreate(&handle)); 
+  checkCudaErrors(cusparseSetStream(handle, stream));
+
+  double * dcooVal;
+  int * dcooRowIdx;
+  int * dcooColIdx;
+  checkCudaErrors(cudaMalloc((void**)&dcooVal, nnz * sizeof(double)));
+  checkCudaErrors(cudaMalloc((void**)&dcooRowIdx, nnz * sizeof(int)));
+  checkCudaErrors(cudaMalloc((void**)&dcooColIdx, nnz * sizeof(int)));
+
+  double * dcsrVal;
+  int * dcsrRowPtr;
+  int * dcsrColIdx;
+  checkCudaErrors(cudaMalloc((void**)&dcsrVal, nnz * sizeof(double)));
+  checkCudaErrors(cudaMalloc((void**)&dcsrRowPtr, (m+1) * sizeof(int)));
+  checkCudaErrors(cudaMalloc((void**)&dcsrColIdx, nnz * sizeof(int)));
+
+
+  checkCudaErrors(cudaMemcpy(dcooVal, cooVal, nnz * sizeof(double), cudaMemcpyHostToDevice));
+  checkCudaErrors(cudaMemcpy(dcooRowIdx, cooRowIdx, nnz * sizeof(int), cudaMemcpyHostToDevice));
+  checkCudaErrors(cudaMemcpy(dcooColIdx, cooColIdx, nnz * sizeof(int), cudaMemcpyHostToDevice));
+
+  double * cooValSorted;
+  void * buffer;
+  int * P;
+
+  sortCOOGPUEx(handle, m, n, nnz,
+               dcooRowIdx, dcooColIdx,
+               &cooValSorted, &buffer, &P);
+
+  sortCOORowGPU(handle, stream,
+                 m, n, nnz,
+                 dcooVal, dcooRowIdx, dcooColIdx,
+                 cooValSorted, buffer, P);
+
+  coo2csrGPU(handle, stream, m, n, nnz,
+             dcooVal, dcooRowIdx, dcooColIdx,
+             dcsrVal, dcsrRowPtr, dcsrColIdx);
+
+  checkCudaErrors(cudaMemcpyAsync(csrVal, dcsrVal,       nnz * sizeof(double), cudaMemcpyDeviceToHost));
+  checkCudaErrors(cudaMemcpyAsync(csrRowPtr, dcsrRowPtr, (m+1) * sizeof(int), cudaMemcpyDeviceToHost));
+  checkCudaErrors(cudaMemcpyAsync(csrColIdx, dcsrColIdx, nnz * sizeof(int), cudaMemcpyDeviceToHost));
+
+  checkCudaErrors(cudaDeviceSynchronize());
+
+  checkCudaErrors(cudaFree(dcooVal));
+  checkCudaErrors(cudaFree(dcooRowIdx));
+  checkCudaErrors(cudaFree(dcooColIdx));
+
+  checkCudaErrors(cudaFree(dcsrVal));
+  checkCudaErrors(cudaFree(dcsrRowPtr));
+  checkCudaErrors(cudaFree(dcsrColIdx));
+
+  checkCudaErrors(cudaFree(cooValSorted));
+  checkCudaErrors(cudaFree(buffer));
+  checkCudaErrors(cudaFree(P));
+
+}
+
+
+void coo2csc(int m, int n, int nnz,
+             double * cooVal, int * cooRowIdx, int * cooColIdx,
+             double * cscVal, int * cscColPtr, int * cscRowIdx) {
+  cudaStream_t stream;
+  cusparseStatus_t status;
+  cusparseHandle_t handle;
+
+  checkCudaErrors(cudaStreamCreate(&stream));
+  checkCudaErrors(cusparseCreate(&handle)); 
+  checkCudaErrors(cusparseSetStream(handle, stream));
+
+  double * dcooVal;
+  int * dcooRowIdx;
+  int * dcooColIdx;
+  checkCudaErrors(cudaMalloc((void**)&dcooVal, nnz * sizeof(double)));
+  checkCudaErrors(cudaMalloc((void**)&dcooRowIdx, nnz * sizeof(int)));
+  checkCudaErrors(cudaMalloc((void**)&dcooColIdx, nnz * sizeof(int)));
+
+  double * dcscVal;
+  int * dcscColPtr;
+  int * dcscRowIdx;
+  checkCudaErrors(cudaMalloc((void**)&dcscVal, nnz * sizeof(double)));
+  checkCudaErrors(cudaMalloc((void**)&dcscColPtr, (n+1) * sizeof(int)));
+  checkCudaErrors(cudaMalloc((void**)&dcscRowIdx, nnz * sizeof(int)));
+
+  checkCudaErrors(cudaMemcpy(dcooVal, cooVal, nnz * sizeof(double), cudaMemcpyHostToDevice));
+  checkCudaErrors(cudaMemcpy(dcooRowIdx, cooRowIdx, nnz * sizeof(int), cudaMemcpyHostToDevice));
+  checkCudaErrors(cudaMemcpy(dcooColIdx, cooColIdx, nnz * sizeof(int), cudaMemcpyHostToDevice));
+
+  double * cooValSorted;
+  void * buffer;
+  int * P;
+
+  sortCOOGPUEx(handle, m, n, nnz,
+               dcooRowIdx, dcooColIdx,
+               &cooValSorted, &buffer, &P);
+
+  sortCOOColGPU(handle, stream,
+                 m, n, nnz,
+                 dcooVal, dcooRowIdx, dcooColIdx,
+                 cooValSorted, buffer, P);
+
+  coo2csrGPU(handle, stream, n, m, nnz,
+             dcooVal, dcooColIdx, dcooRowIdx,
+             dcscVal, dcscColPtr, dcscRowIdx);
+
+  checkCudaErrors(cudaMemcpyAsync(cscVal, dcscVal,       nnz * sizeof(double), cudaMemcpyDeviceToHost));
+  checkCudaErrors(cudaMemcpyAsync(cscColPtr, dcscColPtr, (n+1) * sizeof(int), cudaMemcpyDeviceToHost));
+  checkCudaErrors(cudaMemcpyAsync(cscRowIdx, dcscRowIdx, nnz * sizeof(int), cudaMemcpyDeviceToHost));
+
+  checkCudaErrors(cudaDeviceSynchronize());
+
+  checkCudaErrors(cudaFree(dcooVal));
+  checkCudaErrors(cudaFree(dcooRowIdx));
+  checkCudaErrors(cudaFree(dcooColIdx));
+
+  checkCudaErrors(cudaFree(dcscVal));
+  checkCudaErrors(cudaFree(dcscColPtr));
+  checkCudaErrors(cudaFree(dcscRowIdx));
+
+  checkCudaErrors(cudaFree(cooValSorted));
+  checkCudaErrors(cudaFree(buffer));
+  checkCudaErrors(cudaFree(P));
+
+}
+
+
 
 int findFirstInSorted(int * a, int n, int key) {
   int l = 0;

@@ -267,11 +267,21 @@ int main(int argc, char *argv[]) {
   cudaMallocHost((void **)&cscColPtr, (n+1) * sizeof(int));
   cudaMallocHost((void **)&cscRowIdx, nnz * sizeof(int));
 
-//   csr2csrNcsc(m, n, nnz,
-//              cooVal, cooRowIdx, cooColIdx,
-//              csrVal, csrRowPtr, csrColIdx,
-//              cscVal, cscColPtr, cscRowIdx);
-//   printf("out of conversion function\n");
+  // csr2csrNcsc(m, n, nnz,
+  //            cooVal, cooRowIdx, cooColIdx,
+  //            csrVal, csrRowPtr, csrColIdx,
+  //            cscVal, cscColPtr, cscRowIdx);
+
+  coo2csr(m, n, nzz,
+          cooVal, cooRowIdx, cooColIdx,
+          csrVal, csrRowPtr, csrColIdx);
+
+  coo2csc(m, n, nzz,
+          cooVal, cooRowIdx, cooColIdx,
+          cscVal, cscColPtr, cscRowIdx);
+
+
+  printf("out of conversion function\n");
 
 //   print_vec(csrVal, nnz, "csrVal:");
 //   print_vec(csrRowPtr, m+1, "csrRowPtr:");

@@ -286,17 +286,13 @@ void csr2csrNcsc(int m, int n, int nnz,
              double * csrVal, int * csrRowPtr, int * csrColIdx,
              double * cscVal, int * cscColPtr, int * cscRowIdx);
 
-void csc2csr_gpu(cusparseHandle_t handle, int m, int n, int nnz, double * A, int lda, 
+void csc2csrGPU(cusparseHandle_t handle, int m, int n, int nnz, double * A, int lda, 
                  double * cscVal, int * cscColPtr, int * cscRowIdx,
                  double * csrVal, int * csrRowPtr, int * csrColIdx);
 
-void csr2csc(int m, int n, int nnz,
-             double * csrVal, int * csrRowPtr, int * csrColIdx,
-             double * cscVal, int * cscColPtr, int * cscRowIdx);
-
-void csc2csr_gpu(int m, int n, int nnz,
-                 double * cscVal, int * cscColPtr, int * cscRowIdx,
-                 double * csrVal, int * csrRowPtr, int * csrColIdx);
+void coo2csrGPU(cusparseHandle_t handle, cudaStream_t stream, int m, int n, int nnz,
+                double * cooVal, int * cooRowIdx, int * cooColIdx,
+                double * csrVal, int * csrRowPtr, int * csrColIdx);
 
 void sortCOORow(int m, int n, int nnz,
                 double * cooVal, int * cooRowIdx, int * cooColIdx);
@@ -304,9 +300,29 @@ void sortCOORow(int m, int n, int nnz,
 void sortCOOCol(int m, int n, int nnz,
                 double * cooVal, int * cooRowIdx, int * cooColIdx);
 
-void coo2csr_gpu(cusparseHandle_t handle, cudaStream_t stream, int m, int n, int nnz,
+void sortCOOGPUEx (cusparseHandle_t handle, int m, int n, int nnz,
+                      int * cooRowIdx, int * cooColIdx,
+                      double ** cooValSorted,  void ** buffer, int ** P);
+
+void sortCOORowGPU(cusparseHandle_t handle, cudaStream_t stream,
+                    int m, int n, int nnz,
+                    double * cooVal, int * cooRowIdx, int * cooColIdx,
+                    double * cooValSorted,  void * buffer, int * P);
+
+void sortCOOColGPU(cusparseHandle_t handle, cudaStream_t stream,
+                int m, int n, int nnz,
                 double * cooVal, int * cooRowIdx, int * cooColIdx,
-                double * csrVal, int * csrRowPtr, int * csrColIdx);
+                double * cooValSorted, void * buffer, int * P);
+
+void coo2csr(int m, int n, int nnz,
+             double * cooVal, int * cooRowIdx, int * cooColIdx,
+             double * csrVal, int * csrRowPtr, int * csrColIdx);
+
+void coo2csc(int m, int n, int nnz,
+             double * cooVal, int * cooRowIdx, int * cooColIdx,
+             double * cscVal, int * cscColPtr, int * cscRowIdx);
+
+
 int findFirstInSorted(int * a, int n, int key);
 int findLastInSorted(int * a, int n, int key);
 

@@ -387,7 +387,7 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
   
     //print_vec_gpu(dev_x, dev_n, "x"+to_string(dev_id));
    
-    coo2csr_gpu(handle, stream, pcooGPU[dev_id].m, pcooGPU[dev_id].n, pcooGPU[dev_id].nnz,
+    coo2csrGPU(handle, stream, pcooGPU[dev_id].m, pcooGPU[dev_id].n, pcooGPU[dev_id].nnz,
                 pcooGPU[dev_id].dval, pcooGPU[dev_id].drowIdx, pcooGPU[dev_id].dcolIdx,
                 dev_csrVal, dev_csrRowPtr, dev_csrColIdx);
     // #pragma omp barrier

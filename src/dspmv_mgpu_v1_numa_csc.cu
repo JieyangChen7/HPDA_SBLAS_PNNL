@@ -358,7 +358,7 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
 
     
 
-    csc2csr_gpu(handle, m, n, nnz, A, lda,
+    csc2csrGPU(handle, m, n, nnz, A, lda,
                  pcscGPU[dev_id].dval, pcscGPU[dev_id].dcolPtr, pcscGPU[dev_id].drowIdx,
                  dev_csrVal, dev_csrRowPtr, dev_csrColIndex); 
 
