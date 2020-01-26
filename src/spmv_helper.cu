@@ -151,7 +151,7 @@ void csr2csrNcsc(int m, int n, int nnz,
     printf("row %d\n", p);
   }
 
-  printf("")
+  printf("done converting\n");
 
   // p = 0;
   // cscColPtr[0] = 0;
