@@ -20,6 +20,7 @@ spmv_ret spMV_mgpu_baseline_csc(int m, int n, int nnz, double * alpha,
   double curr_time = 0.0;
   double numa_part_time = 0.0;
   double part_time = 0.0;
+  double comp_time = 0.0;
   double comm_time = 0.0;
   double merg_time = 0.0;
 
@@ -115,7 +116,7 @@ spmv_ret spMV_mgpu_baseline_csc(int m, int n, int nnz, double * alpha,
     cudaSetDevice(d);
     csc2csr_gpu(handle[d], m, n, nnz, A[d], lda[d],
                 dev_cscVal[d], dev_cscColPtr[d], dev_cscRowIdx[d],
-                dev_csrVal[d], dev_csrRowPtr[d], dev_csrColIdxp[d]);
+                dev_csrVal[d], dev_csrRowPtr[d], dev_csrColIdx[d]);
     checkCudaErrors(cusparseDcsrmv(handle[d],CUSPARSE_OPERATION_NON_TRANSPOSE, 
                                dev_m[d], dev_n[d], dev_nnz[d], 
                                alpha, descr[d], dev_csrVal[d], 
@@ -150,7 +151,7 @@ spmv_ret spMV_mgpu_baseline_csc(int m, int n, int nnz, double * alpha,
     cudaFreeHost(A[d]);
     cudaFree(dev_csrVal[d]);
     cudaFree(dev_csrRowPtr[d]);
-    cudaFree(dev_csrColIndex[d]);
+    cudaFree(dev_csrColIdx[d]);
     cudaFreeHost(host_py[d]);
     cudaFreeHost(host_cscColPtr[d]);
 
@@ -169,8 +170,8 @@ spmv_ret spMV_mgpu_baseline_csc(int m, int n, int nnz, double * alpha,
   delete [] stream;
   delete [] handle;
   delete [] descr;
-  delete [] start_row;
-  delete [] end_row;
+  delete [] start_col;
+  delete [] end_col;
   delete [] dev_m;
   delete [] dev_n;
   delete [] dev_nnz;
