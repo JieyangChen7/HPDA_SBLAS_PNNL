@@ -369,7 +369,7 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
     time_comm = get_time() - curr_time;
     curr_time = get_time();
     err = 0;
-
+    #pragma omp barrier
     #pragma omp critical 
     {
     cudaDeviceSynchronize();
@@ -391,6 +391,7 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
                 pcooGPU[dev_id].val, pcooGPU[dev_id].rowIdx, pcooGPU[dev_id].colIdx,
                 dev_csrVal, dev_csrRowPtr, dev_csrColIdx);
 
+    #pragma omp barrier
     #pragma omp critical 
     {
     checkCudaErrors(cudaDeviceSynchronize());
