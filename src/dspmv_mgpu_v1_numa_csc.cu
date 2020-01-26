@@ -152,11 +152,11 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
 
       numa_part_time += get_time() - tmp_time;
 
-      print_vec(pcscNuma[numa_id].dval, pcscNuma[numa_id].nnz, "cscVal"+to_string(dev_id));
-      print_vec(pcscNuma[numa_id].dcolPtr, pcscNuma[numa_id].n + 1, "colPtr"+to_string(dev_id));
-      print_vec(pcscNuma[numa_id].drowIdx, pcscNuma[numa_id].nnz, "rowIdx"+to_string(dev_id));
-      print_vec(pcscNuma[numa_id].dx, pcscNuma[numa_id].n, "x"+to_string(dev_id));
-      print_vec(pcscNuma[numa_id].dy, pcscNuma[numa_id].m, "y_before"+to_string(dev_id));
+      print_vec(pcscNuma[numa_id].val, pcscNuma[numa_id].nnz, "cscVal"+to_string(dev_id));
+      print_vec(pcscNuma[numa_id].colPtr, pcscNuma[numa_id].n + 1, "colPtr"+to_string(dev_id));
+      print_vec(pcscNuma[numa_id].rowIdx, pcscNuma[numa_id].nnz, "rowIdx"+to_string(dev_id));
+      print_vec(pcscNuma[numa_id].x, pcscNuma[numa_id].n, "x"+to_string(dev_id));
+      print_vec(pcscNuma[numa_id].y, pcscNuma[numa_id].m, "y_before"+to_string(dev_id));
       printf("dev_id %d, alpha %f, beta %f\n", dev_id, *alpha, *beta);
 
     }
