@@ -371,12 +371,12 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
                  dev_csrVal, dev_csrRowPtr, dev_csrColIndex); 
 
 
-    print_vec_gpu(dev_csrVal, pcscGPU[dev_id].nnz, "csrVal"+to_string(dev_id));
-    print_vec_gpu(dev_csrRowPtr, pcscGPU[dev_id].m + 1, "csrRowPtr"+to_string(dev_id));
-    print_vec_gpu(dev_csrColIndex, pcscGPU[dev_id].nnz, "csrColIndex"+to_string(dev_id));
-    print_vec_gpu(pcscGPU[dev_id].dx, pcscGPU[dev_id].n, "x"+to_string(dev_id));
-    print_vec_gpu(pcscGPU[dev_id].dy, pcscGPU[dev_id].m, "y_before"+to_string(dev_id));
-    printf("dev_id %d, alpha %f, beta %f\n", dev_id, *alpha, *beta);
+    // print_vec_gpu(dev_csrVal, pcscGPU[dev_id].nnz, "csrVal"+to_string(dev_id));
+    // print_vec_gpu(dev_csrRowPtr, pcscGPU[dev_id].m + 1, "csrRowPtr"+to_string(dev_id));
+    // print_vec_gpu(dev_csrColIndex, pcscGPU[dev_id].nnz, "csrColIndex"+to_string(dev_id));
+    // print_vec_gpu(pcscGPU[dev_id].dx, pcscGPU[dev_id].n, "x"+to_string(dev_id));
+    // print_vec_gpu(pcscGPU[dev_id].dy, pcscGPU[dev_id].m, "y_before"+to_string(dev_id));
+    // printf("dev_id %d, alpha %f, beta %f\n", dev_id, *alpha, *beta);
 
 
 
@@ -389,7 +389,7 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
       
   
     checkCudaErrors(cudaDeviceSynchronize());
-    print_vec_gpu(pcscGPU[dev_id].dy, pcscGPU[dev_id].m, "y_after"+to_string(dev_id));
+    // print_vec_gpu(pcscGPU[dev_id].dy, pcscGPU[dev_id].m, "y_after"+to_string(dev_id));
     printf("omp thread %d, time %f\n", dev_id, get_time() - tmp_time);
     core_time = get_time() - tmp_time;
 
@@ -397,8 +397,9 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
                     pcscGPU[dev_id].m * sizeof(double), cudaMemcpyDeviceToHost, stream)); 
 
     checkCudaErrors(cudaDeviceSynchronize());
-    print_vec(pcscGPU[dev_id].py, m, "y"+to_string(dev_id));
     #pragma omp barrier
+    print_vec(y, m, "y"+to_string(dev_id));
+    print_vec(pcscGPU[dev_id].py, m, "py"+to_string(dev_id));
     if (dev_id == 0) {
       for (int i = 0; i < m; i++) {
         for (int d = 0; d < ngpu; d++) {
