@@ -243,6 +243,9 @@ void csr2csc_gpu(int m, int n, int nnz,
 void csr2csc(int m, int n, int nnz,
              double * csrVal, int * csrRowPtr, int * csrColIdx,
              double * cscVal, int * cscColPtr, int * cscRowIdx);
+void csc2csr_gpu(int m, int n, int nnz,
+                 double * cscVal, int * cscColPtr, int * cscRowIdx,
+                 double * csrVal, int * csrRowPtr, int * csrColIdx);
 
 
 #endif /* SPMV_KERNEL */
