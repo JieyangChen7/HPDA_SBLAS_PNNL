@@ -374,7 +374,7 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
     checkCudaErrors(cusparseDcsrmv(handle,CUSPARSE_OPERATION_TRANSPOSE, 
                             pcscGPU[dev_id].n, pcscGPU[dev_id].m, pcscGPU[dev_id].nnz, 
                             alpha, descr, 
-                            dev_csrVal, dev_csrRowPtr, dev_csrColIndex
+                            pcscGPU[dev_id].dval, pcscGPU[dev_id].dcolPtr, pcscGPU[dev_id].drowIdx,
                             pcscGPU[dev_id].dx, beta, pcscGPU[dev_id].dy));
 
 
