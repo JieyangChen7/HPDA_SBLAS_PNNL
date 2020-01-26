@@ -125,6 +125,7 @@ void csr2csrNcsc(int m, int n, int nnz,
              double * cscVal, int * cscColPtr, int * cscRowIdx) {
 
   printf("converting: %d, %d\n", m, n);
+
   double * A = new double[m * n];
   for (int i = 0; i < m; i++) {
     for (int j = 0; j < n; j++) {
@@ -134,6 +135,10 @@ void csr2csrNcsc(int m, int n, int nnz,
 
   for (int i = 0; i < nnz; i++) {
     A[cooRowIdx[i] * n + cooColIdx[i]] = cooVal[i];
+  }
+
+  for (int i = 0; i < m; i++) {
+    print_vec(&(A[i * n], n, "A"));
   }
 
   int p = 0;
