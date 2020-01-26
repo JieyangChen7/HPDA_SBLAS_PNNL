@@ -190,7 +190,7 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
   
     // Mark imcomplete rows
     // True: imcomplete
-    if (pcooGPU[dev_id].startIdx > findFirstInSorted(cooNuma[numa_id].rowIdx, 
+    if (pcooGPU[dev_id].startIdx > findFirstInSorted(pcooNuma[numa_id].rowIdx, 
                                                      pcooGPU[dev_id].nnz, 
                                                      pcooGPU[dev_id].startRow)) {
       pcooGPU[dev_id].startFlag = true;
@@ -205,7 +205,7 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
 
     // Mark imcomplete rows
     // True: imcomplete
-    if (pcooGPU[dev_id].endIdx < findLastInSorted(cooNuma[numa_id].rowIdx, 
+    if (pcooGPU[dev_id].endIdx < findLastInSorted(pcooNuma[numa_id].rowIdx, 
                                                   pcooGPU[dev_id].nnz, 
                                                   pcooGPU[dev_id].endRow))  {
       pcooGPU[dev_id].endFlag = true;
