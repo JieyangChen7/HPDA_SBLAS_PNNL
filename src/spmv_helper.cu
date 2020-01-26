@@ -138,7 +138,7 @@ void csr2csrNcsc(int m, int n, int nnz,
   }
 
   for (int i = 0; i < m; i++) {
-    print_vec(&(A[i * n], n, "A"));
+    print_vec(&(A[i * n]), n, "A");
   }
 
   int p = 0;
