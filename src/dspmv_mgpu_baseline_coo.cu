@@ -133,18 +133,19 @@ spmv_ret spMV_mgpu_baseline_coo(int m, int n, int nnz, double * alpha,
   curr_time = get_time();
   for (int d = 0; d < ngpu; d++) {
     cudaSetDevice(d);
-    checkCudaErrors(cudaMemcpyAsync(host_py[d], dev_y[d], 
-                    dev_m[d] * sizeof(double), cudaMemcpyDeviceToHost, stream[d])); 
+    checkCudaErrors(cudaMemcpyAsync(&y[start_row[d]],   dev_y[d], dev_m[d]*sizeof(double),     cudaMemcpyDeviceToHost, stream[d])); 
+    //checkCudaErrors(cudaMemcpyAsync(host_py[d], dev_y[d], 
+                    //dev_m[d] * sizeof(double), cudaMemcpyDeviceToHost, stream[d])); 
   }
   for (int d = 0; d < ngpu; d++) {
     cudaSetDevice(d);
     checkCudaErrors(cudaDeviceSynchronize());
   }
-  for (int d = 0; d < ngpu; d++) {
-    for (int i = 0; i < dev_m[d]; i++) {
-      y[start_row[d] + i] += host_py[d][i];
-    }
-  }
+  // for (int d = 0; d < ngpu; d++) {
+  //   for (int i = 0; i < dev_m[d]; i++) {
+  //     y[start_row[d] + i] += host_py[d][i];
+  //   }
+  // }
   merg_time = get_time() - curr_time;
 
   for (int d = 0; d < ngpu; d++) {
