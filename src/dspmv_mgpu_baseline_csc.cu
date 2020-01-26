@@ -141,7 +141,7 @@ spmv_ret spMV_mgpu_baseline_csc(int m, int n, int nnz, double * alpha,
   }
   for (int d = 0; d < ngpu; d++) {
     for (int i = 0; i < m; i++) {
-      y[i] += host_py[i];
+      y[i] += host_py[d][i];
     }
   }
   merg_time = get_time() - curr_time;
