@@ -172,7 +172,6 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
   double * org_y = new double[ngpu];
   int * start_rows = new int[ngpu];
 
-
   omp_set_num_threads(ngpu);
 
   double core_time;
@@ -183,6 +182,7 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
     unsigned int dev_id = omp_get_thread_num();
     cudaSetDevice(dev_id);
     unsigned int hwthread = sched_getcpu();
+
 
     printf("omp thread %d, hw thread %d\n", dev_id, hwthread);  
 
@@ -236,6 +236,7 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
 
     part_time = get_time() - tmp_time;  
 
+    cudaMallocHost((void**)&(pcscGPU[dev_id].py), pcscGPU[dev_id].m * sizeof(double));
 
 
     // preparing data on host 
@@ -392,16 +393,16 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
     printf("omp thread %d, time %f\n", dev_id, get_time() - tmp_time);
     core_time = get_time() - tmp_time;
 
-    checkCudaErrors(cudaMemcpyAsync(pcscGPU[dev_id].y, pcscGPU[dev_id].dy, 
+    checkCudaErrors(cudaMemcpyAsync(pcscGPU[dev_id].py, pcscGPU[dev_id].dy, 
                     pcscGPU[dev_id].m * sizeof(double), cudaMemcpyDeviceToHost, stream)); 
 
     checkCudaErrors(cudaDeviceSynchronize());
-    print_vec(pcscGPU[dev_id].y, m, "y"+to_string(dev_id));
+    print_vec(pcscGPU[dev_id].py, m, "y"+to_string(dev_id));
     #pragma omp barrier
     if (dev_id == 0) {
       for (int i = 0; i < m; i++) {
         for (int d = 0; d < ngpu; d++) {
-          y[i] += pcscGPU[d].y[i];
+          y[i] += pcscGPU[dev_id].py[i];
         }
       }
     }

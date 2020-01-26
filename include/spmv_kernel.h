@@ -79,6 +79,7 @@ struct pCSC {
   int * rowIdx;
   double * x;
   double * y;
+  double * py;
 
   double * dval;
   int * dcolPtr;
