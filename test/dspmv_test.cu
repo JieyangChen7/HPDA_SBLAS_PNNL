@@ -269,13 +269,13 @@ int main(int argc, char *argv[]) {
   //            cscVal, cscColPtr, cscRowIdx);
   // printf("out of conversion function\n");
 
-  // print_vec(csrVal, nnz, "csrVal:");
-  // print_vec(csrRowPtr, m+1, "csrRowPtr:");
-  // print_vec(csrColIdx, nnz, "csrColIdx:");
+  print_vec(csrVal, nnz, "csrVal:");
+  print_vec(csrRowPtr, m+1, "csrRowPtr:");
+  print_vec(csrColIdx, nnz, "csrColIdx:");
 
-  // print_vec(cscVal, nnz, "cscVal:");
-  // print_vec(cscColPtr, n+1, "cscColPtr:");
-  // print_vec(cscRowIdx, nnz, "cscRowIdx:");
+  print_vec(cscVal, nnz, "cscVal:");
+  print_vec(cscColPtr, n+1, "cscColPtr:");
+  print_vec(cscRowIdx, nnz, "cscRowIdx:");
 
   double * x;
 
@@ -539,7 +539,12 @@ int main(int argc, char *argv[]) {
   cudaFreeHost(cooRowIndex);
   cudaFreeHost(cooColIndex);
   cudaFreeHost(cooVal);
+  cudaFreeHost(csrVal);
   cudaFreeHost(csrRowPtr);
+  cudaFreeHost(csrColIdx);
+  cudaFreeHost(cscVal);
+  cudaFreeHost(cscColPtr);
+  cudaFreeHost(cscRowIdx);
 
   myfile.close();
 }
