@@ -106,7 +106,7 @@ spmv_ret spMV_mgpu_baseline_coo(int m, int n, int nnz, double * alpha,
     checkCudaErrors(cudaMemcpyAsync(dev_cooVal[d],    &(cooVal[start_idx[d]]),          dev_nnz[d] * sizeof(double), cudaMemcpyHostToDevice, stream[d]));
     checkCudaErrors(cudaMemcpyAsync(dev_cooRowIdx[d], &host_cooRowIdx[start_idx[d]], dev_nnz[d] * sizeof(int),    cudaMemcpyHostToDevice, stream[d])); 
     checkCudaErrors(cudaMemcpyAsync(dev_cooColIdx[d], &cooColIdx[start_idx[d]],      dev_nnz[d] * sizeof(double), cudaMemcpyHostToDevice, stream[d]));
-    checkCudaErrors(cudaMemcpyAsync(dev_y[d],         &y[start_row],                 dev_m[d]*sizeof(double),     cudaMemcpyHostToDevice, stream[d])); 
+    checkCudaErrors(cudaMemcpyAsync(dev_y[d],         &y[start_row[d]],                 dev_m[d]*sizeof(double),     cudaMemcpyHostToDevice, stream[d])); 
     checkCudaErrors(cudaMemcpyAsync(dev_x[d],         x,                             dev_n[d]*sizeof(double),     cudaMemcpyHostToDevice, stream[d])); 
   }
   //time_comm = get_time() - curr_time;
