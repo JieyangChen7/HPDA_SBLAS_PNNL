@@ -398,13 +398,14 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
 
     checkCudaErrors(cudaDeviceSynchronize());
     #pragma omp barrier
-    print_vec(y, m, "y"+to_string(dev_id));
+    //
     print_vec(pcscGPU[dev_id].py, m, "py"+to_string(dev_id));
     if (dev_id == 0) {
-      for (int i = 0; i < m; i++) {
-        for (int d = 0; d < ngpu; d++) {
+      for (int d = 0; d < ngpu; d++) {
+        for (int i = 0; i < m; i++) {
           y[i] += pcscGPU[dev_id].py[i];
         }
+        print_vec(y, m, "y"+to_string(d));
       }
     }
     merg_time = get_time() - tmp_time;
