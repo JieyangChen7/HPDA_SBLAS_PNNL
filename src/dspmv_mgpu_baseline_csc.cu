@@ -127,7 +127,7 @@ spmv_ret spMV_mgpu_baseline_csc(int m, int n, int nnz, double * alpha,
     cudaSetDevice(d);
     cudaDeviceSynchronize();
   }
-  comm_time = get_time() - curr_time;
+  comp_time = get_time() - curr_time;
 
   curr_time = get_time();
   for (int d = 0; d < ngpu; d++) {
