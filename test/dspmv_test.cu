@@ -118,7 +118,7 @@ int main(int argc, char *argv[]) {
     }
     nnz = nnz_int;
         
-    nnz = 10;
+    nnz = 9;
      m = 11;
      n = 10;
 
