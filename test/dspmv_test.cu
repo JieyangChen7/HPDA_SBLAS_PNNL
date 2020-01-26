@@ -359,12 +359,12 @@ int main(int argc, char *argv[]) {
   
   cout << "Compute CPU version" << endl;
   for (int i = 0; i < m; i++) y_verify[i] = 0.0;
-  // csr_spmv_cpu(m, n, nnz,
-  //              &ALPHA,
-  //              csrVal, csrRowPtr, csrColIdx,
-  //              x,
-  //              &BETA,
-  //              y_verify);
+  csr_spmv_cpu(m, n, nnz,
+               &ALPHA,
+               csrVal, csrRowPtr, csrColIdx,
+               x,
+               &BETA,
+               y_verify);
 
   ofstream myfile;
   ostringstream o;
@@ -412,30 +412,30 @@ int main(int argc, char *argv[]) {
       y_static_coo[i] = 0.0;
       y_dynamic_coo[i] = 0.0;
     }
-    // ret = spMV_mgpu_baseline(m, n, nnz, &ALPHA,
-    //                         csrVal, csrRowPtr, csrColIdx, 
-    //                         x, &BETA,
-    //                         y_baseline_csr,
-    //                         ngpu);
-    // ret_baseline_csr.add(ret);
+    ret = spMV_mgpu_baseline(m, n, nnz, &ALPHA,
+                            csrVal, csrRowPtr, csrColIdx, 
+                            x, &BETA,
+                            y_baseline_csr,
+                            ngpu);
+    ret_baseline_csr.add(ret);
 
-    // ret = spMV_mgpu_v1_numa(m, n, nnz, &ALPHA,
-    //                         csrVal, csrRowPtr, csrColIdx,
-    //                         x, &BETA,
-    //                         y_static_csr,
-    //                         ngpu,
-    //                         1,
-    //                         numa_mapping); //kernel 1
-    // ret_static_csr.add(ret);
+    ret = spMV_mgpu_v1_numa(m, n, nnz, &ALPHA,
+                            csrVal, csrRowPtr, csrColIdx,
+                            x, &BETA,
+                            y_static_csr,
+                            ngpu,
+                            1,
+                            numa_mapping); //kernel 1
+    ret_static_csr.add(ret);
 
-    // ret = spMV_mgpu_v1_numa_csc(m, n, nnz, &ALPHA,
-    //                             cscVal, cscColPtr, cscRowIdx,
-    //                             x, &BETA,
-    //                             y_static_csr,
-    //                             ngpu,
-    //                             1,
-    //                             numa_mapping); //kernel 1
-    // ret_static_csc.add(ret);
+    ret = spMV_mgpu_v1_numa_csc(m, n, nnz, &ALPHA,
+                                cscVal, cscColPtr, cscRowIdx,
+                                x, &BETA,
+                                y_static_csr,
+                                ngpu,
+                                1,
+                                numa_mapping); //kernel 1
+    ret_static_csc.add(ret);
 
     
 
