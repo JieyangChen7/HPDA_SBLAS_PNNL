@@ -295,34 +295,31 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
 
   
     // preparing GPU env
-    cudaStreamCreate(&stream);
+    checkCudaErrors(cudaStreamCreate(&stream));
 
-    status = cusparseCreate(&handle); 
-    if (status != CUSPARSE_STATUS_SUCCESS) 
-    { 
-      printf("CUSPARSE Library initialization failed");
-      //return 1; 
-    } 
-    status = cusparseSetStream(handle, stream);
-    if (status != CUSPARSE_STATUS_SUCCESS) 
-    { 
-      printf("Stream bindind failed");
-      //return 1;
-    } 
-    status = cusparseCreateMatDescr(&descr);
-    if (status != CUSPARSE_STATUS_SUCCESS) 
-    { 
-      printf("Matrix descriptor initialization failed");
-      //return 1;
-    }   
-    cusparseSetMatType(descr,CUSPARSE_MATRIX_TYPE_GENERAL); 
-    cusparseSetMatIndexBase(descr,CUSPARSE_INDEX_BASE_ZERO);
+    checkCudaErrors(cusparseCreate(&handle)); 
+    checkCudaErrors(cusparseSetStream(handle, stream));
+    checkCudaErrors(cusparseCreateMatDescr(&descr));
+    checkCudaErrors(cusparseSetMatType(descr,CUSPARSE_MATRIX_TYPE_GENERAL)); 
+    checkCudaErrors(cusparseSetMatIndexBase(descr,CUSPARSE_INDEX_BASE_ZERO));
     
-    cudaMalloc((void**)&pcscGPU[dev_id].dval,    pcscGPU[dev_id].nnz     * sizeof(double));
-    cudaMalloc((void**)&pcscGPU[dev_id].dcolPtr, (pcscGPU[dev_id].n + 1) * sizeof(int)   );
-    cudaMalloc((void**)&pcscGPU[dev_id].drowIdx, pcscGPU[dev_id].nnz     * sizeof(int)   );
-    cudaMalloc((void**)&pcscGPU[dev_id].dx,      pcscGPU[dev_id].n       * sizeof(double)); 
-    cudaMalloc((void**)&pcscGPU[dev_id].dy,      pcscGPU[dev_id].m       * sizeof(double)); 
+    checkCudaErrors(cudaMalloc((void**)&pcscGPU[dev_id].dval,    pcscGPU[dev_id].nnz     * sizeof(double)));
+    checkCudaErrors(cudaMalloc((void**)&pcscGPU[dev_id].dcolPtr, (pcscGPU[dev_id].n + 1) * sizeof(int)   ));
+    checkCudaErrors(cudaMalloc((void**)&pcscGPU[dev_id].drowIdx, pcscGPU[dev_id].nnz     * sizeof(int)   ));
+    checkCudaErrors(cudaMalloc((void**)&pcscGPU[dev_id].dx,      pcscGPU[dev_id].n       * sizeof(double))); 
+    checkCudaErrors(cudaMalloc((void**)&pcscGPU[dev_id].dy,      pcscGPU[dev_id].m       * sizeof(double))); 
+
+
+    double * dev_csrVal;
+    int * dev_csrRowPtr;
+    int * dev_csrColIndex;
+    checkCudaErrors(cudaMalloc((void**)&dev_csrVal,    pcscGPU[dev_id].nnz     * sizeof(double)));
+    checkCudaErrors(cudaMalloc((void**)&dev_csrRowPtr, (pcscGPU[dev_id].m + 1) * sizeof(int)   ));
+    checkCudaErrors(cudaMalloc((void**)&dev_csrColIndex, pcscGPU[dev_id].nnz     * sizeof(int) ));
+
+    double * A;
+    int lda = m;
+    checkCudaErrors(cudaMalloc((void**)&A, m * n * sizeof(double)));
 
 
     tmp_time = get_time();
@@ -359,14 +356,9 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
   //   err = 0;
     // if (kernel == 1) {
 
-    double * dev_csrVal;
-    int * dev_csrRowPtr;
-    int * dev_csrColIndex;
-    checkCudaErrors(cudaMalloc((void**)&dev_csrVal,    pcscGPU[dev_id].nnz     * sizeof(double)));
-    checkCudaErrors(cudaMalloc((void**)&dev_csrRowPtr, (pcscGPU[dev_id].m + 1) * sizeof(int)   ));
-    checkCudaErrors(cudaMalloc((void**)&dev_csrColIndex, pcscGPU[dev_id].nnz     * sizeof(int) ));
+    
 
-    csc2csr_gpu(m, n, nnz,
+    csc2csr_gpu(handle, m, n, nnz, A, lda,
                  pcscGPU[dev_id].dval, pcscGPU[dev_id].dcolPtr, pcscGPU[dev_id].drowIdx,
                  dev_csrVal, dev_csrRowPtr, dev_csrColIndex); 
 

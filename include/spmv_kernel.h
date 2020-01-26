@@ -170,6 +170,13 @@ spmv_ret spMV_mgpu_baseline(int m, int n, int nnz, double * alpha,
          double * x, double * beta,
          double * y,
          int ngpu);
+
+spmv_ret spMV_mgpu_baseline_csc(int m, int n, int nnz, double * alpha,
+            double * cscVal, int * cscColPtr, int * cscRowIdx, 
+            double * x, double * beta,
+            double * y,
+            int ngpu);
+
 spmv_ret spMV_mgpu_v1(int m, int n, int nnz, double * alpha,
           double * csrVal, int * csrRowPtr, int * csrColIndex, 
           double * x, double * beta,
@@ -238,9 +245,10 @@ void csr2csrNcsc(int m, int n, int nnz,
              double * csrVal, int * csrRowPtr, int * csrColIdx,
              double * cscVal, int * cscColPtr, int * cscRowIdx);
 
-void csr2csc_gpu(int m, int n, int nnz,
-                 double * csrVal, int * csrRowPtr, int * csrColIdx,
-                 double * cscVal, int * cscColPtr, int * cscRowIdx);
+void csc2csr_gpu(cusparseHandle_t handle, int m, int n, int nnz, double * A, int lda, 
+                 double * cscVal, int * cscColPtr, int * cscRowIdx,
+                 double * csrVal, int * csrRowPtr, int * csrColIdx);
+
 void csr2csc(int m, int n, int nnz,
              double * csrVal, int * csrRowPtr, int * csrColIdx,
              double * cscVal, int * cscColPtr, int * cscRowIdx);
