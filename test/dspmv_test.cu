@@ -263,11 +263,11 @@ int main(int argc, char *argv[]) {
   //         csrVal, csrRowPtr, csrColIdx,
   //         cscVal, cscColPtr, cscRowIdx);
 
-  // csr2csrNcsc(m, n, nnz,
-  //            cooVal, cooRowIndex, cooColIndex,
-  //            csrVal, csrRowPtr, csrColIdx,
-  //            cscVal, cscColPtr, cscRowIdx);
-  // printf("out of conversion function\n");
+  csr2csrNcsc(m, n, nnz,
+             cooVal, cooRowIndex, cooColIndex,
+             csrVal, csrRowPtr, csrColIdx,
+             cscVal, cscColPtr, cscRowIdx);
+  printf("out of conversion function\n");
 
   print_vec(csrVal, nnz, "csrVal:");
   print_vec(csrRowPtr, m+1, "csrRowPtr:");
