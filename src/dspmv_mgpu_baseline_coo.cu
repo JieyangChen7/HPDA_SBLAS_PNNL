@@ -56,7 +56,7 @@ spmv_ret spMV_mgpu_baseline_coo(int m, int n, int nnz, double * alpha,
 
   curr_time = get_time();
   for (int d = 0; d < ngpu; d++) {
-    cudaSetDevice(d);
+    checkCudaErrors(cudaSetDevice(d));
     start_row[d] = floor((d)     * m / ngpu);
     end_row[d]   = floor((d + 1) * m / ngpu) - 1;
     start_idx[d] = findFirstInSorted(cooRowIdx, nnz, start_row[d]);
@@ -80,8 +80,8 @@ spmv_ret spMV_mgpu_baseline_coo(int m, int n, int nnz, double * alpha,
     checkCudaErrors(cudaMalloc((void**)&(dev_csrRowPtr[d]),   (dev_m[d] + 1) * sizeof(int)   ));
     checkCudaErrors(cudaMalloc((void**)&(dev_csrColIdx[d]),   dev_nnz[d]     * sizeof(int)   ));
 
-    cudaMallocHost((void**)& host_py[d], dev_m[d] * sizeof(double));
-    cudaMallocHost((void**)& host_cooRowIdx[d], dev_nnz[d] * sizeof(int));
+    checkCudaErrors(cudaMallocHost((void**)& (host_py[d]), dev_m[d] * sizeof(double)));
+    checkCudaErrors(cudaMallocHost((void**)& (host_cooRowIdx[d]), dev_nnz[d] * sizeof(int)));
 
     checkCudaErrors(cudaMalloc((void**)&dev_cooVal[d],    dev_nnz[d] * sizeof(double)));
     checkCudaErrors(cudaMalloc((void**)&dev_cooRowIdx[d], dev_nnz[d] * sizeof(int))); 
@@ -102,7 +102,7 @@ spmv_ret spMV_mgpu_baseline_coo(int m, int n, int nnz, double * alpha,
 
   curr_time = get_time();
   for (int d = 0; d < ngpu; d++) {
-    cudaSetDevice(d);
+    checkCudaErrors(cudaSetDevice(d));
     checkCudaErrors(cudaMemcpyAsync(dev_cooVal[d],    &(cooVal[start_idx[d]]),          dev_nnz[d] * sizeof(double), cudaMemcpyHostToDevice, stream[d]));
     checkCudaErrors(cudaMemcpyAsync(dev_cooRowIdx[d], &host_cooRowIdx[start_idx[d]], dev_nnz[d] * sizeof(int),    cudaMemcpyHostToDevice, stream[d])); 
     checkCudaErrors(cudaMemcpyAsync(dev_cooColIdx[d], &cooColIdx[start_idx[d]],      dev_nnz[d] * sizeof(int), cudaMemcpyHostToDevice, stream[d]));
@@ -114,7 +114,7 @@ spmv_ret spMV_mgpu_baseline_coo(int m, int n, int nnz, double * alpha,
 
   //curr_time = get_time();
   for (int d = 0; d < ngpu; ++d) {
-    cudaSetDevice(d);
+    checkCudaErrors(cudaSetDevice(d));
     coo2csr_gpu(handle[d], stream[d], dev_m[d], dev_n[d], dev_nnz[d],
                 dev_cooVal[d], dev_cooRowIdx[d], dev_cooColIdx[d],
                 dev_csrVal[d], dev_csrRowPtr[d], dev_csrColIdx[d]);
