@@ -293,23 +293,23 @@ int main(int argc, char *argv[]) {
 
   double * y_verify;
 
-  printf("Allocate y\n");
+  // printf("Allocate y\n");
 
-  cudaMallocHost((void**)&x, n * sizeof(double));
+  // cudaMallocHost((void**)&x, n * sizeof(double));
 
-  cudaMallocHost((void**)&y_baseline_csr, m * sizeof(double));
-  cudaMallocHost((void**)&y_static_csr, m * sizeof(double));
-  cudaMallocHost((void**)&y_dynamic_csr, m * sizeof(double));
+  // cudaMallocHost((void**)&y_baseline_csr, m * sizeof(double));
+  // cudaMallocHost((void**)&y_static_csr, m * sizeof(double));
+  // cudaMallocHost((void**)&y_dynamic_csr, m * sizeof(double));
 
-  cudaMallocHost((void**)&y_baseline_csc, m * sizeof(double));
-  cudaMallocHost((void**)&y_static_csc, m * sizeof(double));
-  cudaMallocHost((void**)&y_dynamic_csc, m * sizeof(double));
+  // cudaMallocHost((void**)&y_baseline_csc, m * sizeof(double));
+  // cudaMallocHost((void**)&y_static_csc, m * sizeof(double));
+  // cudaMallocHost((void**)&y_dynamic_csc, m * sizeof(double));
 
-  cudaMallocHost((void**)&y_baseline_coo, m * sizeof(double));
-  cudaMallocHost((void**)&y_static_coo, m * sizeof(double));
-  cudaMallocHost((void**)&y_dynamic_coo, m * sizeof(double));
+  // cudaMallocHost((void**)&y_baseline_coo, m * sizeof(double));
+  // cudaMallocHost((void**)&y_static_coo, m * sizeof(double));
+  // cudaMallocHost((void**)&y_dynamic_coo, m * sizeof(double));
 
-  cudaMallocHost((void**)&y_verify, m * sizeof(double));
+  // cudaMallocHost((void**)&y_verify, m * sizeof(double));
 
 //   cout << "Initializing x" << endl;
 //   for (int i = 0; i < n; i++)
