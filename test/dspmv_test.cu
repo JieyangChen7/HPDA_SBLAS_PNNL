@@ -156,7 +156,7 @@ int main(int argc, char *argv[]) {
     
     // testing data
     for (int i = 0; i < nnz; i++) {
-      cooVal[i] = i;
+      cooVal[i] = i+1;
       cooRowIndex[i] = i+1;
       cooColIndex[i] = i;
     }
