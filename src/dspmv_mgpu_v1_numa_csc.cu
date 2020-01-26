@@ -388,6 +388,7 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
       
   
     checkCudaErrors(cudaDeviceSynchronize());
+    print_vec_gpu(pcscGPU[dev_id].dy, pcscGPU[dev_id].m, "y_after"+to_string(dev_id));
     printf("omp thread %d, time %f\n", dev_id, get_time() - tmp_time);
     core_time = get_time() - tmp_time;
 
