@@ -135,18 +135,18 @@ void csr2csrNcsc(int m, int n, int nnz,
     A[cooRowIdx[i] * m + cooColIdx[i]] = cooVal[i];
   }
 
-  // int p = 0;
-  // csrRowPtr[0] = 0;
-  // for (int i = 0; i < m; i++) {
-  //   for (int j = 0; j < n; j++) {
-  //     if (A[i * m + j] != 0) {
-  //       csrVal[p] = A[i * m + j];
-  //       csrColIdx[p] = j;
-  //       p++;
-  //     }
-  //   }
-  //   csrRowPtr[i + 1] = p;
-  // }
+  int p = 0;
+  csrRowPtr[0] = 0;
+  for (int i = 0; i < m; i++) {
+    for (int j = 0; j < n; j++) {
+      if (A[i * m + j] != 0) {
+        csrVal[p] = A[i * m + j];
+        csrColIdx[p] = j;
+        p++;
+      }
+    }
+    csrRowPtr[i + 1] = p;
+  }
 
   // p = 0;
   // cscColPtr[0] = 0;
