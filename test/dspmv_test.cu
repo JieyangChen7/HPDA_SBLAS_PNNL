@@ -357,342 +357,342 @@ int main(int argc, char *argv[]) {
 //   // ret_static_coo.init();
 //   // ret_dynamic_coo.init();
   
-//   cout << "Compute CPU version" << endl;
-//   for (int i = 0; i < m; i++) y_verify[i] = 0.0;
-//   // csr_spmv_cpu(m, n, nnz,
-//   //              &ALPHA,
-//   //              csrVal, csrRowPtr, csrColIdx,
-//   //              x,
-//   //              &BETA,
-//   //              y_verify);
+  cout << "Compute CPU version" << endl;
+  for (int i = 0; i < m; i++) y_verify[i] = 0.0;
+  // csr_spmv_cpu(m, n, nnz,
+  //              &ALPHA,
+  //              csrVal, csrRowPtr, csrColIdx,
+  //              x,
+  //              &BETA,
+  //              y_verify);
 
-//   ofstream myfile;
-//   ostringstream o;
-//   if(input_type == 'g') {
-//       o << csv_output << "_" << n << ".csv";
-//   }
-//   if(input_type == 'f') {
-//       o << csv_output << ".csv";
-//   }
-//   cout <<"Output to file: " << o.str().c_str() << endl;
-//   myfile.open (o.str().c_str());
+  ofstream myfile;
+  ostringstream o;
+  if(input_type == 'g') {
+      o << csv_output << "_" << n << ".csv";
+  }
+  if(input_type == 'f') {
+      o << csv_output << ".csv";
+  }
+  cout <<"Output to file: " << o.str().c_str() << endl;
+  myfile.open (o.str().c_str());
 
-//   // double profile_time = 0.0;
+  // double profile_time = 0.0;
         
-//   // double min_profile_time_k1 = numeric_limits<double>::max();
-//   // double best_dev_count_k1 = ngpu;
-//   // int best_copy_k1 = 1;
+  // double min_profile_time_k1 = numeric_limits<double>::max();
+  // double best_dev_count_k1 = ngpu;
+  // int best_copy_k1 = 1;
   
-//   // double min_profile_time_k2 = numeric_limits<double>::max();
-//   // double best_dev_count_k2 = ngpu;
-//   // int best_copy_k2 = 1;
+  // double min_profile_time_k2 = numeric_limits<double>::max();
+  // double best_dev_count_k2 = ngpu;
+  // int best_copy_k2 = 1;
 
-//   // double min_profile_time_k3 = numeric_limits<double>::max();
-//   // double best_dev_count_k3 = ngpu;
-//   // int best_copy_k3 = 1;
-
-  
-// /*
-//   for (int d = 1; d <= ngpu; d++) {
-//           for (int c = 1; c <= 8; c++) {
-//       curr_time = get_time();
-//       spmv_ret ret =spMV_mgpu_v2(m, n, nnz, &ALPHA,
-//        cooVal, csrRowPtr, cooColIndex, 
-//        x, &BETA,
-//        y_v2k1,
-//        d,
-//              1, //kernel 1
-//        ceil(nnz / (d * c)),
-//        c);
-//       profile_time = ret.comp_time + ret.comm_time; //get_time() - curr_time; 
-//       if (profile_time < min_profile_time_k1) {
-//         min_profile_time_k1 = profile_time;
-//               best_dev_count_k1 = d;
-//               best_copy_k1 = c;
-//       }
-//     }
-//         }
-// */
-// /*
-//        for (int d = 1; d <= ngpu; d++) {
-//           for (int c = 1; c <= 8; c++) {
-//             curr_time = get_time();
-//             spmv_ret ret = spMV_mgpu_v2(m, n, nnz, &ALPHA,
-//                          cooVal, csrRowPtr, cooColIndex,  
-//                          x, &BETA,
-//                          y_v2k2,
-//                          d,
-//                          2, //kernel 2
-//                          ceil(nnz / (d * c)),
-//                          c);
-//             profile_time = ret.comp_time + ret.comm_time;//get_time() - curr_time;  
-//             if (profile_time < min_profile_time_k2) {
-//               min_profile_time_k2 = profile_time;
-//               best_dev_count_k2 = d;
-//               best_copy_k2 = c;
-//             }
-//           }
-//         }
-
-//        for (int d = 1; d <= ngpu; d++) {
-//           for (int c = 1; c <= 8; c++) {
-//             curr_time = get_time();
-//             spmv_ret ret = spMV_mgpu_v2(m, n, nnz, &ALPHA,
-//                          cooVal, csrRowPtr, cooColIndex,  
-//                          x, &BETA,
-//                          y_v2k3,
-//                          d,
-//                          3, //kernel 3
-//                          ceil(nnz / (d * c)),
-//                          c);
-//             profile_time = ret.comp_time + ret.comm_time;//get_time() - curr_time;  
-//             if (profile_time < min_profile_time_k3) {
-//               min_profile_time_k3 = profile_time;
-//               best_dev_count_k3 = d;
-//               best_copy_k3 = c;
-//             }
-//           }
-//         }
-
-// */
-//   // double min_profile_time_k1s = numeric_limits<double>::max();
-//   // double best_dev_count_k1s = ngpu;
-//   // int best_copy_k1s = 1;
-
-//   // double min_profile_time_k2s = numeric_limits<double>::max();
-//   // double best_dev_count_k2s = ngpu;
-//   // int best_copy_k2s = 1;
-
-//   // double min_profile_time_k3s = numeric_limits<double>::max();
-//   // double best_dev_count_k3s = ngpu;
-//   // int best_copy_k3s = 1;
-
-// /*
-//   for (int d = 1; d <= ngpu; d++) {
-//           for (int c = 1; c <= 8; c++) {
-//             curr_time = get_time();
-//             spmv_ret ret =spMspV_mgpu_v2(m, n, nnz, &ALPHA,
-//                          cooVal, csrRowPtr, cooColIndex, 
-//                          x, &BETA,
-//                          y_v2k1s,
-//                          d,
-//                          1, //kernel 1
-//                          ceil(nnz / (d * c)),
-//                          c);
-//             profile_time = ret.comp_time + ret.comm_time; //get_time() - curr_time;     
-//             if (profile_time < min_profile_time_k1s) {
-//               min_profile_time_k1s = profile_time;
-//               best_dev_count_k1s = d;
-//               best_copy_k1s = c;
-//             }
-//           }
-//         }
-// */
-
-//        for (int d = 1; d <= ngpu; d++) {
-//           for (int c = 1; c <= 8; c++) {
-//             curr_time = get_time();
-//             spmv_ret ret = spMspV_mgpu_v2(m, n, nnz, &ALPHA,
-//                          cooVal, csrRowPtr, cooColIndex,  
-//                          x, &BETA,
-//                          y_v2k2s,
-//                          d,
-//                          2, //kernel 2
-//                          ceil(nnz / (d * c)),
-//                          c);
-//             profile_time = ret.comp_time + ret.comm_time;//get_time() - curr_time;  
-//             if (profile_time < min_profile_time_k2s) {
-//               min_profile_time_k2s = profile_time;
-//               best_dev_count_k2s = d;
-//               best_copy_k2s = c;
-//             }
-//           }
-//         }
-
-//        for (int d = 1; d <= ngpu; d++) {
-//           for (int c = 1; c <= 8; c++) {
-//             curr_time = get_time();
-//             spmv_ret ret = spMspV_mgpu_v2(m, n, nnz, &ALPHA,
-//                          cooVal, csrRowPtr, cooColIndex,  
-//                          x, &BETA,
-//                          y_v2k3s,
-//                          d,
-//                          3, //kernel 3
-//                          ceil(nnz / (d * c)),
-//                          c);
-//             profile_time = ret.comp_time + ret.comm_time;//get_time() - curr_time;  
-//             if (profile_time < min_profile_time_k3s) {
-//               min_profile_time_k3s = profile_time;
-//               best_dev_count_k3s = d;
-//               best_copy_k3s = c;
-//             }
-//           }
-//         }
-
+  // double min_profile_time_k3 = numeric_limits<double>::max();
+  // double best_dev_count_k3 = ngpu;
+  // int best_copy_k3 = 1;
 
   
+/*
+  for (int d = 1; d <= ngpu; d++) {
+          for (int c = 1; c <= 8; c++) {
+      curr_time = get_time();
+      spmv_ret ret =spMV_mgpu_v2(m, n, nnz, &ALPHA,
+       cooVal, csrRowPtr, cooColIndex, 
+       x, &BETA,
+       y_v2k1,
+       d,
+             1, //kernel 1
+       ceil(nnz / (d * c)),
+       c);
+      profile_time = ret.comp_time + ret.comm_time; //get_time() - curr_time; 
+      if (profile_time < min_profile_time_k1) {
+        min_profile_time_k1 = profile_time;
+              best_dev_count_k1 = d;
+              best_copy_k1 = c;
+      }
+    }
+        }
+*/
+/*
+       for (int d = 1; d <= ngpu; d++) {
+          for (int c = 1; c <= 8; c++) {
+            curr_time = get_time();
+            spmv_ret ret = spMV_mgpu_v2(m, n, nnz, &ALPHA,
+                         cooVal, csrRowPtr, cooColIndex,  
+                         x, &BETA,
+                         y_v2k2,
+                         d,
+                         2, //kernel 2
+                         ceil(nnz / (d * c)),
+                         c);
+            profile_time = ret.comp_time + ret.comm_time;//get_time() - curr_time;  
+            if (profile_time < min_profile_time_k2) {
+              min_profile_time_k2 = profile_time;
+              best_dev_count_k2 = d;
+              best_copy_k2 = c;
+            }
+          }
+        }
 
-//   int pass_baseline_csr = 0;
-//   int pass_static_csr = 0;
-//   int pass_dynamic_csr = 0;
+       for (int d = 1; d <= ngpu; d++) {
+          for (int c = 1; c <= 8; c++) {
+            curr_time = get_time();
+            spmv_ret ret = spMV_mgpu_v2(m, n, nnz, &ALPHA,
+                         cooVal, csrRowPtr, cooColIndex,  
+                         x, &BETA,
+                         y_v2k3,
+                         d,
+                         3, //kernel 3
+                         ceil(nnz / (d * c)),
+                         c);
+            profile_time = ret.comp_time + ret.comm_time;//get_time() - curr_time;  
+            if (profile_time < min_profile_time_k3) {
+              min_profile_time_k3 = profile_time;
+              best_dev_count_k3 = d;
+              best_copy_k3 = c;
+            }
+          }
+        }
 
-//   int pass_baseline_csc = 0;
-//   int pass_static_csc = 0;
-//   int pass_dynamic_csc = 0;
+*/
+  // double min_profile_time_k1s = numeric_limits<double>::max();
+  // double best_dev_count_k1s = ngpu;
+  // int best_copy_k1s = 1;
 
-//   int pass_baseline_coo = 0;
-//   int pass_static_coo = 0;
-//   int pass_dynamic_coo = 0;
+  // double min_profile_time_k2s = numeric_limits<double>::max();
+  // double best_dev_count_k2s = ngpu;
+  // int best_copy_k2s = 1;
 
-//   struct spmv_ret ret;
-//   struct spmv_ret ret2;
-//   ret = ret2;
-//   int numa_mapping[6] = {0,0,0,1,1,1};
+  // double min_profile_time_k3s = numeric_limits<double>::max();
+  // double best_dev_count_k3s = ngpu;
+  // int best_copy_k3s = 1;
+
+/*
+  for (int d = 1; d <= ngpu; d++) {
+          for (int c = 1; c <= 8; c++) {
+            curr_time = get_time();
+            spmv_ret ret =spMspV_mgpu_v2(m, n, nnz, &ALPHA,
+                         cooVal, csrRowPtr, cooColIndex, 
+                         x, &BETA,
+                         y_v2k1s,
+                         d,
+                         1, //kernel 1
+                         ceil(nnz / (d * c)),
+                         c);
+            profile_time = ret.comp_time + ret.comm_time; //get_time() - curr_time;     
+            if (profile_time < min_profile_time_k1s) {
+              min_profile_time_k1s = profile_time;
+              best_dev_count_k1s = d;
+              best_copy_k1s = c;
+            }
+          }
+        }
+*/
+
+       for (int d = 1; d <= ngpu; d++) {
+          for (int c = 1; c <= 8; c++) {
+            curr_time = get_time();
+            spmv_ret ret = spMspV_mgpu_v2(m, n, nnz, &ALPHA,
+                         cooVal, csrRowPtr, cooColIndex,  
+                         x, &BETA,
+                         y_v2k2s,
+                         d,
+                         2, //kernel 2
+                         ceil(nnz / (d * c)),
+                         c);
+            profile_time = ret.comp_time + ret.comm_time;//get_time() - curr_time;  
+            if (profile_time < min_profile_time_k2s) {
+              min_profile_time_k2s = profile_time;
+              best_dev_count_k2s = d;
+              best_copy_k2s = c;
+            }
+          }
+        }
+
+       for (int d = 1; d <= ngpu; d++) {
+          for (int c = 1; c <= 8; c++) {
+            curr_time = get_time();
+            spmv_ret ret = spMspV_mgpu_v2(m, n, nnz, &ALPHA,
+                         cooVal, csrRowPtr, cooColIndex,  
+                         x, &BETA,
+                         y_v2k3s,
+                         d,
+                         3, //kernel 3
+                         ceil(nnz / (d * c)),
+                         c);
+            profile_time = ret.comp_time + ret.comm_time;//get_time() - curr_time;  
+            if (profile_time < min_profile_time_k3s) {
+              min_profile_time_k3s = profile_time;
+              best_dev_count_k3s = d;
+              best_copy_k3s = c;
+            }
+          }
+        }
+
+
   
-//   cout << "Starting tests..." << endl;
 
-//   for (int i = 0; i < repeat_test; i++) {
-//     for (int i = 0; i < m; i++) {
-//       y_baseline_csr[i] = 0.0;
-//       y_static_csr[i] = 0.0;
-//       y_dynamic_csr[i] = 0.0;
+  int pass_baseline_csr = 0;
+  int pass_static_csr = 0;
+  int pass_dynamic_csr = 0;
 
-//       y_baseline_csc[i] = 0.0;
-//       y_static_csc[i] = 0.0;
-//       y_dynamic_csc[i] = 0.0;
+  int pass_baseline_csc = 0;
+  int pass_static_csc = 0;
+  int pass_dynamic_csc = 0;
 
-//       y_baseline_coo[i] = 0.0;
-//       y_static_coo[i] = 0.0;
-//       y_dynamic_coo[i] = 0.0;
-//     }
-//     // ret = spMV_mgpu_baseline(m, n, nnz, &ALPHA,
-//     //                         csrVal, csrRowPtr, csrColIdx, 
-//     //                         x, &BETA,
-//     //                         y_baseline_csr,
-//     //                         ngpu);
-//     // ret_baseline_csr.add(ret);
+  int pass_baseline_coo = 0;
+  int pass_static_coo = 0;
+  int pass_dynamic_coo = 0;
 
-//     // ret = spMV_mgpu_v1_numa(m, n, nnz, &ALPHA,
-//     //                         csrVal, csrRowPtr, csrColIdx,
-//     //                         x, &BETA,
-//     //                         y_static_csr,
-//     //                         ngpu,
-//     //                         1,
-//     //                         numa_mapping); //kernel 1
-//     // ret_static_csr.add(ret);
+  struct spmv_ret ret;
+  struct spmv_ret ret2;
+  ret = ret2;
+  int numa_mapping[6] = {0,0,0,1,1,1};
+  
+  cout << "Starting tests..." << endl;
 
-//     // ret = spMV_mgpu_v1_numa_csc(m, n, nnz, &ALPHA,
-//     //                             cscVal, cscColPtr, cscRowIdx,
-//     //                             x, &BETA,
-//     //                             y_static_csr,
-//     //                             ngpu,
-//     //                             1,
-//     //                             numa_mapping); //kernel 1
-//     // ret_static_csc.add(ret);
+  for (int i = 0; i < repeat_test; i++) {
+    for (int i = 0; i < m; i++) {
+      y_baseline_csr[i] = 0.0;
+      y_static_csr[i] = 0.0;
+      y_dynamic_csr[i] = 0.0;
+
+      y_baseline_csc[i] = 0.0;
+      y_static_csc[i] = 0.0;
+      y_dynamic_csc[i] = 0.0;
+
+      y_baseline_coo[i] = 0.0;
+      y_static_coo[i] = 0.0;
+      y_dynamic_coo[i] = 0.0;
+    }
+    // ret = spMV_mgpu_baseline(m, n, nnz, &ALPHA,
+    //                         csrVal, csrRowPtr, csrColIdx, 
+    //                         x, &BETA,
+    //                         y_baseline_csr,
+    //                         ngpu);
+    // ret_baseline_csr.add(ret);
+
+    // ret = spMV_mgpu_v1_numa(m, n, nnz, &ALPHA,
+    //                         csrVal, csrRowPtr, csrColIdx,
+    //                         x, &BETA,
+    //                         y_static_csr,
+    //                         ngpu,
+    //                         1,
+    //                         numa_mapping); //kernel 1
+    // ret_static_csr.add(ret);
+
+    // ret = spMV_mgpu_v1_numa_csc(m, n, nnz, &ALPHA,
+    //                             cscVal, cscColPtr, cscRowIdx,
+    //                             x, &BETA,
+    //                             y_static_csr,
+    //                             ngpu,
+    //                             1,
+    //                             numa_mapping); //kernel 1
+    // ret_static_csc.add(ret);
 
     
 
     
 
-//     bool correct_baseline_csr = true;
-//     bool correct_static_csr = true;
-//     bool correct_dynamic_csr = true;
+    bool correct_baseline_csr = true;
+    bool correct_static_csr = true;
+    bool correct_dynamic_csr = true;
 
-//     bool correct_baseline_csc = true;
-//     bool correct_static_csc = true;
-//     bool correct_dynamic_csc = true;
+    bool correct_baseline_csc = true;
+    bool correct_static_csc = true;
+    bool correct_dynamic_csc = true;
 
-//     bool correct_baseline_coo = true;
-//     bool correct_static_coo = true;
-//     bool correct_dynamic_coo = true;
+    bool correct_baseline_coo = true;
+    bool correct_static_coo = true;
+    bool correct_dynamic_coo = true;
     
 
-//     double E = 1e-3;
-//     for(int i = 0; i < m; i++) {
-//       if (abs(y_verify[i] - y_baseline_csr[i]) > E) {
-//         correct_baseline_csr = false;
-//       }
-//       if (abs(y_verify[i] - y_static_csr[i]) > E) {
-//         correct_static_csr = false;
-//       }
-//       if (abs(y_verify[i] - y_dynamic_csr[i]) > E) {
-//         correct_dynamic_csr = false;
-//       }
+    double E = 1e-3;
+    for(int i = 0; i < m; i++) {
+      if (abs(y_verify[i] - y_baseline_csr[i]) > E) {
+        correct_baseline_csr = false;
+      }
+      if (abs(y_verify[i] - y_static_csr[i]) > E) {
+        correct_static_csr = false;
+      }
+      if (abs(y_verify[i] - y_dynamic_csr[i]) > E) {
+        correct_dynamic_csr = false;
+      }
 
-//       if (abs(y_verify[i] - y_baseline_csc[i]) > E) {
-//         correct_baseline_csc = false;
-//       }
-//       if (abs(y_verify[i] - y_static_csc[i]) > E) {
-//         correct_static_csc = false;
-//       }
-//       if (abs(y_verify[i] - y_dynamic_csc[i]) > E) {
-//         correct_dynamic_csc = false;
-//       }
+      if (abs(y_verify[i] - y_baseline_csc[i]) > E) {
+        correct_baseline_csc = false;
+      }
+      if (abs(y_verify[i] - y_static_csc[i]) > E) {
+        correct_static_csc = false;
+      }
+      if (abs(y_verify[i] - y_dynamic_csc[i]) > E) {
+        correct_dynamic_csc = false;
+      }
 
-//       if (abs(y_verify[i] - y_baseline_coo[i]) > E) {
-//         correct_baseline_coo = false;
-//       }
-//       if (abs(y_verify[i] - y_static_coo[i]) > E) {
-//         correct_static_coo = false;
-//       }
-//       if (abs(y_verify[i] - y_dynamic_coo[i]) > E) {
-//         correct_dynamic_coo = false;
-//       }
-//     }
+      if (abs(y_verify[i] - y_baseline_coo[i]) > E) {
+        correct_baseline_coo = false;
+      }
+      if (abs(y_verify[i] - y_static_coo[i]) > E) {
+        correct_static_coo = false;
+      }
+      if (abs(y_verify[i] - y_dynamic_coo[i]) > E) {
+        correct_dynamic_coo = false;
+      }
+    }
 
-//     if (correct_baseline_csr) pass_baseline_csr++;
-//     if (correct_static_csr) pass_static_csr++;
-//     if (correct_dynamic_csr) pass_dynamic_csr++;
+    if (correct_baseline_csr) pass_baseline_csr++;
+    if (correct_static_csr) pass_static_csr++;
+    if (correct_dynamic_csr) pass_dynamic_csr++;
 
-//     if (correct_baseline_csc) pass_baseline_csc++;
-//     if (correct_static_csc) pass_static_csc++;
-//     if (correct_dynamic_csc) pass_dynamic_csc++;
+    if (correct_baseline_csc) pass_baseline_csc++;
+    if (correct_static_csc) pass_static_csc++;
+    if (correct_dynamic_csc) pass_dynamic_csc++;
 
-//     if (correct_baseline_coo) pass_baseline_coo++;
-//     if (correct_static_coo) pass_static_coo++;
-//     if (correct_dynamic_coo) pass_dynamic_coo++;
+    if (correct_baseline_coo) pass_baseline_coo++;
+    if (correct_static_coo) pass_static_coo++;
+    if (correct_dynamic_coo) pass_dynamic_coo++;
     
 
-//     ret_baseline_csr.avg(repeat_test);
-//     ret_static_csr.avg(repeat_test);
-//     ret_dynamic_csr.avg(repeat_test);
+    ret_baseline_csr.avg(repeat_test);
+    ret_static_csr.avg(repeat_test);
+    ret_dynamic_csr.avg(repeat_test);
 
-//     ret_baseline_csc.avg(repeat_test);
-//     ret_static_csc.avg(repeat_test);
-//     ret_dynamic_csc.avg(repeat_test);
+    ret_baseline_csc.avg(repeat_test);
+    ret_static_csc.avg(repeat_test);
+    ret_dynamic_csc.avg(repeat_test);
 
-//     ret_baseline_coo.avg(repeat_test);
-//     ret_static_coo.avg(repeat_test);
-//     ret_dynamic_coo.avg(repeat_test);
-//   }
+    ret_baseline_coo.avg(repeat_test);
+    ret_static_coo.avg(repeat_test);
+    ret_dynamic_coo.avg(repeat_test);
+  }
 
-//   ret_baseline_csr.print();
-//   printf("Check: %d/%d\n", pass_baseline_csr, repeat_test);
-//   ret_static_csr.print();
-//   printf("Check: %d/%d\n", pass_static_csr, repeat_test);
-//   ret_dynamic_csr.print();
-//   printf("Check: %d/%d\n", pass_dynamic_csr, repeat_test);
+  ret_baseline_csr.print();
+  printf("Check: %d/%d\n", pass_baseline_csr, repeat_test);
+  ret_static_csr.print();
+  printf("Check: %d/%d\n", pass_static_csr, repeat_test);
+  ret_dynamic_csr.print();
+  printf("Check: %d/%d\n", pass_dynamic_csr, repeat_test);
 
-//   ret_baseline_csc.print();
-//   printf("Check: %d/%d\n", pass_baseline_csc, repeat_test);
-//   ret_static_csc.print();
-//   printf("Check: %d/%d\n", pass_static_csc, repeat_test);
-//   ret_dynamic_csc.print();
-//   printf("Check: %d/%d\n", pass_dynamic_csc, repeat_test);
+  ret_baseline_csc.print();
+  printf("Check: %d/%d\n", pass_baseline_csc, repeat_test);
+  ret_static_csc.print();
+  printf("Check: %d/%d\n", pass_static_csc, repeat_test);
+  ret_dynamic_csc.print();
+  printf("Check: %d/%d\n", pass_dynamic_csc, repeat_test);
 
-//   ret_baseline_coo.print();
-//   printf("Check: %d/%d\n", pass_baseline_coo, repeat_test);
-//   ret_static_coo.print();
-//   printf("Check: %d/%d\n", pass_static_coo, repeat_test);
-//   ret_dynamic_coo.print();
-//   printf("Check: %d/%d\n", pass_dynamic_coo, repeat_test);
+  ret_baseline_coo.print();
+  printf("Check: %d/%d\n", pass_baseline_coo, repeat_test);
+  ret_static_coo.print();
+  printf("Check: %d/%d\n", pass_static_coo, repeat_test);
+  ret_dynamic_coo.print();
+  printf("Check: %d/%d\n", pass_dynamic_coo, repeat_test);
 
-//   //myfile << avg_time_baseline << "," << avg_time_v1k1 << "," << avg_time_v1k2 << "," << avg_time_v1k3 << "," << avg_time_v2k1 << "," << avg_time_v2k2 << "," << avg_time_v2k3 << "," << avg_time_v1k1s << "," << avg_time_v1k2s << "," << avg_time_v1k3s << "," << avg_time_v2k1s << "," << avg_time_v2k2s << "," << avg_time_v2k3s;  
+  //myfile << avg_time_baseline << "," << avg_time_v1k1 << "," << avg_time_v1k2 << "," << avg_time_v1k3 << "," << avg_time_v2k1 << "," << avg_time_v2k2 << "," << avg_time_v2k3 << "," << avg_time_v1k1s << "," << avg_time_v1k2s << "," << avg_time_v1k3s << "," << avg_time_v2k1s << "," << avg_time_v2k2s << "," << avg_time_v2k3s;  
 
-//   cudaFreeHost(cooRowIndex);
-//   cudaFreeHost(cooColIndex);
-//   cudaFreeHost(cooVal);
-//   cudaFreeHost(csrRowPtr);
+  cudaFreeHost(cooRowIndex);
+  cudaFreeHost(cooColIndex);
+  cudaFreeHost(cooVal);
+  cudaFreeHost(csrRowPtr);
 
-//   myfile.close();
+  myfile.close();
 }
