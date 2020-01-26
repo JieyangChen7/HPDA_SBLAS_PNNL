@@ -124,10 +124,10 @@ void csr2csrNcsc(int m, int n, int nnz,
              double * csrVal, int * csrRowPtr, int * csrColIdx,
              double * cscVal, int * cscColPtr, int * cscRowIdx) {
 
-  double * A = new double[m * n];
+  //double * A = new double[m * n];
   for (int i = 0; i < m; i++) {
     for (int j = 0; j < n; j++) {
-      A[i * m + j] = 0.0;
+      //A[i * m + j] = 0.0;
     }
   }
 
