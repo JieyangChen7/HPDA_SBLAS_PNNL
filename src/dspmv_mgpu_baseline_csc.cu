@@ -105,8 +105,8 @@ spmv_ret spMV_mgpu_baseline_csc(int m, int n, int nnz, double * alpha,
     checkCudaErrors(cudaMemcpyAsync(dev_cscColPtr[d], host_cscColPtr[d],                   (size_t)((dev_n[d] + 1) * sizeof(int)), cudaMemcpyHostToDevice, stream[d]));
     checkCudaErrors(cudaMemcpyAsync(dev_cscRowIdx[d], &cscRowIdx[cscColPtr[start_col[d]]], (size_t)(dev_nnz[d] * sizeof(int)),     cudaMemcpyHostToDevice, stream[d])); 
     checkCudaErrors(cudaMemcpyAsync(dev_cscVal[d],    &cscVal[cscColPtr[start_col[d]]],    (size_t)(dev_nnz[d] * sizeof(double)),  cudaMemcpyHostToDevice, stream[d]));
-    checkCudaErrors(cudaMemcpyAsync(dev_y[d],         &y[start_col[d]],                    (size_t)(dev_m[d]*sizeof(double)),      cudaMemcpyHostToDevice, stream[d])); 
-    checkCudaErrors(cudaMemcpyAsync(dev_x[d],         x,                                   (size_t)(dev_n[d]*sizeof(double)),      cudaMemcpyHostToDevice, stream[d])); 
+    checkCudaErrors(cudaMemcpyAsync(dev_y[d],         y,                                   (size_t)(dev_m[d]*sizeof(double)),      cudaMemcpyHostToDevice, stream[d])); 
+    checkCudaErrors(cudaMemcpyAsync(dev_x[d],         &x[start_col[d]],                    (size_t)(dev_n[d]*sizeof(double)),      cudaMemcpyHostToDevice, stream[d])); 
   }
   //time_comm = get_time() - curr_time;
 
