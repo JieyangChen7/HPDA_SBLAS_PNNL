@@ -405,7 +405,7 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
         for (int i = 0; i < m; i++) {
           y[i] += pcscGPU[dev_id].py[i];
         }
-        print_vec(pcscGPU[dev_id].py, m, "py-after"+to_string(dev_id));
+        print_vec(pcscGPU[d].py, m, "py-after"+to_string(d));
         print_vec(y, m, "y"+to_string(d));
       }
     }
