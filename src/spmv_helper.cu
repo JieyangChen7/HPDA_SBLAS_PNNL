@@ -374,9 +374,9 @@ void csc2csr_gpu(int m, int n, int nnz,
   checkCudaErrors(cusparseDnnz(handle, CUSPARSE_DIRECTION_ROW,
                                m, n, descr, A, lda, nnzPerRow, nnzTotalDevHostPtr));
 
-  // checkCudaErrors(cusparseDdense2csc(handle, m, n, descr, 
-  //                                    A, lda, nnzPerCol,
-  //                                    cscVal, cscColPtr, cscRowIdx));
+  checkCudaErrors(cusparseDdense2csr(handle, m, n, descr, 
+                                     A, lda, nnzPerRow,
+                                     csrVal, csrRowPtr, csrColIdx));
 
   // checkCudaErrors(cusparseDcsr2csc(handle, m, n, nnz,
   //                                   csrVal, csrRowPtr, csrColIdx,
