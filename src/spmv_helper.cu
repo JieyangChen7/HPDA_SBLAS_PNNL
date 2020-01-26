@@ -395,6 +395,164 @@ void csc2csr_gpu(cusparseHandle_t handle, int m, int n, int nnz, double * A, int
   
 }
 
+void sortCOORow(int m, int n, int nnz,
+                double * cooVal, int * cooRowIdx, int * cooColIdx) {
+  cudaStream_t stream;
+  cusparseStatus_t status;
+  cusparseHandle_t handle;
+
+  checkCudaErrors(cudaStreamCreate(&stream));
+  checkCudaErrors(cusparseCreate(&handle)); 
+  checkCudaErrors(cusparseSetStream(handle, stream));
+
+  double * dcooVal;
+  int * dcooRowIdx;
+  int * dcooColIdx;
+  double * dcooValSorted;
+  void * buffer;
+  size_t bufferSize = 0;
+  int * dP;
+
+  checkCudaErrors(cusparseXcoosort_bufferSizeExt(handle, m, n, nnz, 
+                                                  dcooRowIdx, d_cooCols,
+                                                  &bufferSize));
+
+  checkCudaErrors(cudaMalloc((void**)&dcooVal, nnz * sizeof(double)));
+  checkCudaErrors(cudaMalloc((void**)&dcooRowIdx, nnz * sizeof(int)));
+  checkCudaErrors(cudaMalloc((void**)&dcooColIdx, nnz * sizeof(int)));
+  checkCudaErrors(cudaMalloc((void**)&dcooValSorted, nnz * sizeof(double)));
+  checkCudaErrors(cudaMalloc((void**)&buffer, bufferSize ));
+  checkCudaErrors(cudaMalloc((void**)&dP, nnz * sizeof(int)));
+
+  checkCudaErrors(cudaMemcpy(dcooVal, cooVal, nnz * sizeof(double), cudaMemcpyHostToDevice));
+  checkCudaErrors(cudaMemcpy(dcooRowIdx, cooRowIdx, nnz * sizeof(int), cudaMemcpyHostToDevice));
+  checkCudaErrors(cudaMemcpy(dcooColIdx, cooColIdx, nnz * sizeof(int), cudaMemcpyHostToDevice));
+
+  checkCudaErrors(cusparseCreateIdentityPermutation(handle, nnz, dP));
+  
+  checkCudaErrors(cusparseXcoosortByRow(handle, m, n, nnz, 
+                                        dcooRowIdx, dcooColIdx,
+                                        dP, buffer));
+  checkCudaErrors(cusparseDgthr(handle, nnz, dcooVal, dcooValSorted, dP,
+                                CUSPARSE_INDEX_BASE_ZERO));
+
+  checkCudaErrors(cudaMemcpy(cooVal, dcooValSorted, nnz * sizeof(double), cudaMemcpyDeviceToHost));
+  checkCudaErrors(cudaMemcpy(cooRowIdx, dcooRowIdx, nnz * sizeof(int), cudaMemcpyDeviceToHost));
+  checkCudaErrors(cudaMemcpy(cooColIdx, dcooColIdx, nnz * sizeof(int), cudaMemcpyDeviceToHost));
+
+  checkCudaErrors(cudaFree(dcooVal));
+  checkCudaErrors(cudaFree(dcooRowIdx));
+  checkCudaErrors(cudaFree(dcooColIdx));
+  checkCudaErrors(cudaFree(dcooValSorted));
+  checkCudaErrors(cudaFree(buffer));
+  checkCudaErrors(cudaFree(dP));
+
+}
+
+void sortCOOCol(int m, int n, int nnz,
+                double * cooVal, int * cooRowIdx, int * cooColIdx) {
+  cudaStream_t stream;
+  cusparseStatus_t status;
+  cusparseHandle_t handle;
+
+  checkCudaErrors(cudaStreamCreate(&stream));
+  checkCudaErrors(cusparseCreate(&handle)); 
+  checkCudaErrors(cusparseSetStream(handle, stream));
+
+  double * dcooVal;
+  int * dcooRowIdx;
+  int * dcooColIdx;
+  double * dcooValSorted;
+  void * buffer;
+  size_t bufferSize = 0;
+  int * dP;
+
+  checkCudaErrors(cusparseXcoosort_bufferSizeExt(handle, m, n, nnz, 
+                                                  dcooRowIdx, d_cooCols,
+                                                  &bufferSize));
+
+  checkCudaErrors(cudaMalloc((void**)&dcooVal, nnz * sizeof(double)));
+  checkCudaErrors(cudaMalloc((void**)&dcooRowIdx, nnz * sizeof(int)));
+  checkCudaErrors(cudaMalloc((void**)&dcooColIdx, nnz * sizeof(int)));
+  checkCudaErrors(cudaMalloc((void**)&dcooValSorted, nnz * sizeof(double)));
+  checkCudaErrors(cudaMalloc((void**)&buffer, bufferSize ));
+  checkCudaErrors(cudaMalloc((void**)&dP, nnz * sizeof(int)));
+
+  checkCudaErrors(cudaMemcpy(dcooVal, cooVal, nnz * sizeof(double), cudaMemcpyHostToDevice));
+  checkCudaErrors(cudaMemcpy(dcooRowIdx, cooRowIdx, nnz * sizeof(int), cudaMemcpyHostToDevice));
+  checkCudaErrors(cudaMemcpy(dcooColIdx, cooColIdx, nnz * sizeof(int), cudaMemcpyHostToDevice));
+
+  checkCudaErrors(cusparseCreateIdentityPermutation(handle, nnz, dP));
+  
+  checkCudaErrors(cusparseXcoosortByColumn(handle, m, n, nnz, 
+                                        dcooRowIdx, dcooColIdx,
+                                        dP, buffer));
+  checkCudaErrors(cusparseDgthr(handle, nnz, dcooVal, dcooValSorted, dP,
+                                CUSPARSE_INDEX_BASE_ZERO));
+
+  checkCudaErrors(cudaMemcpy(cooVal, dcooValSorted, nnz * sizeof(double), cudaMemcpyDeviceToHost));
+  checkCudaErrors(cudaMemcpy(cooRowIdx, dcooRowIdx, nnz * sizeof(int), cudaMemcpyDeviceToHost));
+  checkCudaErrors(cudaMemcpy(cooColIdx, dcooColIdx, nnz * sizeof(int), cudaMemcpyDeviceToHost));
+
+  checkCudaErrors(cudaFree(dcooVal));
+  checkCudaErrors(cudaFree(dcooRowIdx));
+  checkCudaErrors(cudaFree(dcooColIdx));
+  checkCudaErrors(cudaFree(dcooValSorted));
+  checkCudaErrors(cudaFree(buffer));
+  checkCudaErrors(cudaFree(dP));
+
+}
+
+//coo sorted by row
+void coo2csr_gpu(cusparseHandle_t handle, cudaStream_t stream, int m, int n, int nnz,
+                double * cooVal, int * cooRowIdx, int * cooColIdx,
+                double * csrVal, int * csrRowPtr, int * csrColIdx) {
+  checkCudaErrors(cusparseXcoo2csr(handle, cooRowIdx, nnz, m, csrRowPtr,
+                  CUSPARSE_INDEX_BASE_ONE));
+  checkCudaErrors(cudaMemcpyAsync(csrVal, cooVal, nnz * sizeof(double), cudaMemcpyDeviceToDevice, stream));
+  checkCudaErrors(cudaMemcpyAsync(csrColIdx, cooColIdx, nnz * sizeof(int), cudaMemcpyDeviceToDevice, stream));
+}
+
+void findFirstInSorted(int * a, int n, int key) {
+  int l = 0;
+  int r = n;
+  int m = l + (r - l) / 2;
+  while (l < r - 1) {
+    int m = l + (r - l) / 2;
+    if (key <= a[m]) {
+      r = m;
+    } else if (idx > a[m]) {
+      l = m;
+    } 
+  }
+  //cout << "a[" << l << "] = " <<  a[l] << endl;
+  //cout << " a[" << r << "] = " << a[r] << endl;
+  //cout << " idx = " << idx << endl;
+  if (idx == a[l]) return l;
+  if (idx == a[r]) return r;
+  return l;
+}
+
+
+void findLastInSorted(int * a, int n, int key) {
+  int l = 0;
+  int r = n;
+  int m = l + (r - l) / 2;
+  while (l < r - 1) {
+    int m = l + (r - l) / 2;
+    if (key < a[m]) {
+      r = m;
+    } else if (idx >= a[m]) {
+      l = m;
+    } 
+  }
+  //cout << "a[" << l << "] = " <<  a[l] << endl;
+  //cout << " a[" << r << "] = " << a[r] << endl;
+  //cout << " idx = " << idx << endl;
+  if (idx == a[l]) return l;
+  if (idx == a[r]) return r;
+  return l;
+}
 
 
 

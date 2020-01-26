@@ -73,18 +73,18 @@ int main(int argc, char *argv[]) {
   //int copy_of_workspace = atoi(argv[8]);
 
   int ret_code;
-    MM_typecode matcode;
-    FILE *f;
-    int m, n;
-    int nnz;   
-    int * cooRowIndex;
-    int * cooColIndex;
-    double * cooVal;
-    
+  MM_typecode matcode;
+  FILE *f;
+  int m, n;
+  int nnz;   
+  int * cooRowIdx;
+  int * cooColIdx;
+  double * cooVal;
+  
 
-    char * csv_output = argv[5];
-    //cout << "csv_output" << csv_output << endl;
-    int deviceCount;
+  char * csv_output = argv[5];
+  //cout << "csv_output" << csv_output << endl;
+  int deviceCount;
   cudaGetDeviceCount(&deviceCount);
   if (deviceCount < ngpu) {
     cout << "Error: Not enough number of GPUs. Only " << deviceCount << "available." << endl;
@@ -123,8 +123,8 @@ int main(int argc, char *argv[]) {
      n = 10;
 
     cout << "m: " << m << " n: " << n << " nnz: " << nnz << endl;
-    cudaMallocHost((void **)&cooRowIndex, nnz * sizeof(int));
-    cudaMallocHost((void **)&cooColIndex, nnz * sizeof(int));
+    cudaMallocHost((void **)&cooRowIdx, nnz * sizeof(int));
+    cudaMallocHost((void **)&cooColIdx, nnz * sizeof(int));
     cudaMallocHost((void **)&cooVal, nnz * sizeof(double));;
     //Read matrix from file into COO format
     // cout << "Start reading data from file" << endl;
@@ -159,8 +159,8 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < m; i++) {
       for (int j = 0; j < n; j++) {
         cooVal[p] = 1;
-        cooRowIndex[p] = i;
-        cooColIndex[p] = j;
+        cooRowIdx[p] = i;
+        cooColIdx[p] = j;
         p++;
       }
     }
@@ -195,8 +195,8 @@ int main(int argc, char *argv[]) {
     nnz = p;
     cout << "m: " << m << " n: " << n << " nnz: " << nnz << endl;
     
-    cudaMallocHost((void **)&cooRowIndex, nnz * sizeof(int));
-    cudaMallocHost((void **)&cooColIndex, nnz * sizeof(int));
+    cudaMallocHost((void **)&cooRowIdx, nnz * sizeof(int));
+    cudaMallocHost((void **)&cooColIdx, nnz * sizeof(int));
     cudaMallocHost((void **)&cooVal, nnz * sizeof(double));
     p = 0;
     
@@ -213,8 +213,8 @@ int main(int argc, char *argv[]) {
         for (int j = 0; j < n * r; j++) {
           //if (p > nnz) { cout << "error" << endl; break;}
           //else {
-          cooRowIndex[p] = ii;
-          cooColIndex[p] = j;
+          cooRowIdx[p] = ii;
+          cooColIdx[p] = j;
           cooVal[p] = 1.0;//(double) rand() / (RAND_MAX);
           p++;
           //cout << 1 << " ";
@@ -227,6 +227,10 @@ int main(int argc, char *argv[]) {
     //cout << "m: " << m << " n: " << n << " nnz: " << p << endl;
     cout << "Done generating data." << endl;
   }
+
+
+
+  sortCOORow(m, n, nnz, cooVal, cooRowIdx, cooColIdx);
 
   // Convert COO to CSR
   double * csrVal;
@@ -453,6 +457,12 @@ int main(int argc, char *argv[]) {
                                 numa_mapping); //kernel 1
     ret_static_csc.add(ret);
 
+    ret = spMV_mgpu_baseline_coo(m, n, nnz, &ALPHA,
+                                cooVal, cooRowIdx, cooColIdx, 
+                                x, &BETA,
+                                y_baseline_coo,
+                                ngpu);
+    ret_baseline_coo.add(ret);
     
 
     

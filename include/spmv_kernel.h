@@ -177,6 +177,12 @@ spmv_ret spMV_mgpu_baseline_csc(int m, int n, int nnz, double * alpha,
             double * y,
             int ngpu);
 
+spmv_ret spMV_mgpu_baseline_coo(int m, int n, int nnz, double * alpha,
+            double * cooVal, int * cooRowIdx, int * cooColIdx, 
+            double * x, double * beta,
+            double * y,
+            int ngpu);
+
 spmv_ret spMV_mgpu_v1(int m, int n, int nnz, double * alpha,
           double * csrVal, int * csrRowPtr, int * csrColIndex, 
           double * x, double * beta,
@@ -257,5 +263,16 @@ void csc2csr_gpu(int m, int n, int nnz,
                  double * cscVal, int * cscColPtr, int * cscRowIdx,
                  double * csrVal, int * csrRowPtr, int * csrColIdx);
 
+void sortCOORow(int m, int n, int nnz,
+                double * cooVal, int * cooRowIdx, int * cooColIdx);
+
+void sortCOOCol(int m, int n, int nnz,
+                double * cooVal, int * cooRowIdx, int * cooColIdx);
+
+void coo2csr_gpu(cusparseHandle_t handle, cudaStream_t stream, int m, int n, int nnz,
+                double * cooVal, int * cooRowIdx, int * cooColIdx,
+                double * csrVal, int * csrRowPtr, int * csrColIdx);
+void findFirstInSorted(int * a, int n, int key);
+void findLastInSorted(int * a, int n, int key);
 
 #endif /* SPMV_KERNEL */
