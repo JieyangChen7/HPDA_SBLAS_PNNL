@@ -390,7 +390,7 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
     #pragma omp critical 
     {
     coo2csr_gpu(handle, stream, pcooGPU[dev_id].m, pcooGPU[dev_id].n, pcooGPU[dev_id].nnz,
-                pcooGPU[dev_id].val, pcooGPU[dev_id].rowIdx, pcooGPU[dev_id].colIdx,
+                pcooGPU[dev_id].dval, pcooGPU[dev_id].drowIdx, pcooGPU[dev_id].dcolIdx,
                 dev_csrVal, dev_csrRowPtr, dev_csrColIdx);
     }
     #pragma omp barrier
