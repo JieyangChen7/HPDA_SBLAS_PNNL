@@ -514,24 +514,34 @@ int main(int argc, char *argv[]) {
   }
 
   ret_baseline_csr.print();
-  printf("Check: %d/%d\n", pass_baseline_csr, repeat_test);
+  
   ret_static_csr.print();
-  printf("Check: %d/%d\n", pass_static_csr, repeat_test);
+  
   ret_dynamic_csr.print();
-  printf("Check: %d/%d\n", pass_dynamic_csr, repeat_test);
+  
 
   ret_baseline_csc.print();
-  printf("Check: %d/%d\n", pass_baseline_csc, repeat_test);
+  
   ret_static_csc.print();
-  printf("Check: %d/%d\n", pass_static_csc, repeat_test);
+  
   ret_dynamic_csc.print();
-  printf("Check: %d/%d\n", pass_dynamic_csc, repeat_test);
+  
 
   ret_baseline_coo.print();
-  printf("Check: %d/%d\n", pass_baseline_coo, repeat_test);
+  
   ret_static_coo.print();
-  printf("Check: %d/%d\n", pass_static_coo, repeat_test);
+  
   ret_dynamic_coo.print();
+  
+
+  printf("Check: %d/%d\n", pass_baseline_csr, repeat_test);
+  printf("Check: %d/%d\n", pass_static_csr, repeat_test);
+  printf("Check: %d/%d\n", pass_dynamic_csr, repeat_test);
+  printf("Check: %d/%d\n", pass_baseline_csc, repeat_test);
+  printf("Check: %d/%d\n", pass_static_csc, repeat_test);
+  printf("Check: %d/%d\n", pass_dynamic_csc, repeat_test);
+  printf("Check: %d/%d\n", pass_baseline_coo, repeat_test);
+  printf("Check: %d/%d\n", pass_static_coo, repeat_test);
   printf("Check: %d/%d\n", pass_dynamic_coo, repeat_test);
 
   //myfile << avg_time_baseline << "," << avg_time_v1k1 << "," << avg_time_v1k2 << "," << avg_time_v1k3 << "," << avg_time_v2k1 << "," << avg_time_v2k2 << "," << avg_time_v2k3 << "," << avg_time_v1k1s << "," << avg_time_v1k2s << "," << avg_time_v1k3s << "," << avg_time_v2k1s << "," << avg_time_v2k2s << "," << avg_time_v2k3s;  
