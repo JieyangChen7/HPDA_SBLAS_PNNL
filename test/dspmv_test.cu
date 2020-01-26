@@ -269,7 +269,7 @@ int main(int argc, char *argv[]) {
              cscVal, cscColPtr, cscRowIdx);
   printf("out of conversion function\n");
 
-  print_vec(csrVal, nnz, "csrVal:");
+  // print_vec(csrVal, nnz, "csrVal:");
   // print_vec(csrRowPtr, m+1, "csrRowPtr:");
   // print_vec(csrColIdx, nnz, "csrColIdx:");
 
