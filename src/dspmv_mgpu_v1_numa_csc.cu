@@ -395,7 +395,7 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
                     pcscGPU[dev_id].m * sizeof(double), cudaMemcpyDeviceToHost, stream)); 
 
     checkCudaErrors(cudaDeviceSynchronize());
-    print_vec_gpu(pcscGPU[dev_id].y, m, "y"+to_string(dev_id));
+    print_vec(pcscGPU[dev_id].y, m, "y"+to_string(dev_id));
     #pragma omp barrier
     if (dev_id == 0) {
       for (int i = 0; i < m; i++) {
