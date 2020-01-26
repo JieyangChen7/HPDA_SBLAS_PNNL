@@ -324,14 +324,14 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
     cudaMalloc((void**)&pcscGPU[dev_id].dy,      pcscGPU[dev_id].m       * sizeof(double)); 
 
 
-    // tmp_time = get_time();
-    // cudaMemcpyAsync(pcscGPU[dev_id].dcolPtr, pcscGPU[dev_id].colPtr, (pcscGPU[dev_id].n + 1) * sizeof(int), cudaMemcpyHostToDevice, stream); 
-    // cudaDeviceSynchronize();
-    // calcCscColPtr(pcscGPU[dev_id].dcolPtr, pcscGPU[dev_id].n, pcscGPU[dev_id].startIdx, pcscGPU[dev_id].nnz, stream);
-    // cudaDeviceSynchronize();
-    // printf("dev_id %d, part_kernel_time = %f\n", dev_id, get_time() - tmp_time);
-    // part_time += get_time() - tmp_time;  
-    // printf("dev_id %d, part_time = %f\n", dev_id, part_time); 
+    tmp_time = get_time();
+    cudaMemcpyAsync(pcscGPU[dev_id].dcolPtr, pcscGPU[dev_id].colPtr, (pcscGPU[dev_id].n + 1) * sizeof(int), cudaMemcpyHostToDevice, stream); 
+    cudaDeviceSynchronize();
+    calcCscColPtr(pcscGPU[dev_id].dcolPtr, pcscGPU[dev_id].n, pcscGPU[dev_id].startIdx, pcscGPU[dev_id].nnz, stream);
+    cudaDeviceSynchronize();
+    printf("dev_id %d, part_kernel_time = %f\n", dev_id, get_time() - tmp_time);
+    part_time += get_time() - tmp_time;  
+    printf("dev_id %d, part_time = %f\n", dev_id, part_time); 
 
 
     #pragma omp barrier
