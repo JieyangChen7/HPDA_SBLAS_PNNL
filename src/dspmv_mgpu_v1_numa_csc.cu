@@ -186,6 +186,11 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
       if (numa_id == numaContext.numaMapping[i]) local_dev_id++;
     }
 
+    cudaStream_t stream;
+    cusparseStatus_t status;
+    cusparseHandle_t handle;
+    cusparseMatDescr_t descr;
+    int err;
   
     double tmp_time = get_time();
 
@@ -232,7 +237,7 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
     //  host_csrVal[i - start_idx] = csrVal[i];
     //}
 
-    cudaMallocHost((void**)&host_cscColPtr, (dev_n + 1)*sizeof(int));
+    //cudaMallocHost((void**)&host_cscColPtr, (dev_n + 1)*sizeof(int));
     //host_csrRowPtr[0] = 0;
     //host_csrRowPtr[dev_m] = dev_nnz;
     //for (int j = 1; j < dev_m; j++) {
@@ -307,7 +312,7 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
     tmp_time = get_time();
     cudaMemcpyAsync(pcscGPU[dev_id].dcolPtr, pcscGPU[dev_id].colPtr, (pcscGPU[dev_id].n + 1) * sizeof(int), cudaMemcpyHostToDevice, stream); 
     cudaDeviceSynchronize();
-    calcCscColPtr(pcsrGPU[dev_id].dcolPtr, pcsrGPU[dev_id].n, pcsrGPU[dev_id].startIdx, pcsrGPU[dev_id].nnz, stream);
+    calcCscColPtr(pcscGPU[dev_id].dcolPtr, pcscGPU[dev_id].n, pcscGPU[dev_id].startIdx, pcscGPU[dev_id].nnz, stream);
     cudaDeviceSynchronize();
     printf("dev_id %d, part_kernel_time = %f\n", dev_id, get_time() - tmp_time);
     part_time += get_time() - tmp_time;  
@@ -402,7 +407,7 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
     #pragma omp barrier
     if (dev_id == 0) {
       for (int i = 0; i < m; i++) {
-        for (int d = 0; d < dev_id; d++) {
+        for (int d = 0; d < ngpu; d++) {
           y[i] += pcscGPU[d].y[i];
         }
       }
