@@ -21,10 +21,10 @@ INC = -I ../include -I ../include/detail/cuda
 
 all: lib test
 
-lib: dspmv_mgpu_v2.o dspmv_mgpu_v1.o dspmv_mgpu_v1_numa.o dspmv_mgpu_v1_numa_csc.o dspmv_mgpu_baseline.o dspmv_mgpu_baseline_csc.o dspmv_mgpu_baseline_coo.o csr5_kernel.o spmv_helper.o
+lib: dspmv_mgpu_v2.o dspmv_mgpu_v1.o dspmv_mgpu_v1_numa.o dspmv_mgpu_v1_numa_csc.o dspmv_mgpu_v1_numa_coo.o dspmv_mgpu_baseline.o dspmv_mgpu_baseline_csc.o dspmv_mgpu_baseline_coo.o csr5_kernel.o spmv_helper.o
 
 test: lib dspmv_test.o 
-	(cd test && nvcc -ccbin g++ $(NVCC_FLAGS) ../src/csr5_kernel.o ../src/spmv_helper.o dspmv_test.o ../src/dspmv_mgpu_baseline.o ../src/dspmv_mgpu_baseline_csc.o ../src/dspmv_mgpu_baseline_coo.o ../src/dspmv_mgpu_v1.o ../src/dspmv_mgpu_v1_numa.o ../src/dspmv_mgpu_v1_numa_csc.o ../src/dspmv_mgpu_v2.o -o test_spmv $(INC) $(CUDA_INCLUDES) $(CUDA_LIBS) -D VALUE_TYPE=$(VALUE_TYPE) -D NUM_RUN=$(NUM_RUN))
+	(cd test && nvcc -ccbin g++ $(NVCC_FLAGS) ../src/csr5_kernel.o ../src/spmv_helper.o dspmv_test.o ../src/dspmv_mgpu_baseline.o ../src/dspmv_mgpu_baseline_csc.o ../src/dspmv_mgpu_baseline_coo.o ../src/dspmv_mgpu_v1.o ../src/dspmv_mgpu_v1_numa.o ../src/dspmv_mgpu_v1_numa_csc.o ../src/dspmv_mgpu_v1_numa_coo.o ../src/dspmv_mgpu_v2.o -o test_spmv $(INC) $(CUDA_INCLUDES) $(CUDA_LIBS) -D VALUE_TYPE=$(VALUE_TYPE) -D NUM_RUN=$(NUM_RUN))
 	#(cd test && nvcc -ccbin g++ $(NVCC_FLAGS) ../src/csr5_kernel.o ../src/spmv_helper.o dspmspv_test.o ../src/dspmv_mgpu_baseline.o ../src/dspmv_mgpu_v1.o ../src/dspmv_mgpu_v2.o -o test_spmspv $(INC) $(CUDA_INCLUDES) $(CUDA_LIBS) -D VALUE_TYPE=$(VALUE_TYPE) -D NUM_RUN=$(NUM_RUN))
 
 dspmv_mgpu_v2.o: ./src/dspmv_mgpu_v2.cu 
@@ -38,6 +38,9 @@ dspmv_mgpu_v1_numa.o: ./src/dspmv_mgpu_v1_numa.cu
 
 dspmv_mgpu_v1_numa_csc.o: ./src/dspmv_mgpu_v1_numa_csc.cu
 	(cd src && nvcc -ccbin g++ -c $(NVCC_FLAGS) dspmv_mgpu_v1_numa_csc.cu $(INC) $(CUDA_INCLUDES) $(CUDA_LIBS))
+
+dspmv_mgpu_v1_numa_coo.o: ./src/dspmv_mgpu_v1_numa_coo.cu
+	(cd src && nvcc -ccbin g++ -c $(NVCC_FLAGS) dspmv_mgpu_v1_numa_coo.cu $(INC) $(CUDA_INCLUDES) $(CUDA_LIBS))
 
 dspmv_mgpu_baseline.o: ./src/dspmv_mgpu_baseline.cu 
 	(cd src && nvcc -ccbin g++ -c $(NVCC_FLAGS) dspmv_mgpu_baseline.cu $(INC) $(CUDA_INCLUDES) $(CUDA_LIBS))

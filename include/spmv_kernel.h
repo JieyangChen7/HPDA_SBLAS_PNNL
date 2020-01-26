@@ -96,6 +96,33 @@ struct pCSC {
   int endCol;
   bool startFlag;
   bool endFlag;
+
+};
+
+struct pCOO {
+  double * val;
+  int * rowIdx;
+  int * colIdx;
+  double * x;
+  double * y;
+  double * py;
+
+  double * dval;
+  int * drowIdx;
+  int * dcolIdx;
+  double * dx;
+  double * dy;
+
+  int m;
+  int n;
+  int nnz;
+  int startIdx;
+  int endIdx;
+  int startCol;
+  int endCol;
+  bool startFlag;
+  bool endFlag;
+  double org_y;
 };
 
 struct NumaContext {
@@ -200,6 +227,14 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
 
 spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
           double * cscVal, int * cscColPtr, int * cscRowIndex, 
+          double * x, double * beta,
+          double * y,
+          int ngpu, 
+          int kernel,
+          int * numa_mapping);
+
+spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
+          double * cooVal, int * cooRowIdx, int * cooColIdx, 
           double * x, double * beta,
           double * y,
           int ngpu, 
