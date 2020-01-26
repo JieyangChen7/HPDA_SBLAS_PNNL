@@ -349,7 +349,7 @@ void csr2csc_gpu(int m, int n, int nnz,
 
 void csc2csr_gpu(int m, int n, int nnz,
                  double * cscVal, int * cscColPtr, int * cscRowIdx,
-                 double * csrVal, int * csrRowPtr, int * csrColIdx,) {
+                 double * csrVal, int * csrRowPtr, int * csrColIdx) {
   cudaStream_t stream;
   cusparseStatus_t status;
   cusparseHandle_t handle;
