@@ -386,14 +386,10 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
     //cudaDeviceSynchronize();
   
     //print_vec_gpu(dev_x, dev_n, "x"+to_string(dev_id));
-    #pragma omp barrier
-    #pragma omp critical 
-    {
+   
     coo2csr_gpu(handle, stream, pcooGPU[dev_id].m, pcooGPU[dev_id].n, pcooGPU[dev_id].nnz,
                 pcooGPU[dev_id].dval, pcooGPU[dev_id].drowIdx, pcooGPU[dev_id].dcolIdx,
                 dev_csrVal, dev_csrRowPtr, dev_csrColIdx);
-    }
-    #pragma omp barrier
     // #pragma omp barrier
     // #pragma omp critical 
     // {
@@ -411,7 +407,7 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
     
     cudaDeviceSynchronize();
     if (status != CUSPARSE_STATUS_SUCCESS) printf("dev_id %d: exec error\n", dev_id);
-    print_vec_gpu(pcooGPU[dev_id].dy, pcooGPU[dev_id].m, "y_after"+to_string(dev_id));
+    //print_vec_gpu(pcooGPU[dev_id].dy, pcooGPU[dev_id].m, "y_after"+to_string(dev_id));
     printf("omp thread %d, time %f\n", dev_id, get_time() - tmp_time);
     core_time = get_time() - tmp_time;
     // GPU based merge
