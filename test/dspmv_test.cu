@@ -345,17 +345,17 @@ int main(int argc, char *argv[]) {
   struct spmv_ret ret_static_coo;
   struct spmv_ret ret_dynamic_coo;
 
-  // ret_baseline_csr.init();
-  // ret_static_csr.init();
-  // ret_dynamic_csr.init();
+  ret_baseline_csr.init();
+  ret_static_csr.init();
+  ret_dynamic_csr.init();
 
-  // ret_baseline_csc.init();
-  // ret_static_csc.init();
-  // ret_dynamic_csc.init();
+  ret_baseline_csc.init();
+  ret_static_csc.init();
+  ret_dynamic_csc.init();
 
-  // ret_baseline_coo.init();
-  // ret_static_coo.init();
-  // ret_dynamic_coo.init();
+  ret_baseline_coo.init();
+  ret_static_coo.init();
+  ret_dynamic_coo.init();
   
   cout << "Compute CPU version" << endl;
   for (int i = 0; i < m; i++) y_verify[i] = 0.0;
