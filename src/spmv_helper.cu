@@ -143,8 +143,8 @@ void csr2csrNcsc(int m, int n, int nnz,
         //csrVal[p] = A[i * m + j];
         //csrColIdx[p] = j;
         //printf("add %f, %d\n", csrVal[p], csrColIdx[p]);
-        p++;
-      }
+        //p++;
+      //}
     }
     //printf("add to row %d\n", i+1);
     //csrRowPtr[i + 1] = p;
