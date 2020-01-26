@@ -268,6 +268,13 @@ int main(int argc, char *argv[]) {
              csrVal, csrRowPtr, csrColIdx,
              cscVal, cscColPtr, cscRowIdx);
 
+  print_vec(cscVal, nnz, "cscVal:");
+  print_vec(csrRowPtr, m+1, "csrRowPtr:");
+  print_vec(csrColIdx, nnz, "csrColIdx:");
+
+  print_vec(csrVal, nnz, "csrVal:");
+  print_vec(cscColPtr, n+1, "cscColPtr:");
+  print_vec(cscRowIdx, nnz, "cscRowIdx:");
 
   double * x;
 
@@ -571,14 +578,14 @@ int main(int argc, char *argv[]) {
                             numa_mapping); //kernel 1
     ret_static_csr.add(ret);
 
-    ret = spMV_mgpu_v1_numa_csc(m, n, nnz, &ALPHA,
-                                cscVal, cscColPtr, cscRowIdx,
-                                x, &BETA,
-                                y_static_csr,
-                                ngpu,
-                                1,
-                                numa_mapping); //kernel 1
-    ret_static_csc.add(ret);
+    // ret = spMV_mgpu_v1_numa_csc(m, n, nnz, &ALPHA,
+    //                             cscVal, cscColPtr, cscRowIdx,
+    //                             x, &BETA,
+    //                             y_static_csr,
+    //                             ngpu,
+    //                             1,
+    //                             numa_mapping); //kernel 1
+    // ret_static_csc.add(ret);
 
     
 
