@@ -113,32 +113,32 @@ spmv_ret spMV_mgpu_baseline_coo(int m, int n, int nnz, double * alpha,
 
 
   //curr_time = get_time();
+  // for (int d = 0; d < ngpu; ++d) {
+  //   checkCudaErrors(cudaSetDevice(d));
+  //   coo2csr_gpu(handle[d], stream[d], dev_m[d], dev_n[d], dev_nnz[d],
+  //               dev_cooVal[d], dev_cooRowIdx[d], dev_cooColIdx[d],
+  //               dev_csrVal[d], dev_csrRowPtr[d], dev_csrColIdx[d]);
+  //   checkCudaErrors(cusparseDcsrmv(handle[d],CUSPARSE_OPERATION_NON_TRANSPOSE, 
+  //                              dev_m[d], dev_n[d], dev_nnz[d], 
+  //                              alpha, descr[d], dev_csrVal[d], 
+  //                              dev_csrRowPtr[d], dev_csrColIdx[d], 
+  //                              dev_x[d], beta, dev_y[d]));       
+  // }
   for (int d = 0; d < ngpu; ++d) {
     checkCudaErrors(cudaSetDevice(d));
-    coo2csr_gpu(handle[d], stream[d], dev_m[d], dev_n[d], dev_nnz[d],
-                dev_cooVal[d], dev_cooRowIdx[d], dev_cooColIdx[d],
-                dev_csrVal[d], dev_csrRowPtr[d], dev_csrColIdx[d]);
-    checkCudaErrors(cusparseDcsrmv(handle[d],CUSPARSE_OPERATION_NON_TRANSPOSE, 
-                               dev_m[d], dev_n[d], dev_nnz[d], 
-                               alpha, descr[d], dev_csrVal[d], 
-                               dev_csrRowPtr[d], dev_csrColIdx[d], 
-                               dev_x[d], beta, dev_y[d]));       
-  }
-  for (int d = 0; d < ngpu; ++d) {
-    cudaSetDevice(d);
-    cudaDeviceSynchronize();
+    checkCudaErrors(cudaDeviceSynchronize());
   }
   comp_time = get_time() - curr_time;
 
   curr_time = get_time();
   for (int d = 0; d < ngpu; d++) {
-    cudaSetDevice(d);
+    checkCudaErrors(cudaSetDevice(d));
     checkCudaErrors(cudaMemcpyAsync(&y[start_row[d]],   dev_y[d], dev_m[d]*sizeof(double),     cudaMemcpyDeviceToHost, stream[d])); 
     //checkCudaErrors(cudaMemcpyAsync(host_py[d], dev_y[d], 
                     //dev_m[d] * sizeof(double), cudaMemcpyDeviceToHost, stream[d])); 
   }
   for (int d = 0; d < ngpu; d++) {
-    cudaSetDevice(d);
+    checkCudaErrors(cudaSetDevice(d));
     checkCudaErrors(cudaDeviceSynchronize());
   }
   // for (int d = 0; d < ngpu; d++) {
