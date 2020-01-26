@@ -235,7 +235,7 @@ void csr2csrNcsc(int m, int n, int nnz,
 }
 
 
-void csc2csr_gpu(cusparseHandle_t handle, int m, int n, int nnz, double * A, int lda, 
+void csc2csrGPU(cusparseHandle_t handle, int m, int n, int nnz, double * A, int lda, 
                  double * cscVal, int * cscColPtr, int * cscRowIdx,
                  double * csrVal, int * csrRowPtr, int * csrColIdx) {
   
