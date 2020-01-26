@@ -358,9 +358,9 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
 
     
 
-    csc2csrGPU(handle, m, n, nnz, A, lda,
-                 pcscGPU[dev_id].dval, pcscGPU[dev_id].dcolPtr, pcscGPU[dev_id].drowIdx,
-                 dev_csrVal, dev_csrRowPtr, dev_csrColIndex); 
+    // csc2csrGPU(handle, m, n, nnz, A, lda,
+    //              pcscGPU[dev_id].dval, pcscGPU[dev_id].dcolPtr, pcscGPU[dev_id].drowIdx,
+    //              dev_csrVal, dev_csrRowPtr, dev_csrColIndex); 
 
 
     // print_vec_gpu(dev_csrVal, pcscGPU[dev_id].nnz, "csrVal"+to_string(dev_id));
@@ -371,13 +371,18 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
     // printf("dev_id %d, alpha %f, beta %f\n", dev_id, *alpha, *beta);
 
 
-
-
-    checkCudaErrors(cusparseDcsrmv(handle,CUSPARSE_OPERATION_NON_TRANSPOSE, 
-                            pcscGPU[dev_id].m, pcscGPU[dev_id].n, pcscGPU[dev_id].nnz, 
-                            alpha, descr, dev_csrVal, 
-                            dev_csrRowPtr, dev_csrColIndex, 
+    checkCudaErrors(cusparseDcsrmv(handle,CUSPARSE_OPERATION_TRANSPOSE, 
+                            pcscGPU[dev_id].n, pcscGPU[dev_id].m, pcscGPU[dev_id].nnz, 
+                            alpha, descr, 
+                            dev_csrVal, dev_csrRowPtr, dev_csrColIndex
                             pcscGPU[dev_id].dx, beta, pcscGPU[dev_id].dy));
+
+
+    // checkCudaErrors(cusparseDcsrmv(handle,CUSPARSE_OPERATION_NON_TRANSPOSE, 
+    //                         pcscGPU[dev_id].m, pcscGPU[dev_id].n, pcscGPU[dev_id].nnz, 
+    //                         alpha, descr, dev_csrVal, 
+    //                         dev_csrRowPtr, dev_csrColIndex, 
+    //                         pcscGPU[dev_id].dx, beta, pcscGPU[dev_id].dy));
       
   
     checkCudaErrors(cudaDeviceSynchronize());
