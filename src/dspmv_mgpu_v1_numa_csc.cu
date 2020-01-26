@@ -338,70 +338,29 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
     double * dev_csrVal;
     int * dev_csrRowPtr;
     int * dev_csrColIndex;
-    cudaMalloc((void**)&dev_csrVal,    pcscGPU[dev_id].nnz     * sizeof(double));
-    cudaMalloc((void**)&dev_csrRowPtr, (pcscGPU[dev_id].m + 1) * sizeof(int)   );
-    cudaMalloc((void**)&dev_csrColIndex, pcscGPU[dev_id].nnz     * sizeof(int)   );
+    checkCudaErrors(cudaMalloc((void**)&dev_csrVal,    pcscGPU[dev_id].nnz     * sizeof(double)));
+    checkCudaErrors(cudaMalloc((void**)&dev_csrRowPtr, (pcscGPU[dev_id].m + 1) * sizeof(int)   ));
+    checkCudaErrors(cudaMalloc((void**)&dev_csrColIndex, pcscGPU[dev_id].nnz     * sizeof(int) ));
 
     csc2csr_gpu(m, n, nnz,
                  pcscGPU[dev_id].dval, pcscGPU[dev_id].dcolPtr, pcscGPU[dev_id].drowIdx,
                  dev_csrVal, dev_csrRowPtr, dev_csrColIndex);
 
-    status = cusparseDcsrmv(handle,CUSPARSE_OPERATION_NON_TRANSPOSE, 
+    checkCudaErrors(cusparseDcsrmv(handle,CUSPARSE_OPERATION_NON_TRANSPOSE, 
                             pcscGPU[dev_id].m, pcscGPU[dev_id].n, pcscGPU[dev_id].nnz, 
                             alpha, descr, dev_csrVal, 
                             dev_csrRowPtr, dev_csrColIndex, 
-                            pcscGPU[dev_id].dx, beta, pcscGPU[dev_id].dy);
+                            pcscGPU[dev_id].dx, beta, pcscGPU[dev_id].dy));
       
-  //     /*
-  //     cusparseSpMatDescr_t A_desc;
-  //     cusparseCreateCsr(&A_desc, dev_m, dev_n, dev_nnz, 
-  //                       dev_csrVal, dev_csrRowPtr, dev_csrColIndex,
-  //                       CUSPARSE_INDEX_32I, 
-  //                       CUSPARSE_INDEX_32I, 
-  //                       CUSPARSE_INDEX_BASE_ZERO, 
-  //                       CUDA_R_64F);
-  //     cusparseDnVecDescr_t x_desc;
-  //     cusparseCreateDnVec(&x_desc, dev_n, dev_x, CUDA_R_64F);
   
-  //     cusparseDnVecDescr_t y_desc;
-  //     cusparseCreateDnVec(&y_desc, dev_m, dev_y, CUDA_R_64F);
-
-  //     size_t buffer_size;
-  //     cusparseSpMV_bufferSize(handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
-  //                             &alpha, A_desc, x_desc, &beta, y_desc,
-  //                             CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, 
-  //                             &buffer_size);
-  //     void * buffer;
-  //     cudaMalloc(&buffer, buffer_size);
-
-  //     cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
-  //                  &alpha, A_desc, x_desc, &beta, y_desc,
-  //                  CUDA_R_64F, CUSPARSE_MV_ALG_DEFAULT, 
-  //                  buffer);
-
-      
-  //     */
-  
- 
-  //   } else if (kernel == 2) {
-  //       status = cusparseDcsrmv_mp(handle,CUSPARSE_OPERATION_NON_TRANSPOSE, 
-  //                                  dev_m, dev_n, dev_nnz, 
-  //                                  alpha, descr, dev_csrVal, 
-  //                                  dev_csrRowPtr, dev_csrColIndex, 
-  //                                  dev_x,  beta, dev_y); 
-  //   } else if (kernel == 3) {
-  //       err = csr5_kernel(dev_m, dev_n, dev_nnz, 
-  //                         alpha, dev_csrVal, 
-  //                         dev_csrRowPtr, dev_csrColIndex, 
-  //                         dev_x, beta, dev_y, stream); 
-  //   }
-    cudaDeviceSynchronize();
+    checkCudaErrors(cudaDeviceSynchronize());
     printf("omp thread %d, time %f\n", dev_id, get_time() - tmp_time);
     core_time = get_time() - tmp_time;
 
-    cudaMemcpyAsync(pcscGPU[dev_id].y, pcscGPU[dev_id].dy, pcscGPU[dev_id].m * sizeof(double), cudaMemcpyHostToDevice, stream); 
+    checkCudaErrors(cudaMemcpyAsync(pcscGPU[dev_id].y, pcscGPU[dev_id].dy, 
+                    pcscGPU[dev_id].m * sizeof(double), cudaMemcpyHostToDevice, stream)); 
 
-    cudaDeviceSynchronize();
+    checkCudaErrors(cudaDeviceSynchronize());
     print_vec_gpu(pcscGPU[dev_id].y, m, "y"+to_string(dev_id));
     #pragma omp barrier
     if (dev_id == 0) {
