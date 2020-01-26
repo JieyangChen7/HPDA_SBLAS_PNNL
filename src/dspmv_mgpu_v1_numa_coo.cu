@@ -219,9 +219,9 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
     
 
 
-    printf("omp thread %d, dev_m %d, dev_n %d, dev_nnz %d, start_idx %d, end_idx %d, start_row %d, end_row %d\n", 
-            dev_id, pcooGPU[dev_id].m, pcooGPU[dev_id].n, pcooGPU[dev_id].nnz, pcooGPU[dev_id].startIdx, pcooGPU[dev_id].endIdx, 
-            pcooGPU[dev_id].startRow, pcooGPU[dev_id].endRow);
+    //printf("omp thread %d, dev_m %d, dev_n %d, dev_nnz %d, start_idx %d, end_idx %d, start_row %d, end_row %d\n", 
+    //        dev_id, pcooGPU[dev_id].m, pcooGPU[dev_id].n, pcooGPU[dev_id].nnz, pcooGPU[dev_id].startIdx, pcooGPU[dev_id].endIdx, 
+    //        pcooGPU[dev_id].startRow, pcooGPU[dev_id].endRow);
 
 
     // preparing data on host 
@@ -370,13 +370,13 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
     curr_time = get_time();
     err = 0;
 
-    //cudaDeviceSynchronize();
-    //print_vec_gpu(dev_csrRowPtr, 5, "csrRowPtr"+to_string(dev_id));
-    //print_vec_gpu(dev_csrVal, 5, "csrVal"+to_string(dev_id));
-    //print_vec_gpu(dev_csrColIndex, 5, "csrColIndex"+to_string(dev_id));
-    //print_vec_gpu(dev_x, 5, "x"+to_string(dev_id));
-    //print_vec_gpu(dev_y, 5, "y_before"+to_string(dev_id));
-    //printf("dev_id %d, alpha %f, beta %f\n", dev_id, *alpha, *beta);
+    cudaDeviceSynchronize();
+    print_vec_gpu(pcooGPU[dev_id].dval, pcooGPU[dev_id].nnz, "dval"+to_string(dev_id));
+    print_vec_gpu(pcooGPU[dev_id].drowIdx, pcooGPU[dev_id].nnz, "drowIdx"+to_string(dev_id));
+    print_vec_gpu(pcooGPU[dev_id].dcolIdx, pcooGPU[dev_id].nnz, "dcolIdx"+to_string(dev_id));
+    print_vec_gpu(pcooGPU[dev_id].dy, pcooGPU[dev_id].m, "y"+to_string(dev_id));
+    print_vec_gpu(pcooGPU[dev_id].dx, pcooGPU[dev_id].n, "y_before"+to_string(dev_id));
+    printf("dev_id %d, alpha %f, beta %f\n", dev_id, *alpha, *beta);
 
 
     //calcCsrRowPtr(dev_csrRowPtr, dev_m, start_idx, dev_nnz, stream);
@@ -387,6 +387,11 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
     coo2csr_gpu(handle, stream, pcooGPU[dev_id].m, pcooGPU[dev_id].n, pcooGPU[dev_id].nnz,
                 pcooGPU[dev_id].val, pcooGPU[dev_id].rowIdx, pcooGPU[dev_id].colIdx,
                 dev_csrVal, dev_csrRowPtr, dev_csrColIdx);
+
+    checkCudaErrors(cudaDeviceSynchronize());
+    print_vec_gpu(dev_csrVal, pcooGPU[dev_id].nnz, "dev_csrVal"+to_string(d));
+    print_vec_gpu(dev_csrRowPtr, pcooGPU[dev_id].m+1, "dev_csrRowPtr"+to_string(d));
+    print_vec_gpu(dev_csrColIdx, pcooGPU[dev_id].nnz, "dev_csrColIdx"+to_string(d));
   
     checkCudaErrors(cusparseDcsrmv(handle,CUSPARSE_OPERATION_NON_TRANSPOSE, 
                               pcooGPU[dev_id].m, pcooGPU[dev_id].n, pcooGPU[dev_id].nnz, 
@@ -396,7 +401,7 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
     
     cudaDeviceSynchronize();
     if (status != CUSPARSE_STATUS_SUCCESS) printf("dev_id %d: exec error\n", dev_id);
-    //print_vec_gpu(dev_y, 5, "y"+to_string(dev_id));
+    print_vec_gpu(pcooGPU[dev_id].dy, pcooGPU[dev_id].m, "y_after"+to_string(dev_id));
     printf("omp thread %d, time %f\n", dev_id, get_time() - tmp_time);
     core_time = get_time() - tmp_time;
     // GPU based merge
