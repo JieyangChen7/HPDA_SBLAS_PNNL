@@ -132,7 +132,7 @@ void csr2csrNcsc(int m, int n, int nnz,
   }
 
   for (int i = 0; i < nnz; i++) {
-    A[cooRowIdx[i] * m + cooColIdx[i]] = cooVal[i];
+    //A[cooRowIdx[i] * m + cooColIdx[i]] = cooVal[i];
   }
 
   int p = 0;
