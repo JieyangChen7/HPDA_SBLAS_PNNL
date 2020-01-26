@@ -115,14 +115,14 @@ spmv_ret spMV_mgpu_baseline_coo(int m, int n, int nnz, double * alpha,
   //curr_time = get_time();
   for (int d = 0; d < ngpu; ++d) {
     checkCudaErrors(cudaSetDevice(d));
-    coo2csr_gpu(handle[d], stream[d], dev_m[d], dev_n[d], dev_nnz[d],
-                dev_cooVal[d], dev_cooRowIdx[d], dev_cooColIdx[d],
-                dev_csrVal[d], dev_csrRowPtr[d], dev_csrColIdx[d]);
-    // checkCudaErrors(cusparseDcsrmv(handle[d],CUSPARSE_OPERATION_NON_TRANSPOSE, 
-    //                            dev_m[d], dev_n[d], dev_nnz[d], 
-    //                            alpha, descr[d], dev_csrVal[d], 
-    //                            dev_csrRowPtr[d], dev_csrColIdx[d], 
-    //                            dev_x[d], beta, dev_y[d]));       
+    // coo2csr_gpu(handle[d], stream[d], dev_m[d], dev_n[d], dev_nnz[d],
+    //             dev_cooVal[d], dev_cooRowIdx[d], dev_cooColIdx[d],
+    //             dev_csrVal[d], dev_csrRowPtr[d], dev_csrColIdx[d]);
+    checkCudaErrors(cusparseDcsrmv(handle[d],CUSPARSE_OPERATION_NON_TRANSPOSE, 
+                               dev_m[d], dev_n[d], dev_nnz[d], 
+                               alpha, descr[d], dev_csrVal[d], 
+                               dev_csrRowPtr[d], dev_csrColIdx[d], 
+                               dev_x[d], beta, dev_y[d]));       
   }
   for (int d = 0; d < ngpu; ++d) {
     checkCudaErrors(cudaSetDevice(d));
