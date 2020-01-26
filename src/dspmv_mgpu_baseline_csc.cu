@@ -79,7 +79,7 @@ spmv_ret spMV_mgpu_baseline_csc(int m, int n, int nnz, double * alpha,
     checkCudaErrors(cudaMalloc((void**)&(dev_csrRowPtr[d]),   (dev_m[d] + 1) * sizeof(int)   ));
     checkCudaErrors(cudaMalloc((void**)&(dev_csrColIdx[d]),   dev_nnz[d]     * sizeof(int)   ));
 
-    cudaMallocHost((void**)& host_py[d], dev_m[d] * sizeof(int));
+    cudaMallocHost((void**)& host_py[d], dev_m[d] * sizeof(double));
     cudaMallocHost((void**)& host_cscColPtr[d], (dev_n[d]+1) * sizeof(int));
 
     checkCudaErrors(cudaMalloc((void**)&dev_cscColPtr[d], (dev_n[d] + 1) * sizeof(int)));
