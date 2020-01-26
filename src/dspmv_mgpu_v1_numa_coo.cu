@@ -20,15 +20,15 @@ using namespace std;
 __global__ void
 _calcCooRowIdx(int * cooRowIdx, int nnz, int offset) {
   int idx = blockIdx.x * blockDim.x + threadIdx.x;
-  for (int i = idx; i < m; i += blockDim.x * gridDim.x) {
+  for (int i = idx; i < nnz; i += blockDim.x * gridDim.x) {
     cooRowIdx[i] -= offset; 
   }
 }
 
 void calcCooRowIdx(int * cooRowIdx, int nnz, int offset, cudaStream_t stream) {
   int thread_per_block = 256;
-  int block_per_grid = ceil((float)m / thread_per_block); 
-  _calcCooRowIdx<<<block_per_grid, thread_per_block, 0, stream>>>(cooRowIdx, nnz, offset, nnz);
+  int block_per_grid = ceil((float)nnz / thread_per_block); 
+  _calcCooRowIdx<<<block_per_grid, thread_per_block, 0, stream>>>(cooRowIdx, nnz, offset);
 }
 
 
@@ -111,9 +111,9 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
       tmp_time = get_time();
 
       for (int i = pcooNuma[numa_id].startIdx; i <= pcooNuma[numa_id].endIdx; i++) {
-        pcooNuma[numa_id].val[i - pcooNuma[numa_id].startIdx] = csrVal[i];
-        pcooNuma[numa_id].rowIdx[i - pcooNuma[numa_id].startIdx] = rowIdx[i] - pcooNuma[numa_id].startRow;
-        pcooNuma[numa_id].colIdx[i - pcooNuma[numa_id].startIdx] = colIdx[i];
+        pcooNuma[numa_id].val[i - pcooNuma[numa_id].startIdx] = cooVal[i];
+        pcooNuma[numa_id].rowIdx[i - pcooNuma[numa_id].startIdx] = cooRowIdx[i] - pcooNuma[numa_id].startRow;
+        pcooNuma[numa_id].colIdx[i - pcooNuma[numa_id].startIdx] = cooColIdx[i];
       }
 
       for (int i = 0; i < pcooNuma[numa_id].n; i++) {
@@ -340,10 +340,10 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
 
     double * dev_csrVal;
     int * dev_csrRowPtr;
-    int * dev_csrColIndex;
+    int * dev_csrColIdx;
     checkCudaErrors(cudaMalloc((void**)&dev_csrVal,    pcooGPU[dev_id].nnz     * sizeof(double)));
     checkCudaErrors(cudaMalloc((void**)&dev_csrRowPtr, (pcooGPU[dev_id].m + 1) * sizeof(int)   ));
-    checkCudaErrors(cudaMalloc((void**)&dev_csrColIndex, pcooGPU[dev_id].nnz     * sizeof(int) ));
+    checkCudaErrors(cudaMalloc((void**)&dev_csrColIdx, pcooGPU[dev_id].nnz     * sizeof(int) ));
 
 
 
@@ -362,16 +362,15 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
     //cudaMemcpyAsync(dev_csrRowPtr, host_csrRowPtr, (dev_m + 1) * sizeof(int), cudaMemcpyHostToDevice, stream);
 
     checkCudaErrors(cudaMemcpyAsync(pcooGPU[dev_id].dcolIdx, pcooGPU[dev_id].colIdx, pcooGPU[dev_id].nnz * sizeof(int), cudaMemcpyHostToDevice, stream)); 
-    checkCudaErrors(cudaMemcpyAsync(pcooGPU[dev_id].dval,    pcooGPU[dev_id].val,    pcooGPU[dev_id].nnz * sizeof(double), cudaMemcpyHostToDevice, stream)) 
+    checkCudaErrors(cudaMemcpyAsync(pcooGPU[dev_id].dval,    pcooGPU[dev_id].val,    pcooGPU[dev_id].nnz * sizeof(double), cudaMemcpyHostToDevice, stream));
     checkCudaErrors(cudaMemcpyAsync(pcooGPU[dev_id].dy,      pcooGPU[dev_id].y,      pcooGPU[dev_id].m*sizeof(double),  cudaMemcpyHostToDevice, stream)); 
     checkCudaErrors(cudaMemcpyAsync(pcooGPU[dev_id].dx,      pcooGPU[dev_id].x,      pcooGPU[dev_id].n*sizeof(double), cudaMemcpyHostToDevice, stream)); 
 
     time_comm = get_time() - curr_time;
     curr_time = get_time();
     err = 0;
-    if (kernel == 1) {
 
-    cudaDeviceSynchronize();
+    //cudaDeviceSynchronize();
     //print_vec_gpu(dev_csrRowPtr, 5, "csrRowPtr"+to_string(dev_id));
     //print_vec_gpu(dev_csrVal, 5, "csrVal"+to_string(dev_id));
     //print_vec_gpu(dev_csrColIndex, 5, "csrColIndex"+to_string(dev_id));

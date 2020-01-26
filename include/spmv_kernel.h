@@ -118,8 +118,8 @@ struct pCOO {
   int nnz;
   int startIdx;
   int endIdx;
-  int startCol;
-  int endCol;
+  int startRow;
+  int endRow;
   bool startFlag;
   bool endFlag;
   double org_y;
