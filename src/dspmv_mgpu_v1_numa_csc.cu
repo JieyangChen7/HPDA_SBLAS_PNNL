@@ -338,7 +338,7 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
     tmp_time = get_time();
 
     cudaMemcpyAsync(pcscGPU[dev_id].dval,    pcscGPU[dev_id].val,    pcscGPU[dev_id].nnz * sizeof(double), cudaMemcpyHostToDevice, stream);
-    cudaMemcpyAsync(pcscGPU[dev_id].dcolPtr, pcscGPU[dev_id].colPtr, (pcscGPU[dev_id].n + 1) * sizeof(int), cudaMemcpyHostToDevice, stream); 
+    // cudaMemcpyAsync(pcscGPU[dev_id].dcolPtr, pcscGPU[dev_id].colPtr, (pcscGPU[dev_id].n + 1) * sizeof(int), cudaMemcpyHostToDevice, stream); 
     cudaMemcpyAsync(pcscGPU[dev_id].drowIdx, pcscGPU[dev_id].rowIdx, pcscGPU[dev_id].nnz * sizeof(int), cudaMemcpyHostToDevice, stream); 
     cudaMemcpyAsync(pcscGPU[dev_id].dx,      pcscGPU[dev_id].x,      pcscGPU[dev_id].n * sizeof(double),  cudaMemcpyHostToDevice, stream); 
     cudaMemcpyAsync(pcscGPU[dev_id].dy,      pcscGPU[dev_id].y,      pcscGPU[dev_id].m * sizeof(double), cudaMemcpyHostToDevice, stream); 
