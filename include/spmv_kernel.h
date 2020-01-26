@@ -272,7 +272,7 @@ void sortCOOCol(int m, int n, int nnz,
 void coo2csr_gpu(cusparseHandle_t handle, cudaStream_t stream, int m, int n, int nnz,
                 double * cooVal, int * cooRowIdx, int * cooColIdx,
                 double * csrVal, int * csrRowPtr, int * csrColIdx);
-void findFirstInSorted(int * a, int n, int key);
-void findLastInSorted(int * a, int n, int key);
+int findFirstInSorted(int * a, int n, int key);
+int findLastInSorted(int * a, int n, int key);
 
 #endif /* SPMV_KERNEL */

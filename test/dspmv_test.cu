@@ -277,7 +277,7 @@ int main(int argc, char *argv[]) {
   //         cscVal, cscColPtr, cscRowIdx);
 
   csr2csrNcsc(m, n, nnz,
-             cooVal, cooRowIndex, cooColIndex,
+             cooVal, cooRowIdx, cooColIdx,
              csrVal, csrRowPtr, csrColIdx,
              cscVal, cscColPtr, cscRowIdx);
   printf("out of conversion function\n");

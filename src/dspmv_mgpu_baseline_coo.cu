@@ -59,8 +59,8 @@ spmv_ret spMV_mgpu_baseline_coo(int m, int n, int nnz, double * alpha,
     cudaSetDevice(d);
     start_row[d] = floor((d)     * m / ngpu);
     end_row[d]   = floor((d + 1) * m / ngpu) - 1;
-    start_idx[d] = findFirstInSorted(host_cooRowIdx, nnz, start_row[d]);
-    end_idx[d]   = findLastInSorted(host_cooRowIdx, nnz, end_row[d]);
+    start_idx[d] = findFirstInSorted(cooRowIdx, nnz, start_row[d]);
+    end_idx[d]   = findLastInSorted(cooRowIdx, nnz, end_row[d]);
     dev_m[d]   = end_row[d] - start_row[d] + 1;
     dev_n[d]   = n;
     dev_nnz[d] = end_idx[d] - start_idx[d] + 1;
@@ -103,7 +103,7 @@ spmv_ret spMV_mgpu_baseline_coo(int m, int n, int nnz, double * alpha,
   curr_time = get_time();
   for (int d = 0; d < ngpu; d++) {
     cudaSetDevice(d);
-    checkCudaErrors(cudaMemcpyAsync(dev_cooVal[d],    cooVal[start_idx[d]],          dev_nnz[d] * sizeof(double), cudaMemcpyHostToDevice, stream[d]));
+    checkCudaErrors(cudaMemcpyAsync(dev_cooVal[d],    &(cooVal[start_idx[d]]),          dev_nnz[d] * sizeof(double), cudaMemcpyHostToDevice, stream[d]));
     checkCudaErrors(cudaMemcpyAsync(dev_cooRowIdx[d], &host_cooRowIdx[start_idx[d]], dev_nnz[d] * sizeof(int),    cudaMemcpyHostToDevice, stream[d])); 
     checkCudaErrors(cudaMemcpyAsync(dev_cooColIdx[d], &cooColIdx[start_idx[d]],      dev_nnz[d] * sizeof(double), cudaMemcpyHostToDevice, stream[d]));
     checkCudaErrors(cudaMemcpyAsync(dev_y[d],         &y[start_row],                 dev_m[d]*sizeof(double),     cudaMemcpyHostToDevice, stream[d])); 

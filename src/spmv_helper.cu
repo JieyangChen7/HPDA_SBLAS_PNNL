@@ -414,7 +414,7 @@ void sortCOORow(int m, int n, int nnz,
   int * dP;
 
   checkCudaErrors(cusparseXcoosort_bufferSizeExt(handle, m, n, nnz, 
-                                                  dcooRowIdx, d_cooCols,
+                                                  dcooRowIdx, dcooColIdx,
                                                   &bufferSize));
 
   checkCudaErrors(cudaMalloc((void**)&dcooVal, nnz * sizeof(double)));
@@ -513,7 +513,7 @@ void coo2csr_gpu(cusparseHandle_t handle, cudaStream_t stream, int m, int n, int
   checkCudaErrors(cudaMemcpyAsync(csrColIdx, cooColIdx, nnz * sizeof(int), cudaMemcpyDeviceToDevice, stream));
 }
 
-void findFirstInSorted(int * a, int n, int key) {
+int findFirstInSorted(int * a, int n, int key) {
   int l = 0;
   int r = n;
   int m = l + (r - l) / 2;
@@ -521,20 +521,20 @@ void findFirstInSorted(int * a, int n, int key) {
     int m = l + (r - l) / 2;
     if (key <= a[m]) {
       r = m;
-    } else if (idx > a[m]) {
+    } else if (key > a[m]) {
       l = m;
     } 
   }
   //cout << "a[" << l << "] = " <<  a[l] << endl;
   //cout << " a[" << r << "] = " << a[r] << endl;
   //cout << " idx = " << idx << endl;
-  if (idx == a[l]) return l;
-  if (idx == a[r]) return r;
+  if (key == a[l]) return l;
+  if (key == a[r]) return r;
   return l;
 }
 
 
-void findLastInSorted(int * a, int n, int key) {
+int findLastInSorted(int * a, int n, int key) {
   int l = 0;
   int r = n;
   int m = l + (r - l) / 2;
@@ -542,15 +542,15 @@ void findLastInSorted(int * a, int n, int key) {
     int m = l + (r - l) / 2;
     if (key < a[m]) {
       r = m;
-    } else if (idx >= a[m]) {
+    } else if (key >= a[m]) {
       l = m;
     } 
   }
   //cout << "a[" << l << "] = " <<  a[l] << endl;
   //cout << " a[" << r << "] = " << a[r] << endl;
   //cout << " idx = " << idx << endl;
-  if (idx == a[l]) return l;
-  if (idx == a[r]) return r;
+  if (key == a[l]) return l;
+  if (key == a[r]) return r;
   return l;
 }
 
