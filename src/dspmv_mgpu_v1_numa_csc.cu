@@ -342,29 +342,15 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
     cudaMalloc((void**)&dev_csrRowPtr, (pcscGPU[dev_id].m + 1) * sizeof(int)   );
     cudaMalloc((void**)&dev_csrColIndex, pcscGPU[dev_id].nnz     * sizeof(int)   );
 
-
     csc2csr_gpu(m, n, nnz,
                  pcscGPU[dev_id].dval, pcscGPU[dev_id].dcolPtr, pcscGPU[dev_id].drowIdx,
                  dev_csrVal, dev_csrRowPtr, dev_csrColIndex);
 
-
-  //     cusparseDcsc2dense(handle,
-  //                        dev_m, dev_n,
-  //                        descr,
-  //                        dev_cscVal,
-  //                        dev_cscRowIndex,
-  //                        dev_cscColPtr,
-  //                        dense_A,
-  //                        lda);
-
-      
-
-
-  //     status = cusparseDcsrmv(handle,CUSPARSE_OPERATION_NON_TRANSPOSE, 
-  //                             dev_m, dev_n, dev_nnz, 
-  //                             alpha, descr, dev_csrVal, 
-  //                             dev_csrRowPtr, dev_csrColIndex, 
-  //                             dev_x, beta, dev_y);
+    status = cusparseDcsrmv(handle,CUSPARSE_OPERATION_NON_TRANSPOSE, 
+                            pcscGPU[dev_id].m, pcscGPU[dev_id].n, pcscGPU[dev_id].nnz, 
+                            alpha, descr, dev_csrVal, 
+                            dev_csrRowPtr, dev_csrColIndex, 
+                            pcscGPU[dev_id].dx, beta, pcscGPU[dev_id].dy);
       
   //     /*
   //     cusparseSpMatDescr_t A_desc;
