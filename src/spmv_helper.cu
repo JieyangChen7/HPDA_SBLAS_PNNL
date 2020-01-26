@@ -146,9 +146,12 @@ void csr2csrNcsc(int m, int n, int nnz,
         p++;
       }
     }
+    printf("add to row %d\n", i+1);
     csrRowPtr[i + 1] = p;
     printf("row %d\n", p);
   }
+
+  printf("")
 
   // p = 0;
   // cscColPtr[0] = 0;
