@@ -9,6 +9,7 @@
 #include <float.h>
 //#include "anonymouslib_cuda.h"
 #include "spmv_kernel.h"
+#include <string>
 using namespace std;
 
 
@@ -100,14 +101,35 @@ spmv_ret spMV_mgpu_baseline_coo(int m, int n, int nnz, double * alpha,
   }
   part_time += get_time() - curr_time;
 
+
+  
+
   curr_time = get_time();
   for (int d = 0; d < ngpu; d++) {
+    print_vec(&(cooVal[start_idx[d]]), dev_nnz[d], "cooVal"+to_string(d));
+    print_vec(host_cooRowIdx[start_idx[d]], dev_nnz[d], "cooRowIdx"+to_string(d));
+    print_vec(cooColIdx[start_idx[d]], dev_nnz[d], "cooRowIdx"+to_string(d));
+    print_vec(y[start_row[d]], dev_m[d], "y"+to_string(d));
+    print_vec(x, dev_n[d], "x"+to_string(d));
+    printf("dev_id %d, m=%d, n=%d, nnz=%d, start_idx=%d, end_idx=%d, start_row=%d, end_row=%d\n", 
+            d, dev_m[d], dev_n[d], dev_nnz[d], start_idx[d], end_idx[d], start_row[d], end_row[d]);
+
+
     checkCudaErrors(cudaSetDevice(d));
     checkCudaErrors(cudaMemcpyAsync(dev_cooVal[d],    &(cooVal[start_idx[d]]),          dev_nnz[d] * sizeof(double), cudaMemcpyHostToDevice, stream[d]));
     checkCudaErrors(cudaMemcpyAsync(dev_cooRowIdx[d], &host_cooRowIdx[start_idx[d]], dev_nnz[d] * sizeof(int),    cudaMemcpyHostToDevice, stream[d])); 
     checkCudaErrors(cudaMemcpyAsync(dev_cooColIdx[d], &cooColIdx[start_idx[d]],      dev_nnz[d] * sizeof(int), cudaMemcpyHostToDevice, stream[d]));
     checkCudaErrors(cudaMemcpyAsync(dev_y[d],         &y[start_row[d]],                 dev_m[d]*sizeof(double),     cudaMemcpyHostToDevice, stream[d])); 
     checkCudaErrors(cudaMemcpyAsync(dev_x[d],         x,                             dev_n[d]*sizeof(double),     cudaMemcpyHostToDevice, stream[d])); 
+  
+    checkCudaErrors(cudaDeviceSynchronize());
+    print_vec_gpu(dev_cooVal[d], dev_nnz[d], "dev_cooVal"+to_string(d));
+    print_vec_gpu(dev_cooRowIdx[d], dev_nnz[d], "dev_cooRowIdx"+to_string(d));
+    print_vec_gpu(dev_cooColIdx[d], dev_nnz[d], "dev_cooColIdx"+to_string(d));
+    print_vec_gpu(dev_y[d], dev_m[d], "dev_y"+to_string(d));
+    print_vec_gpu(dev_x[d], dev_n[d], "dev_x"+to_string(d));
+    
+
   }
   //time_comm = get_time() - curr_time;
 
@@ -115,18 +137,27 @@ spmv_ret spMV_mgpu_baseline_coo(int m, int n, int nnz, double * alpha,
   //curr_time = get_time();
   for (int d = 0; d < ngpu; ++d) {
     checkCudaErrors(cudaSetDevice(d));
-    // coo2csr_gpu(handle[d], stream[d], dev_m[d], dev_n[d], dev_nnz[d],
-    //             dev_cooVal[d], dev_cooRowIdx[d], dev_cooColIdx[d],
-    //             dev_csrVal[d], dev_csrRowPtr[d], dev_csrColIdx[d]);
+    coo2csr_gpu(handle[d], stream[d], dev_m[d], dev_n[d], dev_nnz[d],
+                dev_cooVal[d], dev_cooRowIdx[d], dev_cooColIdx[d],
+                dev_csrVal[d], dev_csrRowPtr[d], dev_csrColIdx[d]);
+    checkCudaErrors(cudaDeviceSynchronize());
+    print_vec_gpu(dev_csrVal[d], dev_nnz[d], "dev_csrVal"+to_string(d));
+    print_vec_gpu(dev_csrRowPtr[d], dev_m[d]+1, "dev_csrRowPtr"+to_string(d));
+    print_vec_gpu(dev_csrColIdx[d], dev_nnz[d], "dev_csrColIdx"+to_string(d));
+
+
     checkCudaErrors(cusparseDcsrmv(handle[d],CUSPARSE_OPERATION_NON_TRANSPOSE, 
                                dev_m[d], dev_n[d], dev_nnz[d], 
                                alpha, descr[d], dev_csrVal[d], 
                                dev_csrRowPtr[d], dev_csrColIdx[d], 
-                               dev_x[d], beta, dev_y[d]));       
-  }
+                               dev_x[d], beta, dev_y[d]));    
+
+
+  } 
   for (int d = 0; d < ngpu; ++d) {
     checkCudaErrors(cudaSetDevice(d));
     checkCudaErrors(cudaDeviceSynchronize());
+    print_vec_gpu(dev_y[d], dev_m[d], "dev_y_after"+to_string(d));
   }
   comp_time = get_time() - curr_time;
 
