@@ -263,10 +263,10 @@ int main(int argc, char *argv[]) {
   //         csrVal, csrRowPtr, csrColIdx,
   //         cscVal, cscColPtr, cscRowIdx);
 
-  csr2csrNcsc(m, n, nnz,
-             cooVal, cooRowIndex, cooColIndex,
-             csrVal, csrRowPtr, csrColIdx,
-             cscVal, cscColPtr, cscRowIdx);
+  // csr2csrNcsc(m, n, nnz,
+  //            cooVal, cooRowIndex, cooColIndex,
+  //            csrVal, csrRowPtr, csrColIdx,
+  //            cscVal, cscColPtr, cscRowIdx);
 
   print_vec(cscVal, nnz, "cscVal:");
   print_vec(csrRowPtr, m+1, "csrRowPtr:");
