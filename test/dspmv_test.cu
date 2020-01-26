@@ -131,26 +131,26 @@ int main(int argc, char *argv[]) {
     if (mm_is_pattern(matcode)) { // binary input
       cout << "binary input\n";
       for (int i = 0; i < nnz; i++) {
-        fscanf(f, "%d %d\n", &cooRowIndex[i], &cooColIndex[i]);
+        fscanf(f, "%d %d\n", &cooRowIdx[i], &cooColIdx[i]);
         cooVal[i] = 1;
-        cooRowIndex[i]--;
-        cooColIndex[i]--;
+        cooRowIdx[i]--;
+        cooColIdx[i]--;
       }
     } else if (mm_is_real(matcode)){ // float input
       cout << "float input\n";
       for (int i = 0; i < nnz; i++) {
-        fscanf(f, "%d %d %lg\n", &cooRowIndex[i], &cooColIndex[i], &cooVal[i]);
-        cooRowIndex[i]--;
-        cooColIndex[i]--;
+        fscanf(f, "%d %d %lg\n", &cooRowIdx[i], &cooColIdx[i], &cooVal[i]);
+        cooRowIdx[i]--;
+        cooColIdx[i]--;
       }
     } else if (mm_is_integer(matcode)){ // integer input
       cout << "integer input\n";
       for (int i = 0; i < nnz; i++) {
         int tmp;
-        fscanf(f, "%d %d %d\n", &cooRowIndex[i], &cooColIndex[i], &tmp);
+        fscanf(f, "%d %d %d\n", &cooRowIdx[i], &cooColIdx[i], &tmp);
         cooVal[i] = tmp;
-        cooRowIndex[i]--;
-        cooColIndex[i]--;
+        cooRowIdx[i]--;
+        cooColIdx[i]--;
       }
     }
     
