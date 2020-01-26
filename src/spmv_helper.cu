@@ -508,7 +508,7 @@ void coo2csr_gpu(cusparseHandle_t handle, cudaStream_t stream, int m, int n, int
                 double * cooVal, int * cooRowIdx, int * cooColIdx,
                 double * csrVal, int * csrRowPtr, int * csrColIdx) {
   checkCudaErrors(cusparseXcoo2csr(handle, cooRowIdx, nnz, m, csrRowPtr,
-                  CUSPARSE_INDEX_BASE_ONE));
+                  CUSPARSE_INDEX_BASE_ZERO));
   checkCudaErrors(cudaMemcpyAsync(csrVal, cooVal, nnz * sizeof(double), cudaMemcpyDeviceToDevice, stream));
   checkCudaErrors(cudaMemcpyAsync(csrColIdx, cooColIdx, nnz * sizeof(int), cudaMemcpyDeviceToDevice, stream));
 }
