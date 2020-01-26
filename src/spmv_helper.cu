@@ -468,7 +468,7 @@ void sortCOOCol(int m, int n, int nnz,
   int * dP;
 
   checkCudaErrors(cusparseXcoosort_bufferSizeExt(handle, m, n, nnz, 
-                                                  dcooRowIdx, d_cooCols,
+                                                  dcooRowIdx, dcooColIdx,
                                                   &bufferSize));
 
   checkCudaErrors(cudaMalloc((void**)&dcooVal, nnz * sizeof(double)));

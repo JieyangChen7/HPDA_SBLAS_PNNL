@@ -566,8 +566,8 @@ int main(int argc, char *argv[]) {
 
   //myfile << avg_time_baseline << "," << avg_time_v1k1 << "," << avg_time_v1k2 << "," << avg_time_v1k3 << "," << avg_time_v2k1 << "," << avg_time_v2k2 << "," << avg_time_v2k3 << "," << avg_time_v1k1s << "," << avg_time_v1k2s << "," << avg_time_v1k3s << "," << avg_time_v2k1s << "," << avg_time_v2k2s << "," << avg_time_v2k3s;  
 
-  cudaFreeHost(cooRowIndex);
-  cudaFreeHost(cooColIndex);
+  cudaFreeHost(cooRowIdx);
+  cudaFreeHost(cooColIdx);
   cudaFreeHost(cooVal);
   cudaFreeHost(csrVal);
   cudaFreeHost(csrRowPtr);
