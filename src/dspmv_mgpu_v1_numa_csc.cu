@@ -177,96 +177,67 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
   double core_time;
   double part_time;
   double merg_time;
-  // #pragma omp parallel default (shared) reduction(max:core_time) reduction(max:part_time) reduction(max:merg_time)
-  // {
-  //   unsigned int dev_id = omp_get_thread_num();
-  //   cudaSetDevice(dev_id);
-  //   unsigned int hwthread = sched_getcpu();
+  #pragma omp parallel default (shared) reduction(max:core_time) reduction(max:part_time) reduction(max:merg_time)
+  {
+    unsigned int dev_id = omp_get_thread_num();
+    cudaSetDevice(dev_id);
+    unsigned int hwthread = sched_getcpu();
 
 
-  //   // printf("omp thread %d, hw thread %d\n", dev_id, hwthread);  
+    // printf("omp thread %d, hw thread %d\n", dev_id, hwthread);  
 
-  //   int numa_id = numaContext.numaMapping[dev_id];
-  //   int local_dev_id = 0;
-  //   for (int i = 0; i < ngpu; i++) {
-  //     if (i == dev_id) break;
-  //     if (numa_id == numaContext.numaMapping[i]) local_dev_id++;
-  //   }
+    int numa_id = numaContext.numaMapping[dev_id];
+    int local_dev_id = 0;
+    for (int i = 0; i < ngpu; i++) {
+      if (i == dev_id) break;
+      if (numa_id == numaContext.numaMapping[i]) local_dev_id++;
+    }
 
-  //   cudaStream_t stream;
-  //   cusparseStatus_t status;
-  //   cusparseHandle_t handle;
-  //   cusparseMatDescr_t descr;
-  //   int err;
+    cudaStream_t stream;
+    cusparseStatus_t status;
+    cusparseHandle_t handle;
+    cusparseMatDescr_t descr;
+    int err;
   
-  //   double tmp_time = get_time();
+    double tmp_time = get_time();
 
-  //   // Calculate the start and end index
-  //   long long tmp1 = local_dev_id * pcscNuma[numa_id].nnz;
-  //   long long tmp2 = (local_dev_id + 1) * pcscNuma[numa_id].nnz;
+    // Calculate the start and end index
+    long long tmp1 = local_dev_id * pcscNuma[numa_id].nnz;
+    long long tmp2 = (local_dev_id + 1) * pcscNuma[numa_id].nnz;
 
-  //   pcscGPU[dev_id].startIdx = floor((double)tmp1 / numaContext.numGPUs[numa_id]);
-  //   pcscGPU[dev_id].endIdx   = floor((double)tmp2 / numaContext.numGPUs[numa_id]) - 1;
+    pcscGPU[dev_id].startIdx = floor((double)tmp1 / numaContext.numGPUs[numa_id]);
+    pcscGPU[dev_id].endIdx   = floor((double)tmp2 / numaContext.numGPUs[numa_id]) - 1;
   
-  //   // Calculate the start and end col
-  //   pcscGPU[dev_id].startCol = get_row_from_index(pcscNuma[numa_id].m, pcscNuma[numa_id].colPtr, pcscGPU[dev_id].startIdx);
-  //   // Mark imcomplete rows
-  //   // True: imcomplete
-  //   if (pcscGPU[dev_id].startIdx > pcscNuma[numa_id].colPtr[pcscGPU[dev_id].startCol]) {
-  //     pcscGPU[dev_id].startFlag = true;
-  //     //start_rows[dev_id] = start_row;
-  //   } else {
-  //     pcscGPU[dev_id].startFlag = false;
-  //   }
-  //   //start_flags[dev_id] = start_flag;   
+    // Calculate the start and end col
+    pcscGPU[dev_id].startCol = get_row_from_index(pcscNuma[numa_id].m, pcscNuma[numa_id].colPtr, pcscGPU[dev_id].startIdx);
+    // Mark imcomplete rows
+    // True: imcomplete
+    if (pcscGPU[dev_id].startIdx > pcscNuma[numa_id].colPtr[pcscGPU[dev_id].startCol]) {
+      pcscGPU[dev_id].startFlag = true;
+      //start_rows[dev_id] = start_row;
+    } else {
+      pcscGPU[dev_id].startFlag = false;
+    }
+    //start_flags[dev_id] = start_flag;   
 
-  //   pcscGPU[dev_id].endCol = get_row_from_index(pcscNuma[numa_id].m, pcscNuma[numa_id].colPtr, pcscGPU[dev_id].endIdx);
-  //   // Mark imcomplete rows
-  //   // True: imcomplete
-  //   if (pcscGPU[dev_id].endIdx < pcscNuma[numa_id].colPtr[pcscGPU[dev_id].endCol + 1] - 1)  {
-  //     pcscGPU[dev_id].endFlag = true;
-  //   } else {
-  //     pcscGPU[dev_id].endFlag = false;
-  //   }
+    pcscGPU[dev_id].endCol = get_row_from_index(pcscNuma[numa_id].m, pcscNuma[numa_id].colPtr, pcscGPU[dev_id].endIdx);
+    // Mark imcomplete rows
+    // True: imcomplete
+    if (pcscGPU[dev_id].endIdx < pcscNuma[numa_id].colPtr[pcscGPU[dev_id].endCol + 1] - 1)  {
+      pcscGPU[dev_id].endFlag = true;
+    } else {
+      pcscGPU[dev_id].endFlag = false;
+    }
     
-  //   // Cacluclate dimensions
-  //   pcscGPU[dev_id].m = m;
-  //   pcscGPU[dev_id].n = pcscGPU[dev_id].endCol - pcscGPU[dev_id].startCol + 1;
-  //   pcscGPU[dev_id].nnz = pcscGPU[dev_id].endIdx - pcscGPU[dev_id].startIdx + 1;
+    // Cacluclate dimensions
+    pcscGPU[dev_id].m = m;
+    pcscGPU[dev_id].n = pcscGPU[dev_id].endCol - pcscGPU[dev_id].startCol + 1;
+    pcscGPU[dev_id].nnz = pcscGPU[dev_id].endIdx - pcscGPU[dev_id].startIdx + 1;
 
-  //   part_time = get_time() - tmp_time;  
+    part_time = get_time() - tmp_time;  
 
-  //   cudaMallocHost((void**)&(pcscGPU[dev_id].py), pcscGPU[dev_id].m * sizeof(double));
-
-
-  //   // preparing data on host 
-  //   //cudaMallocHost((void**)&host_csrVal, dev_nnz * sizeof(double));
-  //   //for (int i = start_idx; i <= end_idx; i++) {
-  //   //  host_csrVal[i - start_idx] = csrVal[i];
-  //   //}
-
-  //   //cudaMallocHost((void**)&host_cscColPtr, (dev_n + 1)*sizeof(int));
-  //   //host_csrRowPtr[0] = 0;
-  //   //host_csrRowPtr[dev_m] = dev_nnz;
-  //   //for (int j = 1; j < dev_m; j++) {
-  //   //  host_csrRowPtr[j] = (int)(csrRowPtr[start_row + j] - start_idx);
-  //   //}
-
-  //   //cudaMallocHost((void**)&host_csrColIndex, dev_nnz * sizeof(int));
-  //   //for (int i = start_idx; i <= end_idx; i++) {
-  //   //  host_csrColIndex[i - start_idx] = csrColIndex[i];
-  //   //}
-
-  //   //cudaMallocHost((void**)&host_x, dev_n * sizeof(double));
-  //   //for (int i = 0; i < dev_n; i++) {
-  //   //  host_x[i] = x[i];
-  //   //}
-
-  //   //cudaMallocHost((void**)&host_y, dev_m * sizeof(double));
-  //   //for (int i = 0; i < dev_m; i++) {
-  //   //  host_y[i] = y[start_row + i];
-  //   //}
-    
+    cudaMallocHost((void**)&(pcscGPU[dev_id].py), pcscGPU[dev_id].m * sizeof(double));
+  
   //   tmp_time = get_time();
 
   //   pcscGPU[dev_id].val = &(pcscNuma[numa_id].val[pcscGPU[dev_id].startIdx]);
@@ -412,7 +383,7 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
   //   cusparseDestroy(handle);
   //   cudaStreamDestroy(stream);
 
-  // }
+  }
 
   // print_vec(y, m, "y_all");
 
