@@ -285,8 +285,8 @@ int main(int argc, char *argv[]) {
 
   printf("Done converting\n");
 
-  printf("csrRowPtr: %d - %d\n", csrRowPtr[0], csrRowPtr[m+1]);
-  printf("cscColPtr: %d - %d\n", cscColPtr[0], cscColPtr[n+1]);
+  printf("csrRowPtr: %d - %d\n", csrRowPtr[0], csrRowPtr[m]);
+  printf("cscColPtr: %d - %d\n", cscColPtr[0], cscColPtr[n]);
   // print_vec(csrVal, nnz, "csrVal:");
   // print_vec(csrRowPtr, m+1, "csrRowPtr:");
   // print_vec(csrColIdx, nnz, "csrColIdx:");

@@ -613,9 +613,9 @@ void coo2csc(int m, int n, int nnz,
              dcooVal, dcooColIdx, dcooRowIdx,
              dcscVal, dcscColPtr, dcscRowIdx);
 
-  checkCudaErrors(cudaMemcpyAsync(cscVal, dcscVal,       nnz * sizeof(double), cudaMemcpyDeviceToHost));
-  checkCudaErrors(cudaMemcpyAsync(cscColPtr, dcscColPtr, (n+1) * sizeof(int), cudaMemcpyDeviceToHost));
-  checkCudaErrors(cudaMemcpyAsync(cscRowIdx, dcscRowIdx, nnz * sizeof(int), cudaMemcpyDeviceToHost));
+  checkCudaErrors(cudaMemcpy(cscVal, dcscVal,       nnz * sizeof(double), cudaMemcpyDeviceToHost));
+  checkCudaErrors(cudaMemcpy(cscColPtr, dcscColPtr, (n+1) * sizeof(int), cudaMemcpyDeviceToHost));
+  checkCudaErrors(cudaMemcpy(cscRowIdx, dcscRowIdx, nnz * sizeof(int), cudaMemcpyDeviceToHost));
 
   checkCudaErrors(cudaDeviceSynchronize());
 
