@@ -515,7 +515,7 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
           tmp = y[pcooNuma[numa_id].startRow + pcooGPU[dev_id].startRow];
         }
         for (int i = 0; i < pcooGPU[dev_id].m; i++) {
-          y[pcooNuma[numa_id].startRow + pcooGPU[dev_id].startRow + i] = pcooGPU[dev_id].py[i];
+          y[pcooNuma[numa_id].startRow + pcooGPU[dev_id].startRow + i] += pcooGPU[dev_id].py[i];
         }
         if (pcooGPU[dev_id].startFlag) {
           //y[pcsrGPU[dev_id].startRow] += tmp;
