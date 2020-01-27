@@ -163,20 +163,20 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
   }
 
 
-  // struct pCSC * pcscGPU = new struct pCSC[ngpu];
+  struct pCSC * pcscGPU = new struct pCSC[ngpu];
 
-  // double * start_element = new double[ngpu];
-  // double * end_element = new double[ngpu];
-  // bool * start_flags = new bool[ngpu];
-  // bool * end_flags = new bool[ngpu];
-  // double * org_y = new double[ngpu];
-  // int * start_rows = new int[ngpu];
+  double * start_element = new double[ngpu];
+  double * end_element = new double[ngpu];
+  bool * start_flags = new bool[ngpu];
+  bool * end_flags = new bool[ngpu];
+  double * org_y = new double[ngpu];
+  int * start_rows = new int[ngpu];
 
-  // omp_set_num_threads(ngpu);
+  omp_set_num_threads(ngpu);
 
-  // double core_time;
-  // double part_time;
-  // double merg_time;
+  double core_time;
+  double part_time;
+  double merg_time;
   // #pragma omp parallel default (shared) reduction(max:core_time) reduction(max:part_time) reduction(max:merg_time)
   // {
   //   unsigned int dev_id = omp_get_thread_num();
