@@ -513,7 +513,7 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
       pcsrGPU[dev_id].host_csrRowPtr[0] = 0;
       pcsrGPU[dev_id].host_csrRowPtr[pcsrGPU[dev_id].m] = pcsrGPU[dev_id].nnz;
       for (int j = 1; j < pcsrGPU[dev_id].m; j++) {
-        pcsrGPU[dev_id].host_csrRowPtr[j] = (int)(pcsrNuma[numa_id].rowPtr[pcsrGPU[dev_id].startRow + j] - pcsrGPU[dev_id].start_idx);
+        pcsrGPU[dev_id].host_csrRowPtr[j] = (int)(pcsrNuma[numa_id].rowPtr[pcsrGPU[dev_id].startRow + j] - pcsrGPU[dev_id].startIdx);
       }
       part_time += get_time() - tmp_time;  
 
@@ -634,7 +634,7 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     tmp_time = get_time();
 
     if (part_opt == 0) {
-      cudaMemcpyAsync(pcsrGPU[dev_id].drowPtr, pcsrGPU[dev_id].host_csrRowPtr, (dev_m + 1) * sizeof(int), cudaMemcpyHostToDevice, stream);
+      cudaMemcpyAsync(pcsrGPU[dev_id].drowPtr, pcsrGPU[dev_id].host_csrRowPtr, (pcsrGPU[dev_id].m + 1) * sizeof(int), cudaMemcpyHostToDevice, stream);
     }
     checkCudaErrors(cudaMemcpyAsync(pcsrGPU[dev_id].dcolIdx, pcsrGPU[dev_id].colIdx, pcsrGPU[dev_id].nnz * sizeof(int), cudaMemcpyHostToDevice, stream)); 
     checkCudaErrors(cudaMemcpyAsync(pcsrGPU[dev_id].dval, pcsrGPU[dev_id].val, pcsrGPU[dev_id].nnz * sizeof(double), cudaMemcpyHostToDevice, stream)); 
