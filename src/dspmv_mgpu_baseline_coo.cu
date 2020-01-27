@@ -57,7 +57,6 @@ spmv_ret spMV_mgpu_baseline_coo(int m, int n, int nnz, double * alpha,
 
   curr_time = get_time();
   for (int d = 0; d < ngpu; d++) {
-    checkCudaErrors(cudaSetDevice(d));
     start_row[d] = floor((d)     * m / ngpu);
     end_row[d]   = floor((d + 1) * m / ngpu) - 1;
     start_idx[d] = findFirstInSorted(cooRowIdx, nnz, start_row[d]);
@@ -100,9 +99,6 @@ spmv_ret spMV_mgpu_baseline_coo(int m, int n, int nnz, double * alpha,
     }
   }
   part_time += get_time() - curr_time;
-
-
-  
 
   curr_time = get_time();
   for (int d = 0; d < ngpu; d++) {

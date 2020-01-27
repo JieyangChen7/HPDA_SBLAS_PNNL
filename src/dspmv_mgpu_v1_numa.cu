@@ -103,9 +103,11 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
           int kernel,
           int * numa_mapping){
 
-  double curr_time = 0.0;
-  double time_comm = 0.0;
-  double time_comp = 0.0;
+  double numa_part_time = 0.0;
+  double part_time = 0.0;
+  double comp_time = 0.0;
+  double comm_time = 0.0;
+  double merg_time = 0.0;
   
   struct NumaContext numaContext(numa_mapping, ngpu);
   struct pCSR * pcsrNuma = new struct pCSR[numaContext.numNumaNodes];
@@ -175,8 +177,6 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
   // double * numa_org_y = new double[num_numa_nodes];
 
 
-  
-  double numa_part_time;
   
   omp_set_num_threads(ngpu);
   #pragma omp parallel default (shared) reduction(max:numa_part_time)
@@ -263,11 +263,11 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
       numa_part_time += get_time() - tmp_time;
 
       // preparing data on host 
-      cudaMallocHost((void**)&(pcsrNuma[numa_id].val), pcsrNuma[numa_id].nnz * sizeof(double));
-      cudaMallocHost((void**)&(pcsrNuma[numa_id].rowPtr), (pcsrNuma[numa_id].m + 1)*sizeof(int));
-      cudaMallocHost((void**)&(pcsrNuma[numa_id].colIdx), pcsrNuma[numa_id].nnz * sizeof(int));
-      cudaMallocHost((void**)&(pcsrNuma[numa_id].x), pcsrNuma[numa_id].n * sizeof(double));
-      cudaMallocHost((void**)&(pcsrNuma[numa_id].y), pcsrNuma[numa_id].m * sizeof(double));
+      checkCudaErrors(cudaMallocHost((void**)&(pcsrNuma[numa_id].val), pcsrNuma[numa_id].nnz * sizeof(double)));
+      checkCudaErrors(cudaMallocHost((void**)&(pcsrNuma[numa_id].rowPtr), (pcsrNuma[numa_id].m + 1)*sizeof(int)));
+      checkCudaErrors(cudaMallocHost((void**)&(pcsrNuma[numa_id].colIdx), pcsrNuma[numa_id].nnz * sizeof(int)));
+      checkCudaErrors(cudaMallocHost((void**)&(pcsrNuma[numa_id].x), pcsrNuma[numa_id].n * sizeof(double)));
+      checkCudaErrors(cudaMallocHost((void**)&(pcsrNuma[numa_id].y), pcsrNuma[numa_id].m * sizeof(double)));
 
 
       // cudaMallocHost((void**)&numa_csrVal[numa_id], numa_nnz[numa_id] * sizeof(double));
@@ -351,11 +351,7 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
 
 
   omp_set_num_threads(ngpu);
-
-  double core_time;
-  double part_time;
-  double merg_time;
-  #pragma omp parallel default (shared) reduction(max:core_time) reduction(max:part_time) reduction(max:merg_time)
+  #pragma omp parallel default (shared) reduction(max:comp_time) reduction(max:part_time) reduction(max:merg_time)
   {
     unsigned int dev_id = omp_get_thread_num();
     cudaSetDevice(dev_id);
@@ -586,34 +582,18 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
 */
     // end of original partition*********************************
 
-    cudaStreamCreate(&stream);
+    checkCudaErrors(cudaStreamCreate(&stream));
+    checkCudaErrors(cusparseCreate(&handle)); 
+    checkCudaErrors(cusparseSetStream(handle, stream));
+    checkCudaErrors(cusparseCreateMatDescr(&descr));
+    checkCudaErrors(cusparseSetMatType(descr,CUSPARSE_MATRIX_TYPE_GENERAL)); 
+    checkCudaErrors(cusparseSetMatIndexBase(descr,CUSPARSE_INDEX_BASE_ZERO));
 
-    status = cusparseCreate(&handle); 
-    if (status != CUSPARSE_STATUS_SUCCESS) 
-    { 
-      printf("CUSPARSE Library initialization failed");
-      //return 1; 
-    } 
-    status = cusparseSetStream(handle, stream);
-    if (status != CUSPARSE_STATUS_SUCCESS) 
-    { 
-      printf("Stream bindind failed");
-      //return 1;
-    } 
-    status = cusparseCreateMatDescr(&descr);
-    if (status != CUSPARSE_STATUS_SUCCESS) 
-    { 
-      printf("Matrix descriptor initialization failed");
-      //return 1;
-    }   
-    cusparseSetMatType(descr,CUSPARSE_MATRIX_TYPE_GENERAL); 
-    cusparseSetMatIndexBase(descr,CUSPARSE_INDEX_BASE_ZERO);
-
-    cudaMalloc((void**)&(pcsrGPU[dev_id].dval),    pcsrGPU[dev_id].nnz     * sizeof(double));
-    cudaMalloc((void**)&(pcsrGPU[dev_id].drowPtr), (pcsrGPU[dev_id].m + 1) * sizeof(int)   );
-    cudaMalloc((void**)&(pcsrGPU[dev_id].dcolIdx), pcsrGPU[dev_id].nnz     * sizeof(int)   );
-    cudaMalloc((void**)&(pcsrGPU[dev_id].dx),      pcsrGPU[dev_id].n       * sizeof(double)); 
-    cudaMalloc((void**)&(pcsrGPU[dev_id].dy),      pcsrGPU[dev_id].m       * sizeof(double)); 
+    checkCudaErrors(cudaMalloc((void**)&(pcsrGPU[dev_id].dval),    pcsrGPU[dev_id].nnz     * sizeof(double)));
+    checkCudaErrors(cudaMalloc((void**)&(pcsrGPU[dev_id].drowPtr), (pcsrGPU[dev_id].m + 1) * sizeof(int)   ));
+    checkCudaErrors(cudaMalloc((void**)&(pcsrGPU[dev_id].dcolIdx), pcsrGPU[dev_id].nnz     * sizeof(int)   ));
+    checkCudaErrors(cudaMalloc((void**)&(pcsrGPU[dev_id].dx),      pcsrGPU[dev_id].n       * sizeof(double))); 
+    checkCudaErrors(cudaMalloc((void**)&(pcsrGPU[dev_id].dy),      pcsrGPU[dev_id].m       * sizeof(double))); 
     
   //   // cudaMalloc((void**)&dev_csrVal,      dev_nnz     * sizeof(double));
   //   // cudaMalloc((void**)&dev_csrRowPtr,   (dev_m + 1) * sizeof(int)   );
@@ -622,13 +602,13 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
   //   // cudaMalloc((void**)&dev_y,           dev_m       * sizeof(double)); 
 
     tmp_time = get_time();
-    cudaMemcpyAsync(pcsrGPU[dev_id].drowPtr, pcsrGPU[dev_id].rowPtr, (pcsrGPU[dev_id].m + 1) * sizeof(int), cudaMemcpyHostToDevice, stream);
+    checkCudaErrors(cudaMemcpyAsync(pcsrGPU[dev_id].drowPtr, pcsrGPU[dev_id].rowPtr, (pcsrGPU[dev_id].m + 1) * sizeof(int), cudaMemcpyHostToDevice, stream));
     //cudaMemcpyAsync(dev_csrRowPtr, host_csrRowPtr, (dev_m + 1) * sizeof(int), cudaMemcpyHostToDevice, stream);
-    cudaDeviceSynchronize();
+    checkCudaErrors(cudaDeviceSynchronize());
     tmp_time = get_time();
     calcCsrRowPtr(pcsrGPU[dev_id].drowPtr, pcsrGPU[dev_id].m, pcsrGPU[dev_id].startIdx, pcsrGPU[dev_id].nnz, stream);
     //calcCsrRowPtr(dev_csrRowPtr, dev_m, start_idx, dev_nnz, stream);
-    cudaDeviceSynchronize();
+    checkCudaErrors(cudaDeviceSynchronize());
     // printf("dev_id %d, part_kernel_time = %f\n", dev_id, get_time() - tmp_time);
     part_time += get_time() - tmp_time;  
     // printf("dev_id %d, part_time = %f\n", dev_id, part_time); 
@@ -638,10 +618,10 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
 
     //cudaMemcpyAsync(dev_csrRowPtr, host_csrRowPtr, (dev_m + 1) * sizeof(int), cudaMemcpyHostToDevice, stream);
 
-    cudaMemcpyAsync(pcsrGPU[dev_id].dcolIdx, pcsrGPU[dev_id].colIdx, pcsrGPU[dev_id].nnz * sizeof(int), cudaMemcpyHostToDevice, stream); 
-    cudaMemcpyAsync(pcsrGPU[dev_id].dval, pcsrGPU[dev_id].val, pcsrGPU[dev_id].nnz * sizeof(double), cudaMemcpyHostToDevice, stream); 
-    cudaMemcpyAsync(pcsrGPU[dev_id].dy, pcsrGPU[dev_id].y, pcsrGPU[dev_id].m*sizeof(double),  cudaMemcpyHostToDevice, stream); 
-    cudaMemcpyAsync(pcsrGPU[dev_id].dx, pcsrGPU[dev_id].x, pcsrGPU[dev_id].n*sizeof(double), cudaMemcpyHostToDevice, stream); 
+    checkCudaErrors(cudaMemcpyAsync(pcsrGPU[dev_id].dcolIdx, pcsrGPU[dev_id].colIdx, pcsrGPU[dev_id].nnz * sizeof(int), cudaMemcpyHostToDevice, stream)); 
+    checkCudaErrors(cudaMemcpyAsync(pcsrGPU[dev_id].dval, pcsrGPU[dev_id].val, pcsrGPU[dev_id].nnz * sizeof(double), cudaMemcpyHostToDevice, stream)); 
+    checkCudaErrors(cudaMemcpyAsync(pcsrGPU[dev_id].dy, pcsrGPU[dev_id].y, pcsrGPU[dev_id].m*sizeof(double),  cudaMemcpyHostToDevice, stream)); 
+    checkCudaErrors(cudaMemcpyAsync(pcsrGPU[dev_id].dx, pcsrGPU[dev_id].x, pcsrGPU[dev_id].n*sizeof(double), cudaMemcpyHostToDevice, stream)); 
 
 
     // cudaMemcpyAsync(dev_csrColIndex, host_csrColIndex, dev_nnz * sizeof(int), cudaMemcpyHostToDevice, stream); 
@@ -649,12 +629,10 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     // cudaMemcpyAsync(dev_y, host_y, dev_m*sizeof(double),  cudaMemcpyHostToDevice, stream); 
     // cudaMemcpyAsync(dev_x, host_x, dev_n*sizeof(double), cudaMemcpyHostToDevice, stream); 
     
-    time_comm = get_time() - curr_time;
-    curr_time = get_time();
     err = 0;
     if (kernel == 1) {
 
-    cudaDeviceSynchronize();
+    checkCudaErrors(cudaDeviceSynchronize());
     //print_vec_gpu(dev_csrRowPtr, 5, "csrRowPtr"+to_string(dev_id));
     //print_vec_gpu(dev_csrVal, 5, "csrVal"+to_string(dev_id));
     //print_vec_gpu(dev_csrColIndex, 5, "csrColIndex"+to_string(dev_id));
@@ -675,32 +653,11 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
                               pcsrGPU[dev_id].drowPtr, pcsrGPU[dev_id].dcolIdx, 
                               pcsrGPU[dev_id].dx, beta, pcsrGPU[dev_id].dy);
 
-    // status = cusparseDcsrmv(handle,CUSPARSE_OPERATION_NON_TRANSPOSE, 
-    //                           dev_m, dev_n, dev_nnz, 
-    //                           alpha, descr, dev_csrVal, 
-    //                           dev_csrRowPtr, dev_csrColIndex, 
-    //                           dev_x, beta, dev_y);
-      
-  
- 
-    } else if (kernel == 2) {
-        // status = cusparseDcsrmv_mp(handle,CUSPARSE_OPERATION_NON_TRANSPOSE, 
-        //                            dev_m, dev_n, dev_nnz, 
-        //                            alpha, descr, dev_csrVal, 
-        //                            dev_csrRowPtr, dev_csrColIndex, 
-        //                            dev_x,  beta, dev_y); 
-    } else if (kernel == 3) {
-        // err = csr5_kernel(dev_m, dev_n, dev_nnz, 
-        //                   alpha, dev_csrVal, 
-        //                   dev_csrRowPtr, dev_csrColIndex, 
-        //                   dev_x, beta, dev_y, stream); 
-    }
-
-    cudaDeviceSynchronize();
+    checkCudaErrors(cudaDeviceSynchronize());
     if (status != CUSPARSE_STATUS_SUCCESS) printf("dev_id %d: exec error\n", dev_id);
     //print_vec_gpu(dev_y, 5, "y"+to_string(dev_id));
     // printf("omp thread %d, time %f\n", dev_id, get_time() - tmp_time);
-    core_time = get_time() - tmp_time;
+    comp_time = get_time() - tmp_time;
     // GPU based merge
     tmp_time = get_time();
     double * dev_y_no_overlap = pcsrGPU[dev_id].dy;
@@ -715,11 +672,11 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
       dev_y_no_overlap += 1;
       start_row_no_overlap += 1;
       dev_m_no_overlap -= 1;
-      cudaMemcpyAsync(start_element+dev_id, pcsrGPU[dev_id].dy, sizeof(double), cudaMemcpyDeviceToHost, stream);
+      checkCudaErrors(cudaMemcpyAsync(start_element+dev_id, pcsrGPU[dev_id].dy, sizeof(double), cudaMemcpyDeviceToHost, stream));
       //cudaMemcpyAsync(start_element+dev_id, dev_y, sizeof(double), cudaMemcpyDeviceToHost, stream);
     }
-    cudaMemcpyAsync(y+start_row_no_overlap, dev_y_no_overlap, dev_m_no_overlap*sizeof(double),  cudaMemcpyDeviceToHost, stream);
-    cudaDeviceSynchronize();
+    checkCudaErrors(cudaMemcpyAsync(y+start_row_no_overlap, dev_y_no_overlap, dev_m_no_overlap*sizeof(double),  cudaMemcpyDeviceToHost, stream));
+    checkCudaErrors(cudaDeviceSynchronize());
     #pragma omp barrier
     if (dev_id == 0) {
       for (int i = 0; i < ngpu; i++) {
@@ -785,12 +742,20 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
 
     printf("end part time: %f\n", part_time);
     //cout << "time_parse = " << time_parse << ", time_comm = " << time_comm << ", time_comp = "<< time_comp <<", time_post = " << time_post << endl;
-                spmv_ret ret;
-                ret.comp_time = core_time;
-                ret.comm_time = 0.0;
-                ret.part_time = part_time;
-                ret.merg_time = merg_time;
-                ret.numa_part_time = numa_part_time;
+    for (int numa_id = 0; numa_id < numaContext.numNumaNodes; numa_id++) {
+      cudaFreeHost(pcsrNuma[numa_id].val);
+      cudaFreeHost(pcsrNuma[numa_id].rowPtr);
+      cudaFreeHost(pcsrNuma[numa_id].colIdx);
+      cudaFreeHost(pcsrNuma[numa_id].x);
+      cudaFreeHost(pcsrNuma[numa_id].y);
+    }
+
+    spmv_ret ret;
+    ret.comp_time = core_time;
+    ret.comm_time = 0.0;
+    ret.part_time = part_time;
+    ret.merg_time = merg_time;
+    ret.numa_part_time = numa_part_time;
     return ret;
   }
 

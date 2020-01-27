@@ -55,7 +55,6 @@ spmv_ret spMV_mgpu_baseline_csc(int m, int n, int nnz, double * alpha,
 
   curr_time = get_time();
   for (int d = 0; d < ngpu; d++) {
-    cudaSetDevice(d);
     start_col[d] = floor((d)     * n / ngpu);
     end_col[d]   = floor((d + 1) * n / ngpu) - 1;
     dev_m[d]   = m;
@@ -101,7 +100,7 @@ spmv_ret spMV_mgpu_baseline_csc(int m, int n, int nnz, double * alpha,
 
   curr_time = get_time();
   for (int d = 0; d < ngpu; d++) {
-    cudaSetDevice(d);
+    cudaMallocHost(cudaSetDevice(d));
     checkCudaErrors(cudaMemcpyAsync(dev_cscColPtr[d], host_cscColPtr[d],                   (size_t)((dev_n[d] + 1) * sizeof(int)), cudaMemcpyHostToDevice, stream[d]));
     checkCudaErrors(cudaMemcpyAsync(dev_cscRowIdx[d], &cscRowIdx[cscColPtr[start_col[d]]], (size_t)(dev_nnz[d] * sizeof(int)),     cudaMemcpyHostToDevice, stream[d])); 
     checkCudaErrors(cudaMemcpyAsync(dev_cscVal[d],    &cscVal[cscColPtr[start_col[d]]],    (size_t)(dev_nnz[d] * sizeof(double)),  cudaMemcpyHostToDevice, stream[d]));
