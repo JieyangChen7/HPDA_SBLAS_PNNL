@@ -377,7 +377,7 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
     // print_vec_gpu(pcscGPU[dev_id].dy, pcscGPU[dev_id].m, "y_before"+to_string(dev_id));
     // printf("dev_id %d, alpha %f, beta %f\n", dev_id, *alpha, *beta);
 
-    checkCudaErrors(cudaEventRecord(comp_stop, stream));
+    checkCudaErrors(cudaEventRecord(comp_start, stream));
     checkCudaErrors(cusparseDcsrmv(handle,CUSPARSE_OPERATION_TRANSPOSE, 
                             pcscGPU[dev_id].n, pcscGPU[dev_id].m, pcscGPU[dev_id].nnz, 
                             alpha, descr, 
