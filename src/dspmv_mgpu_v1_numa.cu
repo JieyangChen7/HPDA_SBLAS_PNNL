@@ -197,7 +197,7 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
 
     int numa_id = numaContext.numaMapping[dev_id];
   
-    numa_part_time = 0;
+    numa_part_time = 0.0;
   
     
 
@@ -360,6 +360,9 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     unsigned int hwthread = sched_getcpu();
 
     float elapsedTime;
+    comm_time = 0.0;
+    comp_time = 0.0;
+    merg_time = 0.0;
 
     cudaStream_t stream;
     cusparseStatus_t status;

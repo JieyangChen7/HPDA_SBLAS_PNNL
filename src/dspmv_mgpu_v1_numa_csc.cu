@@ -182,6 +182,9 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
     unsigned int hwthread = sched_getcpu();
 
     float elapsedTime;
+    comm_time = 0.0;
+    comp_time = 0.0;
+    merg_time = 0.0;
 
     cudaStream_t stream;
     cusparseStatus_t status;
