@@ -36,64 +36,64 @@ void calcCsrRowPtr(int * csrRowPrt, int m, int offset, int nnz, cudaStream_t str
   _calcCsrRowPtr<<<block_per_grid, thread_per_block, 0, stream>>>(csrRowPrt, m, offset, nnz);
 }
 
-spmv_ret spMspV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
-                                  double * csrVal, int * csrRowPtr, int * csrColIndex,
-                                  double * x, double * beta,
-                                  double * y,
-                                  int ngpu,
-                                  int kernel) {
-  double start = get_time();   
-  int nnz_reduced = 0;
-  vector<double> * csrVal_reduced = new vector<double>();
-  vector<int> * csrRowPtr_reduced = new vector<int>();
-  vector<int> * csrColIndex_reduced = new vector<int>();
+// spmv_ret spMspV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
+//                                   double * csrVal, int * csrRowPtr, int * csrColIndex,
+//                                   double * x, double * beta,
+//                                   double * y,
+//                                   int ngpu,
+//                                   int kernel) {
+//   double start = get_time();   
+//   int nnz_reduced = 0;
+//   vector<double> * csrVal_reduced = new vector<double>();
+//   vector<int> * csrRowPtr_reduced = new vector<int>();
+//   vector<int> * csrColIndex_reduced = new vector<int>();
 
-  double * csrVal_reduced_pin;
-  int * csrRowPtr_reduced_pin;
-  int * csrColIndex_reduced_pin;
+//   double * csrVal_reduced_pin;
+//   int * csrRowPtr_reduced_pin;
+//   int * csrColIndex_reduced_pin;
 
-  csrRowPtr_reduced->push_back(0);
-  for (int i = 0; i < m; i++) {
-    for (int j = csrRowPtr[i]; j < csrRowPtr[i+1]; j++) {
-      if (x[csrColIndex[j]] != 0.0) {
-  csrVal_reduced->push_back(csrVal[j]);
-        csrColIndex_reduced->push_back(csrColIndex[j]);
-  nnz_reduced ++;
-      }
-    }
-    csrRowPtr_reduced->push_back(nnz_reduced);
-  }
+//   csrRowPtr_reduced->push_back(0);
+//   for (int i = 0; i < m; i++) {
+//     for (int j = csrRowPtr[i]; j < csrRowPtr[i+1]; j++) {
+//       if (x[csrColIndex[j]] != 0.0) {
+//   csrVal_reduced->push_back(csrVal[j]);
+//         csrColIndex_reduced->push_back(csrColIndex[j]);
+//   nnz_reduced ++;
+//       }
+//     }
+//     csrRowPtr_reduced->push_back(nnz_reduced);
+//   }
 
 
-  double convert_time = get_time() - start;
+//   double convert_time = get_time() - start;
 
-  cudaMallocHost((void **)&csrVal_reduced_pin, nnz_reduced * sizeof(double));
-  cudaMallocHost((void **)&csrRowPtr_reduced_pin, (m+1) * sizeof(int));
-  cudaMallocHost((void **)&csrColIndex_reduced_pin, nnz_reduced * sizeof(int));
+//   cudaMallocHost((void **)&csrVal_reduced_pin, nnz_reduced * sizeof(double));
+//   cudaMallocHost((void **)&csrRowPtr_reduced_pin, (m+1) * sizeof(int));
+//   cudaMallocHost((void **)&csrColIndex_reduced_pin, nnz_reduced * sizeof(int));
 
-  cudaMemcpy(csrVal_reduced_pin, csrVal_reduced->data(), nnz_reduced * sizeof(double), cudaMemcpyHostToHost);
-  cudaMemcpy(csrRowPtr_reduced_pin, csrRowPtr_reduced->data(), (m+1) * sizeof(int), cudaMemcpyHostToHost);
-  cudaMemcpy(csrColIndex_reduced_pin, csrColIndex_reduced->data(), nnz_reduced * sizeof(int), cudaMemcpyHostToHost);
+//   cudaMemcpy(csrVal_reduced_pin, csrVal_reduced->data(), nnz_reduced * sizeof(double), cudaMemcpyHostToHost);
+//   cudaMemcpy(csrRowPtr_reduced_pin, csrRowPtr_reduced->data(), (m+1) * sizeof(int), cudaMemcpyHostToHost);
+//   cudaMemcpy(csrColIndex_reduced_pin, csrColIndex_reduced->data(), nnz_reduced * sizeof(int), cudaMemcpyHostToHost);
 
-  delete csrVal_reduced;
-  delete csrRowPtr_reduced;
-  delete csrColIndex_reduced;
+//   delete csrVal_reduced;
+//   delete csrRowPtr_reduced;
+//   delete csrColIndex_reduced;
 
-  cout << "spMspV_mgpu_v1: nnz reduced from " << nnz << " to " << nnz_reduced << std::endl;
+//   cout << "spMspV_mgpu_v1: nnz reduced from " << nnz << " to " << nnz_reduced << std::endl;
 
-  int numa_mapping[6] = {0,0,0,1,1,1};
+//   int numa_mapping[6] = {0,0,0,1,1,1};
 
-  spmv_ret ret =  spMV_mgpu_v1_numa(m, n, nnz_reduced, alpha,
-               csrVal_reduced_pin,
-               csrRowPtr_reduced_pin, 
-               csrColIndex_reduced_pin,
-               x, beta, y, ngpu, kernel, numa_mapping);
-  cudaFreeHost(csrVal_reduced_pin);
-  cudaFreeHost(csrRowPtr_reduced_pin);
-  cudaFreeHost(csrColIndex_reduced_pin);
+//   spmv_ret ret =  spMV_mgpu_v1_numa(m, n, nnz_reduced, alpha,
+//                csrVal_reduced_pin,
+//                csrRowPtr_reduced_pin, 
+//                csrColIndex_reduced_pin,
+//                x, beta, y, ngpu, kernel, numa_mapping);
+//   cudaFreeHost(csrVal_reduced_pin);
+//   cudaFreeHost(csrRowPtr_reduced_pin);
+//   cudaFreeHost(csrColIndex_reduced_pin);
 
-  return ret;
-}
+//   return ret;
+// }
 
 spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
           double * csrVal, int * csrRowPtr, int * csrColIndex, 
