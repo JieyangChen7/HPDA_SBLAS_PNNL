@@ -70,7 +70,7 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
     numa_part_time = 0;
 
     if (numaContext.representiveThreads[dev_id]) {
-      printf("represent thread %d hw thread %d\n", dev_id, hwthread);
+      // printf("represent thread %d hw thread %d\n", dev_id, hwthread);
 
       double tmp_time = get_time();
 
@@ -107,10 +107,10 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
       pcscNuma[numa_id].n = pcscNuma[numa_id].endCol - pcscNuma[numa_id].startCol + 1;
       pcscNuma[numa_id].nnz  = pcscNuma[numa_id].endIdx - pcscNuma[numa_id].startIdx + 1;
 
-      printf("numa_id %d, numa_start_idx %d, numa_end_idx %d\n",
-              numa_id, pcscNuma[numa_id].startIdx, pcscNuma[numa_id].endIdx);
-      printf("numa_id %d, numa_start_col %d, numa_end_col %d\n",
-              numa_id, pcscNuma[numa_id].startCol, pcscNuma[numa_id].endCol);
+      // printf("numa_id %d, numa_start_idx %d, numa_end_idx %d\n",
+      //         numa_id, pcscNuma[numa_id].startIdx, pcscNuma[numa_id].endIdx);
+      // printf("numa_id %d, numa_start_col %d, numa_end_col %d\n",
+      //         numa_id, pcscNuma[numa_id].startCol, pcscNuma[numa_id].endCol);
     
       numa_part_time += get_time() - tmp_time;
 
@@ -184,7 +184,7 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
     unsigned int hwthread = sched_getcpu();
 
 
-    printf("omp thread %d, hw thread %d\n", dev_id, hwthread);  
+    // printf("omp thread %d, hw thread %d\n", dev_id, hwthread);  
 
     int numa_id = numaContext.numaMapping[dev_id];
     int local_dev_id = 0;
@@ -327,9 +327,9 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
     cudaDeviceSynchronize();
     calcCscColPtr(pcscGPU[dev_id].dcolPtr, pcscGPU[dev_id].n, pcscGPU[dev_id].startIdx, pcscGPU[dev_id].nnz, stream);
     cudaDeviceSynchronize();
-    printf("dev_id %d, part_kernel_time = %f\n", dev_id, get_time() - tmp_time);
+    // printf("dev_id %d, part_kernel_time = %f\n", dev_id, get_time() - tmp_time);
     part_time += get_time() - tmp_time;  
-    printf("dev_id %d, part_time = %f\n", dev_id, part_time); 
+    // printf("dev_id %d, part_time = %f\n", dev_id, part_time); 
 
 
     #pragma omp barrier
@@ -387,7 +387,7 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
   
     checkCudaErrors(cudaDeviceSynchronize());
     // print_vec_gpu(pcscGPU[dev_id].dy, pcscGPU[dev_id].m, "y_after"+to_string(dev_id));
-    printf("omp thread %d, time %f\n", dev_id, get_time() - tmp_time);
+    // printf("omp thread %d, time %f\n", dev_id, get_time() - tmp_time);
     core_time = get_time() - tmp_time;
 
     checkCudaErrors(cudaMemcpyAsync(pcscGPU[dev_id].py, pcscGPU[dev_id].dy, 
@@ -396,7 +396,7 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
     checkCudaErrors(cudaDeviceSynchronize());
     #pragma omp barrier
     //
-    print_vec(pcscGPU[dev_id].py, m, "py"+to_string(dev_id));
+    // print_vec(pcscGPU[dev_id].py, m, "py"+to_string(dev_id));
     if (dev_id == 0) {
       for (int d = 0; d < ngpu; d++) {
         for (int i = 0; i < m; i++) {
@@ -414,7 +414,7 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
 
   }
 
-  print_vec(y, m, "y_all");
+  // print_vec(y, m, "y_all");
 
   spmv_ret ret;
   ret.comp_time = core_time;

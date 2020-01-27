@@ -61,7 +61,7 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
     numa_part_time = 0;
   
     if (numaContext.representiveThreads[dev_id]) {
-      printf("represent thread %d hw thread %d\n", dev_id, hwthread);
+      // printf("represent thread %d hw thread %d\n", dev_id, hwthread);
 
       double tmp_time = get_time();
 
@@ -95,8 +95,8 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
       }
 
     
-      printf("numa_id %d, numa_start_idx %d, numa_end_idx %d\n",numa_id, pcooNuma[numa_id].startIdx, pcooNuma[numa_id].endIdx);
-      printf("numa_id %d, numa_start_row %d, numa_end_row %d\n",numa_id, pcooNuma[numa_id].startRow, pcooNuma[numa_id].endRow);
+      // printf("numa_id %d, numa_start_idx %d, numa_end_idx %d\n",numa_id, pcooNuma[numa_id].startIdx, pcooNuma[numa_id].endIdx);
+      // printf("numa_id %d, numa_start_row %d, numa_end_row %d\n",numa_id, pcooNuma[numa_id].startRow, pcooNuma[numa_id].endRow);
     
 
       numa_part_time += get_time() - tmp_time;
@@ -165,7 +165,7 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
       if (numa_id == numaContext.numaMapping[i]) local_dev_id++;
     }
 
-    printf("omp thread %d, hw thread %d, numa_id %d, local_id %d\n", dev_id, hwthread, numa_id, local_dev_id);  
+    // printf("omp thread %d, hw thread %d, numa_id %d, local_id %d\n", dev_id, hwthread, numa_id, local_dev_id);  
 
     cudaStream_t stream;
     cusparseStatus_t status;
@@ -352,9 +352,9 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
     tmp_time = get_time();
     calcCooRowIdx(pcooGPU[dev_id].drowIdx, pcooGPU[dev_id].nnz, pcooGPU[dev_id].startRow, stream);
     cudaDeviceSynchronize();
-    printf("dev_id %d, part_kernel_time = %f\n", dev_id, get_time() - tmp_time);
+    // printf("dev_id %d, part_kernel_time = %f\n", dev_id, get_time() - tmp_time);
     part_time += get_time() - tmp_time;  
-    printf("dev_id %d, part_time = %f\n", dev_id, part_time); 
+    // printf("dev_id %d, part_time = %f\n", dev_id, part_time); 
   //cudaProfilerStart();
     #pragma omp barrier
     tmp_time = get_time();
@@ -406,9 +406,9 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
 
     
     cudaDeviceSynchronize();
-    if (status != CUSPARSE_STATUS_SUCCESS) printf("dev_id %d: exec error\n", dev_id);
+    // if (status != CUSPARSE_STATUS_SUCCESS) printf("dev_id %d: exec error\n", dev_id);
     //print_vec_gpu(pcooGPU[dev_id].dy, pcooGPU[dev_id].m, "y_after"+to_string(dev_id));
-    printf("omp thread %d, time %f\n", dev_id, get_time() - tmp_time);
+    // printf("omp thread %d, time %f\n", dev_id, get_time() - tmp_time);
     core_time = get_time() - tmp_time;
     // GPU based merge
     tmp_time = get_time();
@@ -492,7 +492,7 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
 
     }
 
-    printf("end part time: %f\n", part_time);
+    // printf("end part time: %f\n", part_time);
     //cout << "time_parse = " << time_parse << ", time_comm = " << time_comm << ", time_comp = "<< time_comp <<", time_post = " << time_post << endl;
                 spmv_ret ret;
                 ret.comp_time = core_time;

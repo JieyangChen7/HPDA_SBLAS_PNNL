@@ -201,7 +201,7 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
 
     //if (is_represetative) {
     if (numaContext.representiveThreads[dev_id]) {
-      printf("represent thread %d hw thread %d\n", dev_id, hwthread);
+      // printf("represent thread %d hw thread %d\n", dev_id, hwthread);
 
       double tmp_time = get_time();
 
@@ -256,8 +256,8 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
       // numa_n[numa_id] = n;
       // numa_nnz[numa_id]   = (int)(numa_end_idx[numa_id] - numa_start_idx[numa_id] + 1);
 
-      printf("numa_id %d, numa_start_idx %d, numa_end_idx %d\n",numa_id, pcsrNuma[numa_id].startIdx, pcsrNuma[numa_id].endIdx);
-      printf("numa_id %d, numa_start_row %d, numa_end_row %d\n",numa_id, pcsrNuma[numa_id].startRow, pcsrNuma[numa_id].endRow);
+      // printf("numa_id %d, numa_start_idx %d, numa_end_idx %d\n",numa_id, pcsrNuma[numa_id].startIdx, pcsrNuma[numa_id].endIdx);
+      // printf("numa_id %d, numa_start_row %d, numa_end_row %d\n",numa_id, pcsrNuma[numa_id].startRow, pcsrNuma[numa_id].endRow);
     
 
       numa_part_time += get_time() - tmp_time;
@@ -376,7 +376,7 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     // }
 
 
-    printf("omp thread %d, hw thread %d, numa_id %d, local_id %d\n", dev_id, hwthread, numa_id, local_dev_id);  
+    // printf("omp thread %d, hw thread %d, numa_id %d, local_id %d\n", dev_id, hwthread, numa_id, local_dev_id);  
 
     // int start_idx, end_idx;
     // int start_row, end_row;
@@ -480,9 +480,9 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     // dev_n = n;
     // dev_nnz   = (int)(end_idx - start_idx + 1);
 
-    printf("omp thread %d, dev_m %d, dev_n %d, dev_nnz %d, start_idx %d, end_idx %d, start_row %d, end_row %d\n", 
-            dev_id, pcsrGPU[dev_id].m, pcsrGPU[dev_id].n, pcsrGPU[dev_id].nnz, pcsrGPU[dev_id].startIdx, pcsrGPU[dev_id].endIdx, 
-            pcsrGPU[dev_id].startRow, pcsrGPU[dev_id].endRow);
+    // printf("omp thread %d, dev_m %d, dev_n %d, dev_nnz %d, start_idx %d, end_idx %d, start_row %d, end_row %d\n", 
+    //         dev_id, pcsrGPU[dev_id].m, pcsrGPU[dev_id].n, pcsrGPU[dev_id].nnz, pcsrGPU[dev_id].startIdx, pcsrGPU[dev_id].endIdx, 
+    //         pcsrGPU[dev_id].startRow, pcsrGPU[dev_id].endRow);
 
 
     // preparing data on host 
@@ -629,9 +629,9 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     calcCsrRowPtr(pcsrGPU[dev_id].drowPtr, pcsrGPU[dev_id].m, pcsrGPU[dev_id].startIdx, pcsrGPU[dev_id].nnz, stream);
     //calcCsrRowPtr(dev_csrRowPtr, dev_m, start_idx, dev_nnz, stream);
     cudaDeviceSynchronize();
-    printf("dev_id %d, part_kernel_time = %f\n", dev_id, get_time() - tmp_time);
+    // printf("dev_id %d, part_kernel_time = %f\n", dev_id, get_time() - tmp_time);
     part_time += get_time() - tmp_time;  
-    printf("dev_id %d, part_time = %f\n", dev_id, part_time); 
+    // printf("dev_id %d, part_time = %f\n", dev_id, part_time); 
   //cudaProfilerStart();
     #pragma omp barrier
     tmp_time = get_time();
@@ -699,7 +699,7 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     cudaDeviceSynchronize();
     if (status != CUSPARSE_STATUS_SUCCESS) printf("dev_id %d: exec error\n", dev_id);
     //print_vec_gpu(dev_y, 5, "y"+to_string(dev_id));
-    printf("omp thread %d, time %f\n", dev_id, get_time() - tmp_time);
+    // printf("omp thread %d, time %f\n", dev_id, get_time() - tmp_time);
     core_time = get_time() - tmp_time;
     // GPU based merge
     tmp_time = get_time();

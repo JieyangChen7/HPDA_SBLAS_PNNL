@@ -321,8 +321,8 @@ spmv_ret spMV_mgpu_v1(int m, int n, int nnz, double * alpha,
 
     //cudaProfilerStop();
 
-                time_comp = get_time() - curr_time;
-                curr_time = get_time();
+      time_comp = get_time() - curr_time;
+      curr_time = get_time();
 
     for (int d = 0; d < ngpu; d++) {
       cudaSetDevice(d);
