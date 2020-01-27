@@ -707,6 +707,8 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     elapsedTime /= 1000.0;
     comp_time += elapsedTime;
 
+    printf("omp thread %d, comp_time %f\n", dev_id, elapsedTime);
+
     checkCudaErrors(cudaDeviceSynchronize());
     //print_vec_gpu(dev_y, 5, "y"+to_string(dev_id));
     // printf("omp thread %d, time %f\n", dev_id, get_time() - tmp_time);
