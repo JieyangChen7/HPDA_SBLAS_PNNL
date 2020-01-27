@@ -511,7 +511,7 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
 
       tmp_time = get_time();
       pcsrGPU[dev_id].host_csrRowPtr[0] = 0;
-      pcsrGPU[dev_id].host_csrRowPtr[dev_m] = pcsrGPU[dev_id].nnz;
+      pcsrGPU[dev_id].host_csrRowPtr[pcsrGPU[dev_id].m] = pcsrGPU[dev_id].nnz;
       for (int j = 1; j < pcsrGPU[dev_id].m; j++) {
         pcsrGPU[dev_id].host_csrRowPtr[j] = (int)(pcsrNuma[numa_id].rowPtr[pcsrGPU[dev_id].startRow + j] - pcsrGPU[dev_id].start_idx);
       }
