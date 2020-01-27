@@ -177,10 +177,10 @@ spmv_ret spMV_mgpu_baseline_csc(int m, int n, int nnz, double * alpha,
 
   for (int d = 0; d < ngpu; d++) {
     cudaSetDevice(d);
-    cudaFreeHost(A[d]);
-    cudaFree(dev_csrVal[d]);
-    cudaFree(dev_csrRowPtr[d]);
-    cudaFree(dev_csrColIdx[d]);
+    // cudaFreeHost(A[d]);
+    // cudaFree(dev_csrVal[d]);
+    // cudaFree(dev_csrRowPtr[d]);
+    // cudaFree(dev_csrColIdx[d]);
     cudaFreeHost(host_py[d]);
     cudaFreeHost(host_cscColPtr[d]);
 

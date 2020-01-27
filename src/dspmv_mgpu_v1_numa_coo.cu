@@ -155,6 +155,7 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
     unsigned int dev_id = omp_get_thread_num();
     checkCudaErrors(cudaSetDevice(dev_id));
     unsigned int hwthread = sched_getcpu();
+    float elapsedTime;
 
     cudaStream_t stream;
     cusparseStatus_t status;
@@ -262,7 +263,7 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
     checkCudaErrors(cudaMalloc((void**)&(pcooGPU[dev_id].dcolIdx), pcooGPU[dev_id].nnz * sizeof(int)   ));
     checkCudaErrors(cudaMalloc((void**)&(pcooGPU[dev_id].dx),      pcooGPU[dev_id].n   * sizeof(double))); 
     checkCudaErrors(cudaMalloc((void**)&(pcooGPU[dev_id].dy),      pcooGPU[dev_id].m   * sizeof(double))); 
-    checkCudaErrors(cudaMallocHost((void**)&(pcsrGPU[dev_id].py),  pcsrGPU[dev_id].m   * sizeof(double)));
+    checkCudaErrors(cudaMallocHost((void**)&(pcooGPU[dev_id].py),  pcooGPU[dev_id].m   * sizeof(double)));
 
     double * dev_csrVal;
     int * dev_csrRowPtr;
@@ -302,10 +303,10 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
     }
 
     checkCudaErrors(cudaEventSynchronize(comm_stop));
-    float elapsedTime;
+    elapsedTime = 0.0;
     checkCudaErrors(cudaEventElapsedTime(&elapsedTime, comm_start, comm_stop));
     elapsedTime /= 1000.0;
-    comm_time += elapsedTime
+    comm_time += elapsedTime;
 
 
     
@@ -443,16 +444,16 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
     checkCudaErrors(cudaEventRecord(comp_stop, stream));
 
     checkCudaErrors(cudaEventSynchronize(comm_stop));
-    float elapsedTime;
+    elapsedTime = 0.0;
     checkCudaErrors(cudaEventElapsedTime(&elapsedTime, comm_start, comm_stop));
     elapsedTime /= 1000.0;
-    comm_time += elapsedTime
+    comm_time += elapsedTime;
 
     checkCudaErrors(cudaEventSynchronize(comp_stop));
-    elapsedTime;
+    elapsedTime = 0.0;
     checkCudaErrors(cudaEventElapsedTime(&elapsedTime, comp_start, comp_stop));
     elapsedTime /= 1000.0;
-    comp_time += elapsedTime
+    comp_time += elapsedTime;
 
 
     

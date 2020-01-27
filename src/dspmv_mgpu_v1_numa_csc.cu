@@ -181,6 +181,7 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
     cudaSetDevice(dev_id);
     unsigned int hwthread = sched_getcpu();
 
+    float elapsedTime;
 
     cudaStream_t stream;
     cusparseStatus_t status;
@@ -286,13 +287,13 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
       }
       part_time += get_time() - tmp_time;
       checkCudaErrors(cudaEventRecord(comm_start, stream));
-      checkCudaErrors(cudaMemcpyAsync(pcscGPU[dev_id].drowPtr, pcscGPU[dev_id].host_cscColPtr, (pcscGPU[dev_id].m + 1) * sizeof(int), cudaMemcpyHostToDevice, stream));
+      checkCudaErrors(cudaMemcpyAsync(pcscGPU[dev_id].dcolPtr, pcscGPU[dev_id].host_cscColPtr, (pcscGPU[dev_id].m + 1) * sizeof(int), cudaMemcpyHostToDevice, stream));
       checkCudaErrors(cudaEventRecord(comm_stop, stream));
       checkCudaErrors(cudaFreeHost(pcscGPU[dev_id].host_cscColPtr));
     }
     
     checkCudaErrors(cudaEventSynchronize(comm_stop));
-    float elapsedTime;
+    elapsedTime = 0.0;
     checkCudaErrors(cudaEventElapsedTime(&elapsedTime, comm_start, comm_stop));
     elapsedTime /= 1000.0;
     comm_time += elapsedTime
@@ -391,16 +392,16 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
     //                         pcscGPU[dev_id].dx, beta, pcscGPU[dev_id].dy));
       
     checkCudaErrors(cudaEventSynchronize(comm_stop));
-    float elapsedTime;
+    elapsedTime = 0.0;
     checkCudaErrors(cudaEventElapsedTime(&elapsedTime, comm_start, comm_stop));
     elapsedTime /= 1000.0;
-    comm_time += elapsedTime
+    comm_time += elapsedTime;
 
     checkCudaErrors(cudaEventSynchronize(comp_stop));
-    elapsedTime;
+    elapsedTime = 0.0;
     checkCudaErrors(cudaEventElapsedTime(&elapsedTime, comp_start, comp_stop));
     elapsedTime /= 1000.0;
-    comp_time += elapsedTime
+    comp_time += elapsedTime;
   
     checkCudaErrors(cudaDeviceSynchronize());
     // print_vec_gpu(pcscGPU[dev_id].dy, pcscGPU[dev_id].m, "y_after"+to_string(dev_id));
