@@ -411,7 +411,7 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
     // printf("omp thread %d, time %f\n", dev_id, get_time() - tmp_time);
     //comp_time = get_time() - tmp_time;
 
-
+    #pragma omp barrier
     tmp_time = get_time();
 
     if (merg_opt == 0 || merg_opt == 1) {
