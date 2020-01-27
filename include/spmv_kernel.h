@@ -43,7 +43,7 @@ struct spmv_ret {
   void print() {
     printf("%f, %f, %f, %f, %f\n", 
             numa_part_time, part_time, 
-            comp_time, comm_time, merg_time);
+            comm_time, comp_time, merg_time);
   }
 };
 
