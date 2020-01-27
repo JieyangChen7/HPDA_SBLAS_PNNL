@@ -712,7 +712,7 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     elapsedTime /= 1000.0;
     comp_time += elapsedTime;
 
-    printf("omp thread %d, elapsedTime1 %f comp_time %f \n", dev_id, elapsedTime, comp_time);
+    // printf("omp thread %d, elapsedTime1 %f comp_time %f \n", dev_id, elapsedTime, comp_time);
 
     checkCudaErrors(cudaDeviceSynchronize());
     //print_vec_gpu(dev_y, 5, "y"+to_string(dev_id));
@@ -737,8 +737,13 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
         checkCudaErrors(cudaMemcpyAsync(start_element+dev_id, pcsrGPU[dev_id].dy, sizeof(double), cudaMemcpyDeviceToHost, stream));
         //cudaMemcpyAsync(start_element+dev_id, dev_y, sizeof(double), cudaMemcpyDeviceToHost, stream);
       }
+      checkCudaErrors(cudaDeviceSynchronize());
+      printf("omp thread %d merg_copy_time1 %f \n", dev_id, get_time() - tmp_time);
+
       checkCudaErrors(cudaMemcpyAsync(y+start_row_no_overlap, dev_y_no_overlap, dev_m_no_overlap*sizeof(double),  cudaMemcpyDeviceToHost, stream));
       checkCudaErrors(cudaDeviceSynchronize());
+
+      printf("omp thread %d merg_copy_time2 %f \n", dev_id, get_time() - tmp_time);
       #pragma omp barrier
       if (dev_id == 0) {
         for (int i = 0; i < ngpu; i++) {
@@ -753,6 +758,8 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
           // } 
         }
       }
+      printf("omp thread %d merg_other_time %f \n", dev_id, get_time() - tmp_time);
+
     }
 
     if (merg_opt == 0) {
