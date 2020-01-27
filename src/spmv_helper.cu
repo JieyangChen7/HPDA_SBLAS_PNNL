@@ -523,6 +523,7 @@ void coo2csr(int m, int n, int nnz,
   sortCOOGPUEx(handle, m, n, nnz,
                dcooRowIdx, dcooColIdx,
                &cooValSorted, &buffer, &P);
+  checkCudaErrors(cudaDeviceSynchronize());
 
   sortCOORowGPU(handle, stream,
                  m, n, nnz,
@@ -603,15 +604,18 @@ void coo2csc(int m, int n, int nnz,
   sortCOOGPUEx(handle, m, n, nnz,
                dcooRowIdx, dcooColIdx,
                &cooValSorted, &buffer, &P);
+  checkCudaErrors(cudaDeviceSynchronize());
 
   sortCOOColGPU(handle, stream,
                  m, n, nnz,
                  dcooVal, dcooRowIdx, dcooColIdx,
                  cooValSorted, buffer, P);
+  checkCudaErrors(cudaDeviceSynchronize());
 
   coo2csrGPU(handle, stream, n, m, nnz,
              dcooVal, dcooColIdx, dcooRowIdx,
              dcscVal, dcscColPtr, dcscRowIdx);
+  checkCudaErrors(cudaDeviceSynchronize());
 
   checkCudaErrors(cudaMemcpy(cscVal, dcscVal,       nnz * sizeof(double), cudaMemcpyDeviceToHost));
   checkCudaErrors(cudaMemcpy(cscColPtr, dcscColPtr, (n+1) * sizeof(int), cudaMemcpyDeviceToHost));
