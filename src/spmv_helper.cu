@@ -528,6 +528,7 @@ void coo2csr(int m, int n, int nnz,
                  m, n, nnz,
                  dcooVal, dcooRowIdx, dcooColIdx,
                  cooValSorted, buffer, P);
+  checkCudaErrors(cudaDeviceSynchronize());
 
   print_vec_gpu(dcooVal, 5, "dcooVal");
   print_vec_gpu(dcooRowIdx, 5, "dcooRowIdx");
@@ -538,9 +539,9 @@ void coo2csr(int m, int n, int nnz,
              dcsrVal, dcsrRowPtr, dcsrColIdx);
 
   checkCudaErrors(cudaDeviceSynchronize());
-  
+
   print_vec_gpu(dcsrVal, 5, "dcsrVal");
-  print_vec_gpu(dcsrRowPtr, 5, "dcsrRowPtr");
+  print_vec_gpu(dcsrRowPtr+482948, 5, "dcsrRowPtr");
   print_vec_gpu(dcsrColIdx, 5, "dcsrColIdx");
 
   checkCudaErrors(cudaMemcpyAsync(csrVal, dcsrVal,       nnz * sizeof(double), cudaMemcpyDeviceToHost));
