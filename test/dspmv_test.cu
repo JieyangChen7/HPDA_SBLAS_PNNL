@@ -118,52 +118,52 @@ int main(int argc, char *argv[]) {
     }
     nnz = nnz_int;
         
-    nnz = 100;
-     m = 10;
-     n = 10;
+    // nnz = 100;
+    //  m = 10;
+    //  n = 10;
 
     cout << "m: " << m << " n: " << n << " nnz: " << nnz << endl;
     cudaMallocHost((void **)&cooRowIdx, nnz * sizeof(int));
     cudaMallocHost((void **)&cooColIdx, nnz * sizeof(int));
     cudaMallocHost((void **)&cooVal, nnz * sizeof(double));;
     //Read matrix from file into COO format
-    // cout << "Start reading data from file" << endl;
-    // if (mm_is_pattern(matcode)) { // binary input
-    //   cout << "binary input\n";
-    //   for (int i = 0; i < nnz; i++) {
-    //     fscanf(f, "%d %d\n", &cooRowIdx[i], &cooColIdx[i]);
-    //     cooVal[i] = 1;
-    //     cooRowIdx[i]--;
-    //     cooColIdx[i]--;
-    //   }
-    // } else if (mm_is_real(matcode)){ // float input
-    //   cout << "float input\n";
-    //   for (int i = 0; i < nnz; i++) {
-    //     fscanf(f, "%d %d %lg\n", &cooRowIdx[i], &cooColIdx[i], &cooVal[i]);
-    //     cooRowIdx[i]--;
-    //     cooColIdx[i]--;
-    //   }
-    // } else if (mm_is_integer(matcode)){ // integer input
-    //   cout << "integer input\n";
-    //   for (int i = 0; i < nnz; i++) {
-    //     int tmp;
-    //     fscanf(f, "%d %d %d\n", &cooRowIdx[i], &cooColIdx[i], &tmp);
-    //     cooVal[i] = tmp;
-    //     cooRowIdx[i]--;
-    //     cooColIdx[i]--;
-    //   }
-    // }
-    
-    // testing data
-    int p = 0;
-    for (int i = 0; i < m; i++) {
-      for (int j = 0; j < n; j++) {
-        cooVal[p] = 1;
-        cooRowIdx[p] = i;
-        cooColIdx[p] = j;
-        p++;
+    cout << "Start reading data from file" << endl;
+    if (mm_is_pattern(matcode)) { // binary input
+      cout << "binary input\n";
+      for (int i = 0; i < nnz; i++) {
+        fscanf(f, "%d %d\n", &cooRowIdx[i], &cooColIdx[i]);
+        cooVal[i] = 1;
+        cooRowIdx[i]--;
+        cooColIdx[i]--;
+      }
+    } else if (mm_is_real(matcode)){ // float input
+      cout << "float input\n";
+      for (int i = 0; i < nnz; i++) {
+        fscanf(f, "%d %d %lg\n", &cooRowIdx[i], &cooColIdx[i], &cooVal[i]);
+        cooRowIdx[i]--;
+        cooColIdx[i]--;
+      }
+    } else if (mm_is_integer(matcode)){ // integer input
+      cout << "integer input\n";
+      for (int i = 0; i < nnz; i++) {
+        int tmp;
+        fscanf(f, "%d %d %d\n", &cooRowIdx[i], &cooColIdx[i], &tmp);
+        cooVal[i] = tmp;
+        cooRowIdx[i]--;
+        cooColIdx[i]--;
       }
     }
+    
+    // testing data
+    // int p = 0;
+    // for (int i = 0; i < m; i++) {
+    //   for (int j = 0; j < n; j++) {
+    //     cooVal[p] = 1;
+    //     cooRowIdx[p] = i;
+    //     cooColIdx[p] = j;
+    //     p++;
+    //   }
+    // }
     
     cout << "Done loading data from file" << endl;
   } else if(input_type == 'g') { // generate data
@@ -225,7 +225,7 @@ int main(int argc, char *argv[]) {
 
 
 
-  sortCOORow(m, n, nnz, cooVal, cooRowIdx, cooColIdx);
+  
 
   // Convert COO to CSR
   double * csrVal;
@@ -271,6 +271,7 @@ int main(int argc, char *argv[]) {
   //            cooVal, cooRowIdx, cooColIdx,
   //            csrVal, csrRowPtr, csrColIdx,
   //            cscVal, cscColPtr, cscRowIdx);
+  printf("Converting COO to CSR and CSC\n");
 
   coo2csr(m, n, nnz,
           cooVal, cooRowIdx, cooColIdx,
@@ -280,8 +281,9 @@ int main(int argc, char *argv[]) {
           cooVal, cooRowIdx, cooColIdx,
           cscVal, cscColPtr, cscRowIdx);
 
+  sortCOORow(m, n, nnz, cooVal, cooRowIdx, cooColIdx);
 
-  printf("out of conversion function\n");
+  printf("Done converting\n");
 
   print_vec(csrVal, nnz, "csrVal:");
   print_vec(csrRowPtr, m+1, "csrRowPtr:");
