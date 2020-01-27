@@ -24,11 +24,15 @@ spmv_ret spMV_mgpu_baseline_csc(int m, int n, int nnz, double * alpha,
   double comm_time = 0.0;
   double merg_time = 0.0;
 
-  
-
   cudaStream_t * stream = new cudaStream_t [ngpu];
   cusparseHandle_t * handle = new cusparseHandle_t[ngpu];
   cusparseMatDescr_t * descr = new cusparseMatDescr_t[ngpu];
+
+  cudaEvent_t * comp_start = new cudaEvent_t[ngpu];
+  cudaEvent_t * comp_stop = new cudaEvent_t[ngpu];
+  
+  cudaEvent_t * comm_start = new cudaEvent_t[ngpu];
+  cudaEvent_t * comm_stop = new cudaEvent_t[ngpu];
 
   int  * start_col  = new int[ngpu];
   int  * end_col    = new int[ngpu];
@@ -41,17 +45,17 @@ spmv_ret spMV_mgpu_baseline_csc(int m, int n, int nnz, double * alpha,
   int ** dev_cscRowIdx   = new int    * [ngpu];
   double ** dev_cscVal   = new double * [ngpu];
 
-  int ** dev_csrRowPtr   = new int    * [ngpu];
-  int ** dev_csrColIdx   = new int    * [ngpu];
-  double ** dev_csrVal   = new double * [ngpu];
+  // int ** dev_csrRowPtr   = new int    * [ngpu];
+  // int ** dev_csrColIdx   = new int    * [ngpu];
+  // double ** dev_csrVal   = new double * [ngpu];
 
   double ** dev_x = new double * [ngpu];
   double ** dev_y = new double * [ngpu];
 
   double ** host_py = new double * [ngpu];
 
-  double ** A = new double * [ngpu];
-  int * lda = new int[ngpu];
+  // double ** A = new double * [ngpu];
+  // int * lda = new int[ngpu];
 
   curr_time = get_time();
   for (int d = 0; d < ngpu; d++) {
@@ -72,11 +76,16 @@ spmv_ret spMV_mgpu_baseline_csc(int m, int n, int nnz, double * alpha,
     checkCudaErrors(cusparseSetMatType(descr[d],CUSPARSE_MATRIX_TYPE_GENERAL)); 
     checkCudaErrors(cusparseSetMatIndexBase(descr[d],CUSPARSE_INDEX_BASE_ZERO)); 
 
-    cudaMallocHost((void**)&(A[d]), dev_m[d] * dev_n[d] * sizeof(double));
-    lda[d] = m;
-    checkCudaErrors(cudaMalloc((void**)&(dev_csrVal[d]),      dev_nnz[d]     * sizeof(double)));
-    checkCudaErrors(cudaMalloc((void**)&(dev_csrRowPtr[d]),   (dev_m[d] + 1) * sizeof(int)   ));
-    checkCudaErrors(cudaMalloc((void**)&(dev_csrColIdx[d]),   dev_nnz[d]     * sizeof(int)   ));
+    checkCudaErrors(cudaEventCreate(&(comp_start[d])));
+    checkCudaErrors(cudaEventCreate(&(comp_stop[d])));
+    checkCudaErrors(cudaEventCreate(&(comm_start[d])));
+    checkCudaErrors(cudaEventCreate(&(comm_stop[d])));
+
+    // cudaMallocHost((void**)&(A[d]), dev_m[d] * dev_n[d] * sizeof(double));
+    // lda[d] = m;
+    // checkCudaErrors(cudaMalloc((void**)&(dev_csrVal[d]),      dev_nnz[d]     * sizeof(double)));
+    // checkCudaErrors(cudaMalloc((void**)&(dev_csrRowPtr[d]),   (dev_m[d] + 1) * sizeof(int)   ));
+    // checkCudaErrors(cudaMalloc((void**)&(dev_csrColIdx[d]),   dev_nnz[d]     * sizeof(int)   ));
 
     cudaMallocHost((void**)& host_py[d], dev_m[d] * sizeof(double));
     cudaMallocHost((void**)& host_cscColPtr[d], (dev_n[d]+1) * sizeof(int));
@@ -98,29 +107,33 @@ spmv_ret spMV_mgpu_baseline_csc(int m, int n, int nnz, double * alpha,
   }
   part_time += get_time() - curr_time;
 
-  curr_time = get_time();
+  //curr_time = get_time();
   for (int d = 0; d < ngpu; d++) {
     checkCudaErrors(cudaSetDevice(d));
+    cudaEventRecord(comm_start[d], stream[d]);
     checkCudaErrors(cudaMemcpyAsync(dev_cscColPtr[d], host_cscColPtr[d],                   (size_t)((dev_n[d] + 1) * sizeof(int)), cudaMemcpyHostToDevice, stream[d]));
     checkCudaErrors(cudaMemcpyAsync(dev_cscRowIdx[d], &cscRowIdx[cscColPtr[start_col[d]]], (size_t)(dev_nnz[d] * sizeof(int)),     cudaMemcpyHostToDevice, stream[d])); 
     checkCudaErrors(cudaMemcpyAsync(dev_cscVal[d],    &cscVal[cscColPtr[start_col[d]]],    (size_t)(dev_nnz[d] * sizeof(double)),  cudaMemcpyHostToDevice, stream[d]));
     checkCudaErrors(cudaMemcpyAsync(dev_y[d],         y,                                   (size_t)(dev_m[d]*sizeof(double)),      cudaMemcpyHostToDevice, stream[d])); 
     checkCudaErrors(cudaMemcpyAsync(dev_x[d],         &x[start_col[d]],                    (size_t)(dev_n[d]*sizeof(double)),      cudaMemcpyHostToDevice, stream[d])); 
+    cudaEventRecord(comm_stop[d], stream[d]);
   }
   //time_comm = get_time() - curr_time;
 
 
-  curr_time = get_time();
+  //curr_time = get_time();
   for (int d = 0; d < ngpu; ++d) {
     checkCudaErrors(cudaSetDevice(d));
     // csc2csrGPU(handle[d], m, n, nnz, A[d], lda[d],
     //             dev_cscVal[d], dev_cscColPtr[d], dev_cscRowIdx[d],
     //             dev_csrVal[d], dev_csrRowPtr[d], dev_csrColIdx[d]);
+    cudaEventRecord(comp_start[d], stream[d]);
     checkCudaErrors(cusparseDcsrmv(handle[d],CUSPARSE_OPERATION_TRANSPOSE, 
                                dev_n[d], dev_m[d], dev_nnz[d], 
                                alpha, descr[d], 
                                dev_cscVal[d], dev_cscColPtr[d], dev_cscRowIdx[d], 
-                               dev_x[d], beta, dev_y[d]));       
+                               dev_x[d], beta, dev_y[d]));
+    cudaEventRecord(comp_stop[d], stream[d]);     
     // checkCudaErrors(cusparseDcsrmv(handle[d],CUSPARSE_OPERATION_NON_TRANSPOSE, 
     //                            dev_m[d], dev_n[d], dev_nnz[d], 
     //                            alpha, descr[d], dev_csrVal[d], 
@@ -129,9 +142,21 @@ spmv_ret spMV_mgpu_baseline_csc(int m, int n, int nnz, double * alpha,
   }
   for (int d = 0; d < ngpu; ++d) {
     checkCudaErrors(cudaSetDevice(d));
+    cudaEventSynchronize(comm_stop[d]);
+    float elapsedTime;
+    cudaEventElapsedTime(&elapsedTime, comm_start[d], comm_stop[d]);
+    elapsedTime /= 1000.0;
+    if (elapsedTime > comm_time) comm_time = elapsedTime;
+
+    cudaEventSynchronize(comp_stop[d]);
+    elapsedTime;
+    cudaEventElapsedTime(&elapsedTime, comp_start[d], comp_stop[d]);
+    elapsedTime /= 1000.0;
+    if (elapsedTime > comp_time) comp_time = elapsedTime;
+
     checkCudaErrors(cudaDeviceSynchronize());
   }
-  comp_time = get_time() - curr_time;
+  //comp_time = get_time() - curr_time;
 
   curr_time = get_time();
   for (int d = 0; d < ngpu; d++) {
@@ -169,6 +194,11 @@ spmv_ret spMV_mgpu_baseline_csc(int m, int n, int nnz, double * alpha,
     cusparseDestroyMatDescr(descr[d]);
     cusparseDestroy(handle[d]);
     cudaStreamDestroy(stream[d]);
+
+    cudaEventDestroy(comp_start[d]);
+    cudaEventDestroy(comp_stop[d]);
+    cudaEventDestroy(comm_start[d]);
+    cudaEventDestroy(comm_stop[d]);
   }
 
   delete [] stream;
@@ -183,14 +213,20 @@ spmv_ret spMV_mgpu_baseline_csc(int m, int n, int nnz, double * alpha,
   delete [] dev_cscColPtr;
   delete [] dev_cscRowIdx;
   delete [] dev_cscVal;
-  delete [] dev_csrRowPtr;
-  delete [] dev_csrColIdx;
-  delete [] dev_csrVal;
+  // delete [] dev_csrRowPtr;
+  // delete [] dev_csrColIdx;
+  // delete [] dev_csrVal;
   delete [] dev_x;
   delete [] dev_y;
   delete [] host_py;
-  delete [] A;
-  delete [] lda;
+  // delete [] A;
+  // delete [] lda;
+
+  delete[] comp_start;
+  delete[] comp_stop;
+  delete[] comm_start;
+  delete[] comm_stop;
+  
     
   spmv_ret ret;
   ret.numa_part_time = numa_part_time;

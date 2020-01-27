@@ -53,6 +53,7 @@ struct pCSR {
   int * colIdx;
   double * x;
   double * y;
+  double * py;
 
   double * dval;
   int * drowPtr;
@@ -88,6 +89,8 @@ struct pCSC {
   int * drowIdx;
   double * dx;
   double * dy;
+
+  int * host_cscColPtr;
 
   int m;
   int n;
@@ -237,7 +240,9 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
           double * y,
           int ngpu, 
           int kernel,
-          int * numa_mapping);
+          int * numa_mapping,
+          int part_opt,
+          int merg_opt);
 
 spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
           double * cooVal, int * cooRowIdx, int * cooColIdx, 

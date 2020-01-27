@@ -24,6 +24,11 @@ spmv_ret spMV_mgpu_baseline(int m, int n, int nnz, double * alpha,
   double comm_time = 0.0;
   double merg_time = 0.0;
 
+  cudaEvent_t * comp_start = new cudaEvent_t[ngpu];
+  cudaEvent_t * comp_stop = new cudaEvent_t[ngpu];
+  
+  cudaEvent_t * comm_start = new cudaEvent_t[ngpu];
+  cudaEvent_t * comm_stop = new cudaEvent_t[ngpu];
 
   curr_time = get_time();
 
@@ -90,6 +95,11 @@ spmv_ret spMV_mgpu_baseline(int m, int n, int nnz, double * alpha,
     checkCudaErrors(cusparseSetMatType(descr[d],CUSPARSE_MATRIX_TYPE_GENERAL)); 
     checkCudaErrors(cusparseSetMatIndexBase(descr[d],CUSPARSE_INDEX_BASE_ZERO)); 
 
+    checkCudaErrors(cudaEventCreate(&(comp_start[d])));
+    checkCudaErrors(cudaEventCreate(&(comp_stop[d])));
+    checkCudaErrors(cudaEventCreate(&(comm_start[d])));
+    checkCudaErrors(cudaEventCreate(&(comm_stop[d])));
+
     checkCudaErrors(cudaMalloc((void**)&dev_csrRowPtr[d],   (dev_m[d] + 1) * sizeof(int)));
     checkCudaErrors(cudaMalloc((void**)&dev_csrColIndex[d], dev_nnz[d] * sizeof(int))); 
     checkCudaErrors(cudaMalloc((void**)&dev_csrVal[d],      dev_nnz[d] * sizeof(double))); 
@@ -97,31 +107,55 @@ spmv_ret spMV_mgpu_baseline(int m, int n, int nnz, double * alpha,
     checkCudaErrors(cudaMalloc((void**)&dev_y[d],           dev_m[d] * sizeof(double))); 
   }
 
-  curr_time = get_time();
+  //curr_time = get_time();
+  
   for (int d = 0; d < ngpu; d++){
+    checkCudaErrors(cudaSetDevice(d));
+    cudaEventRecord(comm_start[d], stream[d]);
     checkCudaErrors(cudaMemcpyAsync(dev_csrRowPtr[d],   host_csrRowPtr[d],                  (size_t)((dev_m[d] + 1) * sizeof(int)), cudaMemcpyHostToDevice, stream[d]));
     checkCudaErrors(cudaMemcpyAsync(dev_csrColIndex[d], &csrColIndex[csrRowPtr[start_row[d]]], (size_t)(dev_nnz[d] * sizeof(int)),   cudaMemcpyHostToDevice, stream[d])); 
     checkCudaErrors(cudaMemcpyAsync(dev_csrVal[d],      &csrVal[csrRowPtr[start_row[d]]],      (size_t)(dev_nnz[d] * sizeof(double)), cudaMemcpyHostToDevice, stream[d]));
     checkCudaErrors(cudaMemcpyAsync(dev_y[d], &y[start_row[d]], (size_t)(dev_m[d]*sizeof(double)), cudaMemcpyHostToDevice, stream[d])); 
     checkCudaErrors(cudaMemcpyAsync(dev_x[d], x,                (size_t)(dev_n[d]*sizeof(double)), cudaMemcpyHostToDevice, stream[d])); 
+    cudaEventRecord(comm_stop[d], stream[d]);
   }
   for (int d = 0; d < ngpu; ++d) {
     checkCudaErrors(cudaSetDevice(d));
+    cudaEventRecord(comp_start[d], stream[d]);
     checkCudaErrors(cusparseDcsrmv(handle[d],CUSPARSE_OPERATION_NON_TRANSPOSE, 
                    dev_m[d], dev_n[d], dev_nnz[d], 
                    alpha, descr[d], dev_csrVal[d], 
                    dev_csrRowPtr[d], dev_csrColIndex[d], 
-                   dev_x[d], beta, dev_y[d]));       
+                   dev_x[d], beta, dev_y[d]));
+    cudaEventRecord(comp_stop[d], stream[d]);     
   }
+
   for (int d = 0; d < ngpu; ++d) {
     checkCudaErrors(cudaSetDevice(d));
+    cudaEventSynchronize(comm_stop[d]);
+    float elapsedTime;
+    cudaEventElapsedTime(&elapsedTime, comm_start[d], comm_stop[d]);
+    elapsedTime /= 1000.0;
+    if (elapsedTime > comm_time) comm_time = elapsedTime;
+
+    cudaEventSynchronize(comp_stop[d]);
+    elapsedTime;
+    cudaEventElapsedTime(&elapsedTime, comp_start[d], comp_stop[d]);
+    elapsedTime /= 1000.0;
+    if (elapsedTime > comp_time) comp_time = elapsedTime;
+
     checkCudaErrors(cudaDeviceSynchronize());
   }
-  comp_time = get_time() - curr_time;
+  //comp_time = get_time() - curr_time;
 
   curr_time = get_time();
   for (int d = 0; d < ngpu; d++) {
-    cudaMemcpy( &y[start_row[d]], dev_y[d], (size_t)(dev_m[d]*sizeof(double)),  cudaMemcpyDeviceToHost);
+    checkCudaErrors(cudaSetDevice(d));
+    checkCudaErrors(cudaMemcpyAsync( &y[start_row[d]], dev_y[d], (size_t)(dev_m[d]*sizeof(double)),  cudaMemcpyDeviceToHost, stream[d]));
+  }
+  for (int d = 0; d < ngpu; d++) {
+    checkCudaErrors(cudaSetDevice(d));
+    checkCudaErrors(cudaDeviceSynchronize());
   }
   merg_time = get_time() - curr_time;
 
@@ -132,9 +166,12 @@ spmv_ret spMV_mgpu_baseline(int m, int n, int nnz, double * alpha,
     cudaFree(dev_csrColIndex[d]);
     cudaFree(dev_x[d]);
     cudaFree(dev_y[d]);
+    cudaEventDestroy(comp_start[d]);
+    cudaEventDestroy(comp_stop[d]);
+    cudaEventDestroy(comm_start[d]);
+    cudaEventDestroy(comm_stop[d]);
   }
 
-  
   delete[] dev_csrVal;
   delete[] dev_csrRowPtr;
   delete[] dev_csrColIndex;
@@ -143,10 +180,10 @@ spmv_ret spMV_mgpu_baseline(int m, int n, int nnz, double * alpha,
   delete[] host_csrRowPtr;
   delete[] start_row;
   delete[] end_row;
-
-  
-    
-  //cout << "time_parse = " << time_parse << ", time_comm = " << time_comm << ", time_comp = "<< time_comp <<", time_post = " << time_post << endl;
+  delete[] comp_start;
+  delete[] comp_stop;
+  delete[] comm_start;
+  delete[] comm_stop;
   
   spmv_ret ret;
   ret.numa_part_time = numa_part_time;

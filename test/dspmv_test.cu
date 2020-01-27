@@ -463,7 +463,8 @@ int main(int argc, char *argv[]) {
                                 y_static_csc,
                                 ngpu,
                                 1,
-                                numa_mapping); //kernel 1
+                                numa_mapping,
+                                part_opt, merg_opt); //kernel 1
     ret_static_csc.add(ret);
 
     ret = spMV_mgpu_baseline_coo(m, n, nnz, &ALPHA,

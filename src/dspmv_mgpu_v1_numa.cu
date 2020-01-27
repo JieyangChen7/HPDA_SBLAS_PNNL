@@ -356,8 +356,28 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
   #pragma omp parallel default (shared) reduction(max:comp_time) reduction(max:part_time) reduction(max:merg_time)
   {
     unsigned int dev_id = omp_get_thread_num();
-    cudaSetDevice(dev_id);
+    checkCudaErrors(cudaSetDevice(dev_id));
     unsigned int hwthread = sched_getcpu();
+
+    cudaStream_t stream;
+    cusparseStatus_t status;
+    cusparseHandle_t handle;
+    cusparseMatDescr_t descr;
+
+    checkCudaErrors(cudaStreamCreate(&stream));
+    checkCudaErrors(cusparseCreate(&handle)); 
+    checkCudaErrors(cusparseSetStream(handle, stream));
+    checkCudaErrors(cusparseCreateMatDescr(&descr));
+    checkCudaErrors(cusparseSetMatType(descr,CUSPARSE_MATRIX_TYPE_GENERAL)); 
+    checkCudaErrors(cusparseSetMatIndexBase(descr,CUSPARSE_INDEX_BASE_ZERO));
+
+    cudaEvent_t comp_start, comp_stop;
+    cudaEvent_t comm_start, comm_stop;
+
+    checkCudaErrors(cudaEventCreate(&comp_start));
+    checkCudaErrors(cudaEventCreate(&comp_stop));
+    checkCudaErrors(cudaEventCreate(&comm_start));
+    checkCudaErrors(cudaEventCreate(&comm_stop));
 
     int numa_id = numaContext.numaMapping[dev_id];
     int local_dev_id = 0;
@@ -397,12 +417,6 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     // double * dev_x;
     // double * dev_y;
     // double y2;
-
-    cudaStream_t stream;
-    cusparseStatus_t status;
-    cusparseHandle_t handle;
-    cusparseMatDescr_t descr;
-    int err;
 
     double tmp_time = get_time();
 
@@ -487,9 +501,7 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
 
     //tmp_time = get_time();
     pcsrGPU[dev_id].val = &(pcsrNuma[numa_id].val[pcsrGPU[dev_id].startIdx]);
-    if (part_opt == 1) {
-      pcsrGPU[dev_id].rowPtr = &(pcsrNuma[numa_id].rowPtr[pcsrGPU[dev_id].startRow]);
-    }
+    pcsrGPU[dev_id].rowPtr = &(pcsrNuma[numa_id].rowPtr[pcsrGPU[dev_id].startRow]);
     pcsrGPU[dev_id].colIdx = &(pcsrNuma[numa_id].colIdx[pcsrGPU[dev_id].startIdx]);
     pcsrGPU[dev_id].x = pcsrNuma[numa_id].x;
     pcsrGPU[dev_id].y = &(pcsrNuma[numa_id].y[pcsrGPU[dev_id].startRow]);
@@ -505,19 +517,52 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     // host_y = &numa_y[numa_id][start_row];
     part_time = get_time() - tmp_time;  
 
+
+    checkCudaErrors(cudaMalloc((void**)&(pcsrGPU[dev_id].dval),    pcsrGPU[dev_id].nnz     * sizeof(double)));
+    checkCudaErrors(cudaMalloc((void**)&(pcsrGPU[dev_id].drowPtr), (pcsrGPU[dev_id].m + 1) * sizeof(int)   ));
+    checkCudaErrors(cudaMalloc((void**)&(pcsrGPU[dev_id].dcolIdx), pcsrGPU[dev_id].nnz     * sizeof(int)   ));
+    checkCudaErrors(cudaMalloc((void**)&(pcsrGPU[dev_id].dx),      pcsrGPU[dev_id].n       * sizeof(double))); 
+    checkCudaErrors(cudaMalloc((void**)&(pcsrGPU[dev_id].dy),      pcsrGPU[dev_id].m       * sizeof(double))); 
+    checkCudaErrors(cudaMallocHost((void**)&(pcsrGPU[dev_id].py),  pcsrGPU[dev_id].m       * sizeof(double)));
+
+
     if (part_opt == 0) {
 
-      cudaMallocHost((void**)&(pcsrGPU[dev_id].host_csrRowPtr), (pcsrGPU[dev_id].m + 1)*sizeof(int));
+      checkCudaErrors(cudaMallocHost((void**)&(pcsrGPU[dev_id].host_csrRowPtr), (pcsrGPU[dev_id].m + 1)*sizeof(int)));
 
       tmp_time = get_time();
       pcsrGPU[dev_id].host_csrRowPtr[0] = 0;
       pcsrGPU[dev_id].host_csrRowPtr[pcsrGPU[dev_id].m] = pcsrGPU[dev_id].nnz;
       for (int j = 1; j < pcsrGPU[dev_id].m; j++) {
-        pcsrGPU[dev_id].host_csrRowPtr[j] = (int)(pcsrNuma[numa_id].rowPtr[pcsrGPU[dev_id].startRow + j] - pcsrGPU[dev_id].startIdx);
+        pcsrGPU[dev_id].host_csrRowPtr[j] = pcsrGPU[dev_id].rowPtr[j] - pcsrGPU[dev_id].startIdx;
       }
-      part_time += get_time() - tmp_time;  
-
+      part_time += get_time() - tmp_time;
+      checkCudaErrors(cudaEventRecord(comm_start, stream));
+      checkCudaErrors(cudaMemcpyAsync(pcsrGPU[dev_id].drowPtr, pcsrGPU[dev_id].host_csrRowPtr, (pcsrGPU[dev_id].m + 1) * sizeof(int), cudaMemcpyHostToDevice, stream));
+      checkCudaErrors(cudaEventRecord(comm_stop, stream));
+      checkCudaErrors(cudaFreeHost(pcscGPU[dev_id].host_csrRowPtr));
     }
+
+    if (part_opt == 1) {
+      checkCudaErrors(cudaEventRecord(comm_start, stream));
+      checkCudaErrors(cudaMemcpyAsync(pcsrGPU[dev_id].drowPtr, pcsrGPU[dev_id].rowPtr, (pcsrGPU[dev_id].m + 1) * sizeof(int), cudaMemcpyHostToDevice, stream));
+      checkCudaErrors(cudaEventRecord(comm_stop, stream));
+      checkCudaErrors(cudaDeviceSynchronize());
+      tmp_time = get_time();
+      calcCsrRowPtr(pcsrGPU[dev_id].drowPtr, pcsrGPU[dev_id].m, pcsrGPU[dev_id].startIdx, pcsrGPU[dev_id].nnz, stream);
+      checkCudaErrors(cudaDeviceSynchronize());
+      part_time += get_time() - tmp_time;
+    }
+
+    checkCudaErrors(cudaEventSynchronize(comm_stop));
+    float elapsedTime;
+    checkCudaErrors(cudaEventElapsedTime(&elapsedTime, comm_start, comm_stop));
+    elapsedTime /= 1000.0;
+    comm_time += elapsedTime
+
+    #pragma omp barrier
+    tmp_time = get_time();
+
 
     // original partition*******************************************
 /*    int tmp1 = dev_id * nnz;
@@ -602,18 +647,9 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
 */
     // end of original partition*********************************
 
-    checkCudaErrors(cudaStreamCreate(&stream));
-    checkCudaErrors(cusparseCreate(&handle)); 
-    checkCudaErrors(cusparseSetStream(handle, stream));
-    checkCudaErrors(cusparseCreateMatDescr(&descr));
-    checkCudaErrors(cusparseSetMatType(descr,CUSPARSE_MATRIX_TYPE_GENERAL)); 
-    checkCudaErrors(cusparseSetMatIndexBase(descr,CUSPARSE_INDEX_BASE_ZERO));
+    
 
-    checkCudaErrors(cudaMalloc((void**)&(pcsrGPU[dev_id].dval),    pcsrGPU[dev_id].nnz     * sizeof(double)));
-    checkCudaErrors(cudaMalloc((void**)&(pcsrGPU[dev_id].drowPtr), (pcsrGPU[dev_id].m + 1) * sizeof(int)   ));
-    checkCudaErrors(cudaMalloc((void**)&(pcsrGPU[dev_id].dcolIdx), pcsrGPU[dev_id].nnz     * sizeof(int)   ));
-    checkCudaErrors(cudaMalloc((void**)&(pcsrGPU[dev_id].dx),      pcsrGPU[dev_id].n       * sizeof(double))); 
-    checkCudaErrors(cudaMalloc((void**)&(pcsrGPU[dev_id].dy),      pcsrGPU[dev_id].m       * sizeof(double))); 
+    
     
   //   // cudaMalloc((void**)&dev_csrVal,      dev_nnz     * sizeof(double));
   //   // cudaMalloc((void**)&dev_csrRowPtr,   (dev_m + 1) * sizeof(int)   );
@@ -621,26 +657,12 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
   //   // cudaMalloc((void**)&dev_x,           dev_n       * sizeof(double)); 
   //   // cudaMalloc((void**)&dev_y,           dev_m       * sizeof(double)); 
 
-    if (part_opt == 1) {
-      tmp_time = get_time();
-      checkCudaErrors(cudaMemcpyAsync(pcsrGPU[dev_id].drowPtr, pcsrGPU[dev_id].rowPtr, (pcsrGPU[dev_id].m + 1) * sizeof(int), cudaMemcpyHostToDevice, stream));
-      checkCudaErrors(cudaDeviceSynchronize());
-      tmp_time = get_time();
-      calcCsrRowPtr(pcsrGPU[dev_id].drowPtr, pcsrGPU[dev_id].m, pcsrGPU[dev_id].startIdx, pcsrGPU[dev_id].nnz, stream);
-      checkCudaErrors(cudaDeviceSynchronize());
-      part_time += get_time() - tmp_time;
-    }
-    #pragma omp barrier
-    tmp_time = get_time();
-
-    if (part_opt == 0) {
-      cudaMemcpyAsync(pcsrGPU[dev_id].drowPtr, pcsrGPU[dev_id].host_csrRowPtr, (pcsrGPU[dev_id].m + 1) * sizeof(int), cudaMemcpyHostToDevice, stream);
-    }
+    checkCudaErrors(cudaEventRecord(comm_start, stream));
     checkCudaErrors(cudaMemcpyAsync(pcsrGPU[dev_id].dcolIdx, pcsrGPU[dev_id].colIdx, pcsrGPU[dev_id].nnz * sizeof(int), cudaMemcpyHostToDevice, stream)); 
     checkCudaErrors(cudaMemcpyAsync(pcsrGPU[dev_id].dval, pcsrGPU[dev_id].val, pcsrGPU[dev_id].nnz * sizeof(double), cudaMemcpyHostToDevice, stream)); 
     checkCudaErrors(cudaMemcpyAsync(pcsrGPU[dev_id].dy, pcsrGPU[dev_id].y, pcsrGPU[dev_id].m*sizeof(double),  cudaMemcpyHostToDevice, stream)); 
     checkCudaErrors(cudaMemcpyAsync(pcsrGPU[dev_id].dx, pcsrGPU[dev_id].x, pcsrGPU[dev_id].n*sizeof(double), cudaMemcpyHostToDevice, stream)); 
-
+    checkCudaErrors(cudaEventRecord(comm_stop, stream));
 
     // cudaMemcpyAsync(dev_csrColIndex, host_csrColIndex, dev_nnz * sizeof(int), cudaMemcpyHostToDevice, stream); 
     // cudaMemcpyAsync(dev_csrVal, host_csrVal, dev_nnz * sizeof(double), cudaMemcpyHostToDevice, stream); 
@@ -663,86 +685,101 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
       
     //print_vec_gpu(dev_x, dev_n, "x"+to_string(dev_id));
   
+    checkCudaErrors(cudaEventRecord(comp_start, stream));
     checkCudaErrors(cusparseDcsrmv(handle,CUSPARSE_OPERATION_NON_TRANSPOSE, 
                               pcsrGPU[dev_id].m, pcsrGPU[dev_id].n, pcsrGPU[dev_id].nnz, 
                               alpha, descr, pcsrGPU[dev_id].dval, 
                               pcsrGPU[dev_id].drowPtr, pcsrGPU[dev_id].dcolIdx, 
                               pcsrGPU[dev_id].dx, beta, pcsrGPU[dev_id].dy));
+    checkCudaErrors(cudaEventRecord(comp_stop, stream));
+
+    checkCudaErrors(cudaEventSynchronize(comm_stop));
+    float elapsedTime;
+    checkCudaErrors(cudaEventElapsedTime(&elapsedTime, comm_start, comm_stop));
+    elapsedTime /= 1000.0;
+    comm_time += elapsedTime
+
+    checkCudaErrors(cudaEventSynchronize(comp_stop));
+    elapsedTime;
+    checkCudaErrors(cudaEventElapsedTime(&elapsedTime, comp_start, comp_stop));
+    elapsedTime /= 1000.0;
+    comp_time += elapsedTime
 
     checkCudaErrors(cudaDeviceSynchronize());
-    if (status != CUSPARSE_STATUS_SUCCESS) printf("dev_id %d: exec error\n", dev_id);
     //print_vec_gpu(dev_y, 5, "y"+to_string(dev_id));
     // printf("omp thread %d, time %f\n", dev_id, get_time() - tmp_time);
-    comp_time = get_time() - tmp_time;
+    //comp_time = get_time() - tmp_time;
     // GPU based merge
     tmp_time = get_time();
-    double * dev_y_no_overlap = pcsrGPU[dev_id].dy;
-    int dev_m_no_overlap = pcsrGPU[dev_id].m;
-    int start_row_no_overlap = pcsrNuma[numa_id].startRow + pcsrGPU[dev_id].startRow;
+    
+    if (merg_opt == 1) {
+      double * dev_y_no_overlap = pcsrGPU[dev_id].dy;
+      int dev_m_no_overlap = pcsrGPU[dev_id].m;
+      int start_row_no_overlap = pcsrNuma[numa_id].startRow + pcsrGPU[dev_id].startRow;
 
-    // double * dev_y_no_overlap = dev_y;
-    // int dev_m_no_overlap = dev_m;
-    // int start_row_no_overlap = numa_start_row[numa_id] + start_row;
-    //int start_row_no_overlap = start_row;
-    if (pcsrGPU[dev_id].startFlag) {
-      dev_y_no_overlap += 1;
-      start_row_no_overlap += 1;
-      dev_m_no_overlap -= 1;
-      checkCudaErrors(cudaMemcpyAsync(start_element+dev_id, pcsrGPU[dev_id].dy, sizeof(double), cudaMemcpyDeviceToHost, stream));
-      //cudaMemcpyAsync(start_element+dev_id, dev_y, sizeof(double), cudaMemcpyDeviceToHost, stream);
-    }
-    checkCudaErrors(cudaMemcpyAsync(y+start_row_no_overlap, dev_y_no_overlap, dev_m_no_overlap*sizeof(double),  cudaMemcpyDeviceToHost, stream));
-    checkCudaErrors(cudaDeviceSynchronize());
-    #pragma omp barrier
-    if (dev_id == 0) {
-      for (int i = 0; i < ngpu; i++) {
-        if (pcsrGPU[i].startFlag) {
-          y[pcsrNuma[numaContext.numaMapping[i]].startRow + pcsrGPU[i].startRow] += (start_element[i] - (*beta) * pcsrGPU[i].org_y); 
-          //y[start_rows[i]] += (start_element[i] - (*beta) * org_y[i]);
-        } 
+      // double * dev_y_no_overlap = dev_y;
+      // int dev_m_no_overlap = dev_m;
+      // int start_row_no_overlap = numa_start_row[numa_id] + start_row;
+      //int start_row_no_overlap = start_row;
+      if (pcsrGPU[dev_id].startFlag) {
+        dev_y_no_overlap += 1;
+        start_row_no_overlap += 1;
+        dev_m_no_overlap -= 1;
+        checkCudaErrors(cudaMemcpyAsync(start_element+dev_id, pcsrGPU[dev_id].dy, sizeof(double), cudaMemcpyDeviceToHost, stream));
+        //cudaMemcpyAsync(start_element+dev_id, dev_y, sizeof(double), cudaMemcpyDeviceToHost, stream);
+      }
+      checkCudaErrors(cudaMemcpyAsync(y+start_row_no_overlap, dev_y_no_overlap, dev_m_no_overlap*sizeof(double),  cudaMemcpyDeviceToHost, stream));
+      checkCudaErrors(cudaDeviceSynchronize());
+      #pragma omp barrier
+      if (dev_id == 0) {
+        for (int i = 0; i < ngpu; i++) {
+          if (pcsrGPU[i].startFlag) {
+            y[pcsrNuma[numaContext.numaMapping[i]].startRow + pcsrGPU[i].startRow] += (start_element[i] - (*beta) * pcsrGPU[i].org_y); 
+            //y[start_rows[i]] += (start_element[i] - (*beta) * org_y[i]);
+          } 
 
-        // if (start_flags[i]) {
-        //   y[numa_start_row[numa_mapping[i]] + start_rows[i]] += (start_element[i] - (*beta) * org_y[i]); 
-        //   //y[start_rows[i]] += (start_element[i] - (*beta) * org_y[i]);
-        // } 
+          // if (start_flags[i]) {
+          //   y[numa_start_row[numa_mapping[i]] + start_rows[i]] += (start_element[i] - (*beta) * org_y[i]); 
+          //   //y[start_rows[i]] += (start_element[i] - (*beta) * org_y[i]);
+          // } 
+        }
       }
     }
 
-
-
-    //  CPU based merge
-    // cudaMemcpyAsync(host_y, dev_y, dev_m*sizeof(double),  cudaMemcpyDeviceToHost, stream);
-
-    // cudaDeviceSynchronize();
-    
-    
-    // //printf("thread %d time: %f\n", dev_id,  get_time() - tmp_time);
-    // #pragma omp critical
-    // {
-    //   double tmp = 0.0;
-      
-    //   if (start_flag) {
-    //     tmp = y[start_row];
-    //   }
-
-    //   for (int i = 0; i < dev_m; i++) y[start_row + i] = host_y[i];
-
-    //   if (start_flag) {
-    //     y[start_row] += tmp;
-    //     y[start_row] -= y2 * (*beta);
-    //   }
-    // }
+    if (merg_opt == 0) {
+      //  CPU based merge
+      checkCudaErrors(cudaMemcpyAsync(pcsrGPU[dev_id].py, pcsrGPU[dev_id].dy, pcsrNuma[numa_id].m * sizeof(double),  cudaMemcpyDeviceToHost, stream));
+      checkCudaErrors(cudaDeviceSynchronize());
+      //printf("thread %d time: %f\n", dev_id,  get_time() - tmp_time);
+      #pragma omp critical
+      {
+        double tmp = 0.0;
+        if (pcsrGPU[dev_id].startFlag) {
+          tmp = y[pcsrGPU[dev_id].startRow];
+        }
+        for (int i = 0; i < pcsrNuma[numa_id].m; i++) {
+          y[pcsrGPU[dev_id].startRow + i] = pcsrGPU[dev_id].py[i];
+        }
+        if (pcsrGPU[dev_id].startFlag) {
+          //y[pcsrGPU[dev_id].startRow] += tmp;
+          y[pcsrGPU[dev_id].startRow] -= tmp * (*beta);
+        }
+      }
+    }
     
   
     merg_time = get_time() - tmp_time;
 
     //cudaProfilerStop();
 
-    cudaFree(pcsrGPU[dev_id].dval);
-    cudaFree(pcsrGPU[dev_id].drowPtr);
-    cudaFree(pcsrGPU[dev_id].dcolIdx);
-    cudaFree(pcsrGPU[dev_id].dx);
-    cudaFree(pcsrGPU[dev_id].dy);
+    checkCudaErrors(cudaFree(pcsrGPU[dev_id].dval));
+    checkCudaErrors(cudaFree(pcsrGPU[dev_id].drowPtr));
+    checkCudaErrors(cudaFree(pcsrGPU[dev_id].dcolIdx));
+    checkCudaErrors(cudaFree(pcsrGPU[dev_id].dx));
+    checkCudaErrors(cudaFree(pcsrGPU[dev_id].dy));
+    checkCudaErrors(cudaFreeHost(pcsrGPU[dev_id].py));
+
+
           
     //cudaFreeHost(host_csrRowPtr);
     //cudaFreeHost(host_csrVal);
@@ -750,20 +787,25 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     //cudaFreeHost(host_x);
     //cudaFreeHost(host_y);
 
-    cusparseDestroyMatDescr(descr);
-    cusparseDestroy(handle);
-    cudaStreamDestroy(stream);
+    checkCudaErrors(cudaEventDestroy(&comp_start));
+    checkCudaErrors(cudaEventDestroy(&comp_stop));
+    checkCudaErrors(cudaEventDestroy(&comm_start));
+    checkCudaErrors(cudaEventDestroy(&comm_stop));
+
+    checkCudaErrors(cusparseDestroyMatDescr(descr));
+    checkCudaErrors(cusparseDestroy(handle));
+    checkCudaErrors(cudaStreamDestroy(stream));
 
   }
 
   printf("end part time: %f\n", part_time);
   //cout << "time_parse = " << time_parse << ", time_comm = " << time_comm << ", time_comp = "<< time_comp <<", time_post = " << time_post << endl;
   for (int numa_id = 0; numa_id < numaContext.numNumaNodes; numa_id++) {
-    cudaFreeHost(pcsrNuma[numa_id].val);
-    cudaFreeHost(pcsrNuma[numa_id].rowPtr);
-    cudaFreeHost(pcsrNuma[numa_id].colIdx);
-    cudaFreeHost(pcsrNuma[numa_id].x);
-    cudaFreeHost(pcsrNuma[numa_id].y);
+    checkCudaErrors(cudaFreeHost(pcsrNuma[numa_id].val));
+    checkCudaErrors(cudaFreeHost(pcsrNuma[numa_id].rowPtr));
+    checkCudaErrors(cudaFreeHost(pcsrNuma[numa_id].colIdx));
+    checkCudaErrors(cudaFreeHost(pcsrNuma[numa_id].x));
+    checkCudaErrors(cudaFreeHost(pcsrNuma[numa_id].y));
   }
 
   spmv_ret ret;
