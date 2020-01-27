@@ -58,8 +58,6 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
   struct NumaContext numaContext(numa_mapping, ngpu);
   struct pCSC * pcscNuma = new struct pCSC[numaContext.numNumaNodes];
 
-  double numa_part_time;
-  
   omp_set_num_threads(ngpu);
   #pragma omp parallel default (shared) reduction(max:numa_part_time)
   {
@@ -402,7 +400,7 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
 
   spmv_ret ret;
   ret.numa_part_time = numa_part_time;
-  ret.comp_time = core_time;
+  ret.comp_time = comp_time;
   ret.comm_time = 0.0;
   ret.part_time = part_time;
   ret.merg_time = merg_time;

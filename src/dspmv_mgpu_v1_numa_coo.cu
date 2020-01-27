@@ -49,8 +49,6 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
   struct NumaContext numaContext(numa_mapping, ngpu);
   struct pCOO * pcooNuma = new struct pCOO[numaContext.numNumaNodes];
 
-  double numa_part_time;
-  
   omp_set_num_threads(ngpu);
   #pragma omp parallel default (shared) reduction(max:numa_part_time)
   {
@@ -485,25 +483,25 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
     cusparseDestroy(handle);
     cudaStreamDestroy(stream);
 
-    }
-
-    for (int numa_id = 0; numa_id < numaContext.numNumaNodes; numa_id++) {
-      cudaFreeHost(pcooNuma[numa_id].val);
-      cudaFreeHost(pcooNuma[numa_id].rowIdx);
-      cudaFreeHost(pcooNuma[numa_id].colIdx);
-      cudaFreeHost(pcooNuma[numa_id].x);
-      cudaFreeHost(pcooNuma[numa_id].y);
-    }
-
-
-    // printf("end part time: %f\n", part_time);
-    //cout << "time_parse = " << time_parse << ", time_comm = " << time_comm << ", time_comp = "<< time_comp <<", time_post = " << time_post << endl;
-    spmv_ret ret;
-    ret.comp_time = core_time;
-    ret.comm_time = 0.0;
-    ret.part_time = part_time;
-    ret.merg_time = merg_time;
-    ret.numa_part_time = numa_part_time;
-    return ret;
   }
+
+  for (int numa_id = 0; numa_id < numaContext.numNumaNodes; numa_id++) {
+    cudaFreeHost(pcooNuma[numa_id].val);
+    cudaFreeHost(pcooNuma[numa_id].rowIdx);
+    cudaFreeHost(pcooNuma[numa_id].colIdx);
+    cudaFreeHost(pcooNuma[numa_id].x);
+    cudaFreeHost(pcooNuma[numa_id].y);
+  }
+
+
+  // printf("end part time: %f\n", part_time);
+  //cout << "time_parse = " << time_parse << ", time_comm = " << time_comm << ", time_comp = "<< time_comp <<", time_post = " << time_post << endl;
+  spmv_ret ret;
+  ret.comp_time = comp_time;
+  ret.comm_time = 0.0;
+  ret.part_time = part_time;
+  ret.merg_time = merg_time;
+  ret.numa_part_time = numa_part_time;
+  return ret;
+}
 
