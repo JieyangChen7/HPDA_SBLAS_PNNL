@@ -750,7 +750,7 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
 
     if (merg_opt == 0) {
       //  CPU based merge
-      checkCudaErrors(cudaMemcpyAsync(pcsrGPU[dev_id].py, pcsrGPU[dev_id].dy, pcsrNuma[numa_id].m * sizeof(double),  cudaMemcpyDeviceToHost, stream));
+      checkCudaErrors(cudaMemcpyAsync(pcsrGPU[dev_id].py, pcsrGPU[dev_id].dy, pcsrGPU[dev_id].m * sizeof(double),  cudaMemcpyDeviceToHost, stream));
       checkCudaErrors(cudaDeviceSynchronize());
       //printf("thread %d time: %f\n", dev_id,  get_time() - tmp_time);
       #pragma omp critical
