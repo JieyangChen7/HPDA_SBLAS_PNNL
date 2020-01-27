@@ -707,7 +707,7 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     elapsedTime /= 1000.0;
     comp_time += elapsedTime;
 
-    printf("omp thread %d, comp_time %f\n", dev_id, elapsedTime);
+    printf("omp thread %d, elapsedTime %f comp_time \n", dev_id, elapsedTime, comp_time);
 
     checkCudaErrors(cudaDeviceSynchronize());
     //print_vec_gpu(dev_y, 5, "y"+to_string(dev_id));
@@ -802,7 +802,8 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
 
   }
 
-  printf("end part time: %f\n", part_time);
+  printf("end comp time: %f\n", comp_time);
+
   //cout << "time_parse = " << time_parse << ", time_comm = " << time_comm << ", time_comp = "<< time_comp <<", time_post = " << time_post << endl;
   for (int numa_id = 0; numa_id < numaContext.numNumaNodes; numa_id++) {
     checkCudaErrors(cudaFreeHost(pcsrNuma[numa_id].val));
