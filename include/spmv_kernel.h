@@ -60,6 +60,8 @@ struct pCSR {
   double * dx;
   double * dy;
 
+  int * host_csrRowPtr;
+
   int m;
   int n;
   int nnz;
@@ -223,7 +225,9 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
           double * y,
           int ngpu,
           int kernel,
-          int * numa_mapping);
+          int * numa_mapping,
+          int part_opt,
+          int merg_opt);
 
 spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
           double * cscVal, int * cscColPtr, int * cscRowIndex, 

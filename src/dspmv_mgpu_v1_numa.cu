@@ -101,7 +101,9 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
           double * y,
           int ngpu, 
           int kernel,
-          int * numa_mapping){
+          int * numa_mapping,
+          int part_opt,
+          int merg_opt){
 
   double numa_part_time = 0.0;
   double part_time = 0.0;
@@ -485,10 +487,15 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
 
     //tmp_time = get_time();
     pcsrGPU[dev_id].val = &(pcsrNuma[numa_id].val[pcsrGPU[dev_id].startIdx]);
-    pcsrGPU[dev_id].rowPtr = &(pcsrNuma[numa_id].rowPtr[pcsrGPU[dev_id].startRow]);
+    if (part_opt == 1) {
+      pcsrGPU[dev_id].rowPtr = &(pcsrNuma[numa_id].rowPtr[pcsrGPU[dev_id].startRow]);
+    }
     pcsrGPU[dev_id].colIdx = &(pcsrNuma[numa_id].colIdx[pcsrGPU[dev_id].startIdx]);
     pcsrGPU[dev_id].x = pcsrNuma[numa_id].x;
     pcsrGPU[dev_id].y = &(pcsrNuma[numa_id].y[pcsrGPU[dev_id].startRow]);
+
+
+
 
 
     // host_csrVal = &numa_csrVal[numa_id][start_idx];
@@ -498,6 +505,19 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     // host_y = &numa_y[numa_id][start_row];
     part_time = get_time() - tmp_time;  
 
+    if (part_opt == 0) {
+
+      cudaMallocHost((void**)&(pcsrGPU[dev_id].host_csrRowPtr), (dev_m + 1)*sizeof(int));
+
+      tmp_time = get_time();
+      pcsrGPU[dev_id].host_csrRowPtr[0] = 0;
+      pcsrGPU[dev_id].host_csrRowPtr[dev_m] = dev_nnz;
+      for (int j = 1; j < dev_m; j++) {
+        pcsrGPU[dev_id].host_csrRowPtr[j] = (int)(pcsrNuma[numa_id].rowPtr[pcsrGPU[dev_id].startRow + j] - pcsrGPU[dev_id].start_idx);
+      }
+      part_time += get_time() - tmp_time;  
+
+    }
 
     // original partition*******************************************
 /*    int tmp1 = dev_id * nnz;
@@ -601,23 +621,21 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
   //   // cudaMalloc((void**)&dev_x,           dev_n       * sizeof(double)); 
   //   // cudaMalloc((void**)&dev_y,           dev_m       * sizeof(double)); 
 
-    tmp_time = get_time();
-    checkCudaErrors(cudaMemcpyAsync(pcsrGPU[dev_id].drowPtr, pcsrGPU[dev_id].rowPtr, (pcsrGPU[dev_id].m + 1) * sizeof(int), cudaMemcpyHostToDevice, stream));
-    //cudaMemcpyAsync(dev_csrRowPtr, host_csrRowPtr, (dev_m + 1) * sizeof(int), cudaMemcpyHostToDevice, stream);
-    checkCudaErrors(cudaDeviceSynchronize());
-    tmp_time = get_time();
-    calcCsrRowPtr(pcsrGPU[dev_id].drowPtr, pcsrGPU[dev_id].m, pcsrGPU[dev_id].startIdx, pcsrGPU[dev_id].nnz, stream);
-    //calcCsrRowPtr(dev_csrRowPtr, dev_m, start_idx, dev_nnz, stream);
-    checkCudaErrors(cudaDeviceSynchronize());
-    // printf("dev_id %d, part_kernel_time = %f\n", dev_id, get_time() - tmp_time);
-    part_time += get_time() - tmp_time;  
-    // printf("dev_id %d, part_time = %f\n", dev_id, part_time); 
-  //cudaProfilerStart();
+    if (part_opt == 1) {
+      tmp_time = get_time();
+      checkCudaErrors(cudaMemcpyAsync(pcsrGPU[dev_id].drowPtr, pcsrGPU[dev_id].rowPtr, (pcsrGPU[dev_id].m + 1) * sizeof(int), cudaMemcpyHostToDevice, stream));
+      checkCudaErrors(cudaDeviceSynchronize());
+      tmp_time = get_time();
+      calcCsrRowPtr(pcsrGPU[dev_id].drowPtr, pcsrGPU[dev_id].m, pcsrGPU[dev_id].startIdx, pcsrGPU[dev_id].nnz, stream);
+      checkCudaErrors(cudaDeviceSynchronize());
+      part_time += get_time() - tmp_time;
+    }
     #pragma omp barrier
     tmp_time = get_time();
 
-    //cudaMemcpyAsync(dev_csrRowPtr, host_csrRowPtr, (dev_m + 1) * sizeof(int), cudaMemcpyHostToDevice, stream);
-
+    if (part_opt == 0) {
+      cudaMemcpyAsync(dev_csrRowPtr, host_csrRowPtr, (dev_m + 1) * sizeof(int), cudaMemcpyHostToDevice, stream);
+    }
     checkCudaErrors(cudaMemcpyAsync(pcsrGPU[dev_id].dcolIdx, pcsrGPU[dev_id].colIdx, pcsrGPU[dev_id].nnz * sizeof(int), cudaMemcpyHostToDevice, stream)); 
     checkCudaErrors(cudaMemcpyAsync(pcsrGPU[dev_id].dval, pcsrGPU[dev_id].val, pcsrGPU[dev_id].nnz * sizeof(double), cudaMemcpyHostToDevice, stream)); 
     checkCudaErrors(cudaMemcpyAsync(pcsrGPU[dev_id].dy, pcsrGPU[dev_id].y, pcsrGPU[dev_id].m*sizeof(double),  cudaMemcpyHostToDevice, stream)); 

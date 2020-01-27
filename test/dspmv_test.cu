@@ -413,6 +413,9 @@ int main(int argc, char *argv[]) {
   struct spmv_ret ret2;
   ret = ret2;
   int numa_mapping[6] = {0,0,0,1,1,1};
+
+  int part_opt = 0;
+  int merg_opt = 0;
   
   cout << "Starting tests..." << endl;
 
@@ -443,7 +446,8 @@ int main(int argc, char *argv[]) {
                             y_static_csr,
                             ngpu,
                             1,
-                            numa_mapping); //kernel 1
+                            numa_mapping,
+                            part_opt, merg_opt); //kernel 1
     ret_static_csr.add(ret);
 
     ret = spMV_mgpu_baseline_csc(m, n, nnz, &ALPHA,
