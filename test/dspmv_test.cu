@@ -285,8 +285,8 @@ int main(int argc, char *argv[]) {
 
   printf("Done converting\n");
 
-  printf("csrRowPtr: %d - %d\n", csrRowPtr[0], csrRowPtr[m]);
-  printf("cscColPtr: %d - %d\n", cscColPtr[0], cscColPtr[n]);
+  // printf("csrRowPtr: %d - %d\n", csrRowPtr[0], csrRowPtr[m]);
+  // printf("cscColPtr: %d - %d\n", cscColPtr[0], cscColPtr[n]);
   // print_vec(csrVal, nnz, "csrVal:");
   // print_vec(csrRowPtr, m+1, "csrRowPtr:");
   // print_vec(csrColIdx, nnz, "csrColIdx:");
@@ -446,37 +446,37 @@ int main(int argc, char *argv[]) {
                             numa_mapping); //kernel 1
     ret_static_csr.add(ret);
 
-    // ret = spMV_mgpu_baseline_csc(m, n, nnz, &ALPHA,
-    //                             cscVal, cscColPtr, cscRowIdx,
-    //                             x, &BETA,
-    //                             y_baseline_csc,
-    //                             ngpu);
-    // ret_baseline_csc.add(ret);
+    ret = spMV_mgpu_baseline_csc(m, n, nnz, &ALPHA,
+                                cscVal, cscColPtr, cscRowIdx,
+                                x, &BETA,
+                                y_baseline_csc,
+                                ngpu);
+    ret_baseline_csc.add(ret);
 
-    // ret = spMV_mgpu_v1_numa_csc(m, n, nnz, &ALPHA,
-    //                             cscVal, cscColPtr, cscRowIdx,
-    //                             x, &BETA,
-    //                             y_static_csc,
-    //                             ngpu,
-    //                             1,
-    //                             numa_mapping); //kernel 1
-    // ret_static_csc.add(ret);
+    ret = spMV_mgpu_v1_numa_csc(m, n, nnz, &ALPHA,
+                                cscVal, cscColPtr, cscRowIdx,
+                                x, &BETA,
+                                y_static_csc,
+                                ngpu,
+                                1,
+                                numa_mapping); //kernel 1
+    ret_static_csc.add(ret);
 
-    // ret = spMV_mgpu_baseline_coo(m, n, nnz, &ALPHA,
-    //                             cooVal, cooRowIdx, cooColIdx, 
-    //                             x, &BETA,
-    //                             y_baseline_coo,
-    //                             ngpu);
-    // ret_baseline_coo.add(ret);
+    ret = spMV_mgpu_baseline_coo(m, n, nnz, &ALPHA,
+                                cooVal, cooRowIdx, cooColIdx, 
+                                x, &BETA,
+                                y_baseline_coo,
+                                ngpu);
+    ret_baseline_coo.add(ret);
     
-    // ret = spMV_mgpu_v1_numa_coo(m, n, nnz, &ALPHA,
-    //                             cooVal, cooRowIdx, cooColIdx, 
-    //                             x, &BETA,
-    //                             y_static_coo,
-    //                             ngpu,
-    //                             1,
-    //                             numa_mapping); //kernel 1
-    // ret_static_coo.add(ret);
+    ret = spMV_mgpu_v1_numa_coo(m, n, nnz, &ALPHA,
+                                cooVal, cooRowIdx, cooColIdx, 
+                                x, &BETA,
+                                y_static_coo,
+                                ngpu,
+                                1,
+                                numa_mapping); //kernel 1
+    ret_static_coo.add(ret);
 
     
 
