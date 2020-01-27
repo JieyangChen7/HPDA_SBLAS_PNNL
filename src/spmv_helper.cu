@@ -314,6 +314,8 @@ void sortCOORow(int m, int n, int nnz,
                                         dP, buffer));
   checkCudaErrors(cusparseDgthr(handle, nnz, dcooVal, dcooValSorted, dP,
                                 CUSPARSE_INDEX_BASE_ZERO));
+  checkCudaErrors(cudaDeviceSynchronize());
+
 
   checkCudaErrors(cudaMemcpy(cooVal, dcooValSorted, nnz * sizeof(double), cudaMemcpyDeviceToHost));
   checkCudaErrors(cudaMemcpy(cooRowIdx, dcooRowIdx, nnz * sizeof(int), cudaMemcpyDeviceToHost));
@@ -368,6 +370,8 @@ void sortCOOCol(int m, int n, int nnz,
                                         dP, buffer));
   checkCudaErrors(cusparseDgthr(handle, nnz, dcooVal, dcooValSorted, dP,
                                 CUSPARSE_INDEX_BASE_ZERO));
+  checkCudaErrors(cudaDeviceSynchronize());
+
 
   checkCudaErrors(cudaMemcpy(cooVal, dcooValSorted, nnz * sizeof(double), cudaMemcpyDeviceToHost));
   checkCudaErrors(cudaMemcpy(cooRowIdx, dcooRowIdx, nnz * sizeof(int), cudaMemcpyDeviceToHost));
