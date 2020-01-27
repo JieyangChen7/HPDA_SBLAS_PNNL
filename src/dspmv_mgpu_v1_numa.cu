@@ -757,14 +757,14 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
       {
         double tmp = 0.0;
         if (pcsrGPU[dev_id].startFlag) {
-          tmp = y[pcsrGPU[dev_id].startRow];
+          tmp = y[pcsrNuma[numa_id].startRow + pcsrGPU[dev_id].startRow];
         }
-        for (int i = 0; i < pcsrNuma[numa_id].m; i++) {
-          y[pcsrGPU[dev_id].startRow + i] = pcsrGPU[dev_id].py[i];
+        for (int i = 0; i < pcsrGPU[dev_id].m; i++) {
+          y[pcsrNuma[numa_id].startRow + pcsrGPU[dev_id].startRow + i] = pcsrGPU[dev_id].py[i];
         }
         if (pcsrGPU[dev_id].startFlag) {
           //y[pcsrGPU[dev_id].startRow] += tmp;
-          y[pcsrGPU[dev_id].startRow] -= tmp * (*beta);
+          y[pcsrNuma[numa_id].startRow + pcsrGPU[dev_id].startRow] -= tmp * (*beta);
         }
       }
     }
@@ -812,7 +812,7 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
 
   spmv_ret ret;
   ret.comp_time = comp_time;
-  ret.comm_time = 0.0;
+  ret.comm_time = comm_time;
   ret.part_time = part_time;
   ret.merg_time = merg_time;
   ret.numa_part_time = numa_part_time;
