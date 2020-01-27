@@ -438,13 +438,13 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
     }
     merg_time = get_time() - tmp_time;
 
-    // checkCudaErrors(cudaFree(pcscGPU[dev_id].dval));
-    // checkCudaErrors(cudaFree(pcscGPU[dev_id].dcolPtr));
-    // checkCudaErrors(cudaFree(pcscGPU[dev_id].drowIdx));
-    // checkCudaErrors(cudaFree(pcscGPU[dev_id].dx));
-    // checkCudaErrors(cudaFree(pcscGPU[dev_id].dy));
+    checkCudaErrors(cudaFree(pcscGPU[dev_id].dval));
+    checkCudaErrors(cudaFree(pcscGPU[dev_id].dcolPtr));
+    checkCudaErrors(cudaFree(pcscGPU[dev_id].drowIdx));
+    checkCudaErrors(cudaFree(pcscGPU[dev_id].dx));
+    checkCudaErrors(cudaFree(pcscGPU[dev_id].dy));
 
-    // checkCudaErrors(cudaFreeHost(pcscGPU[dev_id].py));
+    checkCudaErrors(cudaFreeHost(pcscGPU[dev_id].py));
     
 
     // checkCudaErrors(cudaEventDestroy(comp_start));
