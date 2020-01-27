@@ -112,7 +112,7 @@ spmv_ret spMV_mgpu_baseline_csc(int m, int n, int nnz, double * alpha,
 
   curr_time = get_time();
   for (int d = 0; d < ngpu; ++d) {
-    checkCudaErrors(scudaSetDevice(d));
+    checkCudaErrors(cudaSetDevice(d));
     // csc2csrGPU(handle[d], m, n, nnz, A[d], lda[d],
     //             dev_cscVal[d], dev_cscColPtr[d], dev_cscRowIdx[d],
     //             dev_csrVal[d], dev_csrRowPtr[d], dev_csrColIdx[d]);
