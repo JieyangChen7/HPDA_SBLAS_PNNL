@@ -629,9 +629,7 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     // cudaMemcpyAsync(dev_y, host_y, dev_m*sizeof(double),  cudaMemcpyHostToDevice, stream); 
     // cudaMemcpyAsync(dev_x, host_x, dev_n*sizeof(double), cudaMemcpyHostToDevice, stream); 
     
-    err = 0;
-    if (kernel == 1) {
-
+  
     checkCudaErrors(cudaDeviceSynchronize());
     //print_vec_gpu(dev_csrRowPtr, 5, "csrRowPtr"+to_string(dev_id));
     //print_vec_gpu(dev_csrVal, 5, "csrVal"+to_string(dev_id));
@@ -647,11 +645,11 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
       
     //print_vec_gpu(dev_x, dev_n, "x"+to_string(dev_id));
   
-    status = cusparseDcsrmv(handle,CUSPARSE_OPERATION_NON_TRANSPOSE, 
+    checkCudaErrors(cusparseDcsrmv(handle,CUSPARSE_OPERATION_NON_TRANSPOSE, 
                               pcsrGPU[dev_id].m, pcsrGPU[dev_id].n, pcsrGPU[dev_id].nnz, 
                               alpha, descr, pcsrGPU[dev_id].dval, 
                               pcsrGPU[dev_id].drowPtr, pcsrGPU[dev_id].dcolIdx, 
-                              pcsrGPU[dev_id].dx, beta, pcsrGPU[dev_id].dy);
+                              pcsrGPU[dev_id].dx, beta, pcsrGPU[dev_id].dy));
 
     checkCudaErrors(cudaDeviceSynchronize());
     if (status != CUSPARSE_STATUS_SUCCESS) printf("dev_id %d: exec error\n", dev_id);
@@ -738,24 +736,24 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     cusparseDestroy(handle);
     cudaStreamDestroy(stream);
 
-    }
-
-    printf("end part time: %f\n", part_time);
-    //cout << "time_parse = " << time_parse << ", time_comm = " << time_comm << ", time_comp = "<< time_comp <<", time_post = " << time_post << endl;
-    for (int numa_id = 0; numa_id < numaContext.numNumaNodes; numa_id++) {
-      cudaFreeHost(pcsrNuma[numa_id].val);
-      cudaFreeHost(pcsrNuma[numa_id].rowPtr);
-      cudaFreeHost(pcsrNuma[numa_id].colIdx);
-      cudaFreeHost(pcsrNuma[numa_id].x);
-      cudaFreeHost(pcsrNuma[numa_id].y);
-    }
-
-    spmv_ret ret;
-    ret.comp_time = core_time;
-    ret.comm_time = 0.0;
-    ret.part_time = part_time;
-    ret.merg_time = merg_time;
-    ret.numa_part_time = numa_part_time;
-    return ret;
   }
+
+  printf("end part time: %f\n", part_time);
+  //cout << "time_parse = " << time_parse << ", time_comm = " << time_comm << ", time_comp = "<< time_comp <<", time_post = " << time_post << endl;
+  for (int numa_id = 0; numa_id < numaContext.numNumaNodes; numa_id++) {
+    cudaFreeHost(pcsrNuma[numa_id].val);
+    cudaFreeHost(pcsrNuma[numa_id].rowPtr);
+    cudaFreeHost(pcsrNuma[numa_id].colIdx);
+    cudaFreeHost(pcsrNuma[numa_id].x);
+    cudaFreeHost(pcsrNuma[numa_id].y);
+  }
+
+  spmv_ret ret;
+  ret.comp_time = comp_time;
+  ret.comm_time = 0.0;
+  ret.part_time = part_time;
+  ret.merg_time = merg_time;
+  ret.numa_part_time = numa_part_time;
+  return ret;
+}
 
