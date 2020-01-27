@@ -109,6 +109,8 @@ struct pCOO {
   double * y;
   double * py;
 
+  int * host_rowIdx;
+
   double * dval;
   int * drowIdx;
   int * dcolIdx;
@@ -243,7 +245,9 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
           double * y,
           int ngpu, 
           int kernel,
-          int * numa_mapping);
+          int * numa_mapping,
+          int part_opt,
+          int merg_opt);
 
 spmv_ret spMV_mgpu_v2(int m, int n, int nnz, double * alpha,
           double * csrVal, int * csrRowPtr, int * csrColIndex, 

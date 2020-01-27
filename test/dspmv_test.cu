@@ -479,7 +479,8 @@ int main(int argc, char *argv[]) {
                                 y_static_coo,
                                 ngpu,
                                 1,
-                                numa_mapping); //kernel 1
+                                numa_mapping,
+                                part_opt, merg_opt); //kernel 1
     ret_static_coo.add(ret);
 
     
