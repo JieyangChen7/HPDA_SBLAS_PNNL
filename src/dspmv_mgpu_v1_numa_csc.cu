@@ -209,34 +209,34 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
     pcscGPU[dev_id].endIdx   = floor((double)tmp2 / numaContext.numGPUs[numa_id]) - 1;
   
     // Calculate the start and end col
-    pcscGPU[dev_id].startCol = get_row_from_index(pcscNuma[numa_id].m, pcscNuma[numa_id].colPtr, pcscGPU[dev_id].startIdx);
-    // Mark imcomplete rows
-    // True: imcomplete
-    if (pcscGPU[dev_id].startIdx > pcscNuma[numa_id].colPtr[pcscGPU[dev_id].startCol]) {
-      pcscGPU[dev_id].startFlag = true;
-      //start_rows[dev_id] = start_row;
-    } else {
-      pcscGPU[dev_id].startFlag = false;
-    }
-    //start_flags[dev_id] = start_flag;   
+    // pcscGPU[dev_id].startCol = get_row_from_index(pcscNuma[numa_id].m, pcscNuma[numa_id].colPtr, pcscGPU[dev_id].startIdx);
+    // // Mark imcomplete rows
+    // // True: imcomplete
+    // if (pcscGPU[dev_id].startIdx > pcscNuma[numa_id].colPtr[pcscGPU[dev_id].startCol]) {
+    //   pcscGPU[dev_id].startFlag = true;
+    //   //start_rows[dev_id] = start_row;
+    // } else {
+    //   pcscGPU[dev_id].startFlag = false;
+    // }
+    // //start_flags[dev_id] = start_flag;   
 
-    pcscGPU[dev_id].endCol = get_row_from_index(pcscNuma[numa_id].m, pcscNuma[numa_id].colPtr, pcscGPU[dev_id].endIdx);
-    // Mark imcomplete rows
-    // True: imcomplete
-    if (pcscGPU[dev_id].endIdx < pcscNuma[numa_id].colPtr[pcscGPU[dev_id].endCol + 1] - 1)  {
-      pcscGPU[dev_id].endFlag = true;
-    } else {
-      pcscGPU[dev_id].endFlag = false;
-    }
+    // pcscGPU[dev_id].endCol = get_row_from_index(pcscNuma[numa_id].m, pcscNuma[numa_id].colPtr, pcscGPU[dev_id].endIdx);
+    // // Mark imcomplete rows
+    // // True: imcomplete
+    // if (pcscGPU[dev_id].endIdx < pcscNuma[numa_id].colPtr[pcscGPU[dev_id].endCol + 1] - 1)  {
+    //   pcscGPU[dev_id].endFlag = true;
+    // } else {
+    //   pcscGPU[dev_id].endFlag = false;
+    // }
     
-    // Cacluclate dimensions
-    pcscGPU[dev_id].m = m;
-    pcscGPU[dev_id].n = pcscGPU[dev_id].endCol - pcscGPU[dev_id].startCol + 1;
-    pcscGPU[dev_id].nnz = pcscGPU[dev_id].endIdx - pcscGPU[dev_id].startIdx + 1;
+    // // Cacluclate dimensions
+    // pcscGPU[dev_id].m = m;
+    // pcscGPU[dev_id].n = pcscGPU[dev_id].endCol - pcscGPU[dev_id].startCol + 1;
+    // pcscGPU[dev_id].nnz = pcscGPU[dev_id].endIdx - pcscGPU[dev_id].startIdx + 1;
 
-    part_time = get_time() - tmp_time;  
+    // part_time = get_time() - tmp_time;  
 
-    cudaMallocHost((void**)&(pcscGPU[dev_id].py), pcscGPU[dev_id].m * sizeof(double));
+    // cudaMallocHost((void**)&(pcscGPU[dev_id].py), pcscGPU[dev_id].m * sizeof(double));
   
   //   tmp_time = get_time();
 
