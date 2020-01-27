@@ -411,7 +411,7 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
 
     tmp_time = get_time();
 
-    if (merg_opt == 0) {
+    if (merg_opt == 0 || merg_opt == 1) {
       checkCudaErrors(cudaMemcpyAsync(pcscGPU[dev_id].py, pcscGPU[dev_id].dy, 
                       pcscGPU[dev_id].m * sizeof(double), cudaMemcpyDeviceToHost, stream)); 
 
