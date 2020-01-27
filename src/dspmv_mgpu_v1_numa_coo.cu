@@ -246,9 +246,7 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
 
     //tmp_time = get_time();
     pcooGPU[dev_id].val    = &(pcooNuma[numa_id].val[pcooGPU[dev_id].startIdx]);
-    if (part_opt == 1) {
-      pcooGPU[dev_id].rowIdx = &(pcooNuma[numa_id].rowIdx[pcooGPU[dev_id].startIdx]);
-    }
+    pcooGPU[dev_id].rowIdx = &(pcooNuma[numa_id].rowIdx[pcooGPU[dev_id].startIdx]);
     pcooGPU[dev_id].colIdx = &(pcooNuma[numa_id].colIdx[pcooGPU[dev_id].startIdx]);
     pcooGPU[dev_id].x      = pcooNuma[numa_id].x;
     pcooGPU[dev_id].y      = &(pcooNuma[numa_id].y[pcooGPU[dev_id].startRow]);
@@ -284,7 +282,7 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
 
       tmp_time = get_time();
       for (int i = 0; i < pcooGPU[dev_id].nnz; i ++) {
-        pcooGPU[dev_id].host_rowIdx[i] = pcooNuma[numa_id].rowIdx[pcooGPU[dev_id].startIdx] - pcooGPU[dev_id].startRow;
+        pcooGPU[dev_id].host_rowIdx[i] = pcooGPU[dev_id].rowIdx[i] - pcooGPU[dev_id].startRow;
       }
       part_time += get_time() - tmp_time; 
       checkCudaErrors(cudaEventRecord(comm_start, stream));
