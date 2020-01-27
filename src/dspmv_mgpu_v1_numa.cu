@@ -353,7 +353,7 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
 
 
   omp_set_num_threads(ngpu);
-  #pragma omp parallel default (shared) reduction(max:comp_time) reduction(max:part_time) reduction(max:merg_time)
+  #pragma omp parallel default (shared) reduction(max:comp_time) reduction(max:comm_time) reduction(max:part_time) reduction(max:merg_time)
   {
     unsigned int dev_id = omp_get_thread_num();
     checkCudaErrors(cudaSetDevice(dev_id));
@@ -565,7 +565,7 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     elapsedTime /= 1000.0;
     comm_time += elapsedTime;
 
-    printf("omp thread %d, elapsedTime0 %f comp_time0 %f\n", dev_id, elapsedTime, comm_time);
+    printf("omp thread %d, elapsedTime0 %f comm_time0 %f size %d\n", dev_id, elapsedTime, comm_time, (pcsrGPU[dev_id].m + 1) * sizeof(int));
 
 
 
@@ -703,7 +703,8 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     checkCudaErrors(cudaEventElapsedTime(&elapsedTime, comm_start, comm_stop));
     elapsedTime /= 1000.0;
     comm_time += elapsedTime;
-    printf("omp thread %d, elapsedTime1 %f comp_time1 %f\n", dev_id, elapsedTime, comm_time);
+    printf("omp thread %d, elapsedTime1 %f comm_time1 %f size \n", dev_id, elapsedTime, comm_time,
+        pcsrGPU[dev_id].nnz * sizeof(int) + pcsrGPU[dev_id].nnz * sizeof(double)+pcsrGPU[dev_id].m*sizeof(double)+pcsrGPU[dev_id].n*sizeof(double));
 
     checkCudaErrors(cudaEventSynchronize(comp_stop));
     elapsedTime = 0.0;

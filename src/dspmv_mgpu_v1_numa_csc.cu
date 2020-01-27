@@ -175,7 +175,7 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
   int * start_rows = new int[ngpu];
 
   omp_set_num_threads(ngpu);
-  #pragma omp parallel default (shared) reduction(max:comp_time) reduction(max:part_time) reduction(max:merg_time)
+  #pragma omp parallel default (shared) reduction(max:comp_time) reduction(max:comm_time) reduction(max:part_time) reduction(max:merg_time)
   {
     unsigned int dev_id = omp_get_thread_num();
     cudaSetDevice(dev_id);
