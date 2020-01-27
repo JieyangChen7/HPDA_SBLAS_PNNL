@@ -209,7 +209,7 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
     pcscGPU[dev_id].endIdx   = floor((double)tmp2 / numaContext.numGPUs[numa_id]) - 1;
   
     // Calculate the start and end col
-    // pcscGPU[dev_id].startCol = get_row_from_index(pcscNuma[numa_id].m, pcscNuma[numa_id].colPtr, pcscGPU[dev_id].startIdx);
+    pcscGPU[dev_id].startCol = get_row_from_index(pcscNuma[numa_id].n, pcscNuma[numa_id].colPtr, pcscGPU[dev_id].startIdx);
     // // Mark imcomplete rows
     // // True: imcomplete
     // if (pcscGPU[dev_id].startIdx > pcscNuma[numa_id].colPtr[pcscGPU[dev_id].startCol]) {
@@ -220,7 +220,7 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
     // }
     // //start_flags[dev_id] = start_flag;   
 
-    // pcscGPU[dev_id].endCol = get_row_from_index(pcscNuma[numa_id].m, pcscNuma[numa_id].colPtr, pcscGPU[dev_id].endIdx);
+    // pcscGPU[dev_id].endCol = get_row_from_index(pcscNuma[numa_id].n, pcscNuma[numa_id].colPtr, pcscGPU[dev_id].endIdx);
     // // Mark imcomplete rows
     // // True: imcomplete
     // if (pcscGPU[dev_id].endIdx < pcscNuma[numa_id].colPtr[pcscGPU[dev_id].endCol + 1] - 1)  {
