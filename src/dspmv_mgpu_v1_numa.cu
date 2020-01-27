@@ -719,6 +719,7 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     // printf("omp thread %d, time %f\n", dev_id, get_time() - tmp_time);
     //comp_time = get_time() - tmp_time;
     // GPU based merge
+    #pragma omp barrier
     tmp_time = get_time();
     
     if (merg_opt == 1) {
