@@ -287,7 +287,7 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
       }
       part_time += get_time() - tmp_time;
       checkCudaErrors(cudaEventRecord(comm_start, stream));
-      checkCudaErrors(cudaMemcpyAsync(pcscGPU[dev_id].dcolPtr, pcscGPU[dev_id].host_cscColPtr, (pcscGPU[dev_id].m + 1) * sizeof(int), cudaMemcpyHostToDevice, stream));
+      checkCudaErrors(cudaMemcpyAsync(pcscGPU[dev_id].dcolPtr, pcscGPU[dev_id].host_cscColPtr, (pcscGPU[dev_id].n + 1) * sizeof(int), cudaMemcpyHostToDevice, stream));
       checkCudaErrors(cudaEventRecord(comm_stop, stream));
       checkCudaErrors(cudaFreeHost(pcscGPU[dev_id].host_cscColPtr));
     }
