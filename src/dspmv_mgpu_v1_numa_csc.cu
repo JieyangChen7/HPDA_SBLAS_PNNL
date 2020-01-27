@@ -412,31 +412,31 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
     //comp_time = get_time() - tmp_time;
 
 
-    // tmp_time = get_time();
+    tmp_time = get_time();
 
-    // if (merg_opt == 0 || merg_opt == 1) {
-    //   checkCudaErrors(cudaMemcpyAsync(pcscGPU[dev_id].py, pcscGPU[dev_id].dy, 
-    //                   pcscGPU[dev_id].m * sizeof(double), cudaMemcpyDeviceToHost, stream)); 
+    if (merg_opt == 0 || merg_opt == 1) {
+      checkCudaErrors(cudaMemcpyAsync(pcscGPU[dev_id].py, pcscGPU[dev_id].dy, 
+                      pcscGPU[dev_id].m * sizeof(double), cudaMemcpyDeviceToHost, stream)); 
 
-    //   checkCudaErrors(cudaDeviceSynchronize());
-    //   #pragma omp barrier
-    //   //
-    //   // print_vec(pcscGPU[dev_id].py, m, "py"+to_string(dev_id));
-    //   if (dev_id == 0) {
-    //     for (int d = 0; d < ngpu; d++) {
-    //       for (int i = 0; i < m; i++) {
-    //         y[i] += pcscGPU[d].py[i];
-    //       }
-    //       // print_vec(pcscGPU[d].py, m, "py-after"+to_string(d));
-    //       // print_vec(y, m, "y"+to_string(d));
-    //     }
-    //   }
-    // }
+      checkCudaErrors(cudaDeviceSynchronize());
+      #pragma omp barrier
+      //
+      // print_vec(pcscGPU[dev_id].py, m, "py"+to_string(dev_id));
+      if (dev_id == 0) {
+        for (int d = 0; d < ngpu; d++) {
+          for (int i = 0; i < m; i++) {
+            y[i] += pcscGPU[d].py[i];
+          }
+          // print_vec(pcscGPU[d].py, m, "py-after"+to_string(d));
+          // print_vec(y, m, "y"+to_string(d));
+        }
+      }
+    }
 
-    // if (merg_opt == 1) {
-    //   // to be done
-    // }
-    // merg_time = get_time() - tmp_time;
+    if (merg_opt == 1) {
+      // to be done
+    }
+    merg_time = get_time() - tmp_time;
 
     // checkCudaErrors(cudaFree(pcscGPU[dev_id].dval));
     // checkCudaErrors(cudaFree(pcscGPU[dev_id].dcolPtr));
