@@ -472,7 +472,7 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
   spmv_ret ret;
   ret.numa_part_time = numa_part_time;
   ret.comp_time = comp_time;
-  ret.comm_time = 0.0;
+  ret.comm_time = comm_time;
   ret.part_time = part_time;
   ret.merg_time = merg_time;
   return ret;

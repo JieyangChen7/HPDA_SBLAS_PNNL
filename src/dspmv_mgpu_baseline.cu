@@ -138,13 +138,15 @@ spmv_ret spMV_mgpu_baseline(int m, int n, int nnz, double * alpha,
     elapsedTime /= 1000.0;
     if (elapsedTime > comm_time) comm_time = elapsedTime;
 
-    printf("dev %d, elapsedTime1 %f comp_time1 %f\n", d, elapsedTime, comm_time);
+    
 
     cudaEventSynchronize(comp_stop[d]);
     elapsedTime = 0.0;
     cudaEventElapsedTime(&elapsedTime, comp_start[d], comp_stop[d]);
     elapsedTime /= 1000.0;
     if (elapsedTime > comp_time) comp_time = elapsedTime;
+
+    printf("dev %d, elapsedTime1 %f comp_time %f\n", d, elapsedTime, comp_time);
 
     checkCudaErrors(cudaDeviceSynchronize());
   }
