@@ -453,14 +453,14 @@ int main(int argc, char *argv[]) {
                                 ngpu);
     ret_baseline_csc.add(ret);
 
-    ret = spMV_mgpu_v1_numa_csc(m, n, nnz, &ALPHA,
-                                cscVal, cscColPtr, cscRowIdx,
-                                x, &BETA,
-                                y_static_csc,
-                                ngpu,
-                                1,
-                                numa_mapping); //kernel 1
-    ret_static_csc.add(ret);
+    // ret = spMV_mgpu_v1_numa_csc(m, n, nnz, &ALPHA,
+    //                             cscVal, cscColPtr, cscRowIdx,
+    //                             x, &BETA,
+    //                             y_static_csc,
+    //                             ngpu,
+    //                             1,
+    //                             numa_mapping); //kernel 1
+    // ret_static_csc.add(ret);
 
     // ret = spMV_mgpu_baseline_coo(m, n, nnz, &ALPHA,
     //                             cooVal, cooRowIdx, cooColIdx, 
