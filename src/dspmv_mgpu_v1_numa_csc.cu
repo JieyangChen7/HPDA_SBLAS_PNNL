@@ -380,36 +380,36 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
     // print_vec_gpu(pcscGPU[dev_id].dy, pcscGPU[dev_id].m, "y_before"+to_string(dev_id));
     // printf("dev_id %d, alpha %f, beta %f\n", dev_id, *alpha, *beta);
 
-    // checkCudaErrors(cudaEventRecord(comp_start, stream));
-    // checkCudaErrors(cusparseDcsrmv(handle,CUSPARSE_OPERATION_TRANSPOSE, 
-    //                         pcscGPU[dev_id].n, pcscGPU[dev_id].m, pcscGPU[dev_id].nnz, 
-    //                         alpha, descr, 
-    //                         pcscGPU[dev_id].dval, pcscGPU[dev_id].dcolPtr, pcscGPU[dev_id].drowIdx,
+    checkCudaErrors(cudaEventRecord(comp_start, stream));
+    checkCudaErrors(cusparseDcsrmv(handle,CUSPARSE_OPERATION_TRANSPOSE, 
+                            pcscGPU[dev_id].n, pcscGPU[dev_id].m, pcscGPU[dev_id].nnz, 
+                            alpha, descr, 
+                            pcscGPU[dev_id].dval, pcscGPU[dev_id].dcolPtr, pcscGPU[dev_id].drowIdx,
+                            pcscGPU[dev_id].dx, beta, pcscGPU[dev_id].dy));
+    checkCudaErrors(cudaEventRecord(comp_stop, stream));
+
+    // checkCudaErrors(cusparseDcsrmv(handle,CUSPARSE_OPERATION_NON_TRANSPOSE, 
+    //                         pcscGPU[dev_id].m, pcscGPU[dev_id].n, pcscGPU[dev_id].nnz, 
+    //                         alpha, descr, dev_csrVal, 
+    //                         dev_csrRowPtr, dev_csrColIndex, 
     //                         pcscGPU[dev_id].dx, beta, pcscGPU[dev_id].dy));
-    // checkCudaErrors(cudaEventRecord(comp_stop, stream));
-
-    // // checkCudaErrors(cusparseDcsrmv(handle,CUSPARSE_OPERATION_NON_TRANSPOSE, 
-    // //                         pcscGPU[dev_id].m, pcscGPU[dev_id].n, pcscGPU[dev_id].nnz, 
-    // //                         alpha, descr, dev_csrVal, 
-    // //                         dev_csrRowPtr, dev_csrColIndex, 
-    // //                         pcscGPU[dev_id].dx, beta, pcscGPU[dev_id].dy));
       
-    // checkCudaErrors(cudaEventSynchronize(comm_stop));
-    // elapsedTime = 0.0;
-    // checkCudaErrors(cudaEventElapsedTime(&elapsedTime, comm_start, comm_stop));
-    // elapsedTime /= 1000.0;
-    // comm_time += elapsedTime;
+    checkCudaErrors(cudaEventSynchronize(comm_stop));
+    elapsedTime = 0.0;
+    checkCudaErrors(cudaEventElapsedTime(&elapsedTime, comm_start, comm_stop));
+    elapsedTime /= 1000.0;
+    comm_time += elapsedTime;
 
-    // checkCudaErrors(cudaEventSynchronize(comp_stop));
-    // elapsedTime = 0.0;
-    // checkCudaErrors(cudaEventElapsedTime(&elapsedTime, comp_start, comp_stop));
-    // elapsedTime /= 1000.0;
-    // comp_time += elapsedTime;
+    checkCudaErrors(cudaEventSynchronize(comp_stop));
+    elapsedTime = 0.0;
+    checkCudaErrors(cudaEventElapsedTime(&elapsedTime, comp_start, comp_stop));
+    elapsedTime /= 1000.0;
+    comp_time += elapsedTime;
   
-    // checkCudaErrors(cudaDeviceSynchronize());
-    // // print_vec_gpu(pcscGPU[dev_id].dy, pcscGPU[dev_id].m, "y_after"+to_string(dev_id));
-    // // printf("omp thread %d, time %f\n", dev_id, get_time() - tmp_time);
-    // //comp_time = get_time() - tmp_time;
+    checkCudaErrors(cudaDeviceSynchronize());
+    // print_vec_gpu(pcscGPU[dev_id].dy, pcscGPU[dev_id].m, "y_after"+to_string(dev_id));
+    // printf("omp thread %d, time %f\n", dev_id, get_time() - tmp_time);
+    //comp_time = get_time() - tmp_time;
 
 
     // tmp_time = get_time();
