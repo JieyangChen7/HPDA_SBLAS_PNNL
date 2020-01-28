@@ -173,7 +173,7 @@ spmv_ret spMV_mgpu_baseline_coo(int m, int n, int nnz, double * alpha,
     if (elapsedTime > comm_time) comm_time = elapsedTime;
 
     cudaEventSynchronize(comp_stop[d]);
-    elapsedTime;
+    elapsedTime = 0;
     cudaEventElapsedTime(&elapsedTime, comp_start[d], comp_stop[d]);
     elapsedTime /= 1000.0;
     if (elapsedTime > comp_time) comp_time = elapsedTime;
@@ -202,27 +202,28 @@ spmv_ret spMV_mgpu_baseline_coo(int m, int n, int nnz, double * alpha,
   merg_time = get_time() - curr_time;
 
   for (int d = 0; d < ngpu; d++) {
-    cudaFree(dev_csrVal[d]);
-    cudaFree(dev_csrRowPtr[d]);
-    cudaFree(dev_csrColIdx[d]);
-    cudaFreeHost(host_py[d]);
-    cudaFreeHost(host_cooRowIdx[d]);
+    checkCudaErrors(cudaSetDevice(d));
+    checkCudaErrors(cudaFree(dev_csrVal[d]));
+    checkCudaErrors(cudaFree(dev_csrRowPtr[d]));
+    checkCudaErrors(cudaFree(dev_csrColIdx[d]));
+    checkCudaErrors(cudaFreeHost(host_py[d]));
+    checkCudaErrors(cudaFreeHost(host_cooRowIdx[d]));
 
-    cudaFree(dev_cooColIdx[d]);
-    cudaFree(dev_cooRowIdx[d]);
-    cudaFree(dev_cooVal[d]);
+    checkCudaErrors(cudaFree(dev_cooColIdx[d]));
+    checkCudaErrors(cudaFree(dev_cooRowIdx[d]));
+    checkCudaErrors(cudaFree(dev_cooVal[d]));
 
-    cudaFree(dev_x[d]);
-    cudaFree(dev_y[d]);
+    checkCudaErrors(cudaFree(dev_x[d]));
+    checkCudaErrors(cudaFree(dev_y[d]));
 
-    cusparseDestroyMatDescr(descr[d]);
-    cusparseDestroy(handle[d]);
-    cudaStreamDestroy(stream[d]);
+    checkCudaErrors(cusparseDestroyMatDescr(descr[d]));
+    checkCudaErrors(cusparseDestroy(handle[d]));
+    checkCudaErrors(cudaStreamDestroy(stream[d]));
 
-    cudaEventDestroy(comp_start[d]);
-    cudaEventDestroy(comp_stop[d]);
-    cudaEventDestroy(comm_start[d]);
-    cudaEventDestroy(comm_stop[d]);
+    checkCudaErrors(cudaEventDestroy(comp_start[d]));
+    checkCudaErrors(cudaEventDestroy(comp_stop[d]));
+    checkCudaErrors(cudaEventDestroy(comm_start[d]));
+    checkCudaErrors(cudaEventDestroy(comm_stop[d]));
   }
 
   delete [] stream;
