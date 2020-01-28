@@ -739,12 +739,12 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
         //cudaMemcpyAsync(start_element+dev_id, dev_y, sizeof(double), cudaMemcpyDeviceToHost, stream);
       }
       checkCudaErrors(cudaDeviceSynchronize());
-      printf("omp thread %d merg_copy_time1 %f \n", dev_id, get_time() - tmp_time);
+      // printf("omp thread %d merg_copy_time1 %f \n", dev_id, get_time() - tmp_time);
 
       checkCudaErrors(cudaMemcpyAsync(y+start_row_no_overlap, dev_y_no_overlap, dev_m_no_overlap*sizeof(double),  cudaMemcpyDeviceToHost, stream));
       checkCudaErrors(cudaDeviceSynchronize());
 
-      printf("omp thread %d merg_copy_time2 %f \n", dev_id, get_time() - tmp_time);
+      // printf("omp thread %d merg_copy_time2 %f \n", dev_id, get_time() - tmp_time);
       #pragma omp barrier
       if (dev_id == 0) {
         for (int i = 0; i < ngpu; i++) {
@@ -759,7 +759,7 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
           // } 
         }
       }
-      printf("omp thread %d merg_other_time %f \n", dev_id, get_time() - tmp_time);
+      // printf("omp thread %d merg_other_time %f \n", dev_id, get_time() - tmp_time);
 
     }
 
@@ -815,7 +815,7 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
 
   }
 
-  printf("end comm time: %f\n", comm_time);
+  // printf("end comm time: %f\n", comm_time);
 
   //cout << "time_parse = " << time_parse << ", time_comm = " << time_comm << ", time_comp = "<< time_comp <<", time_post = " << time_post << endl;
   for (int numa_id = 0; numa_id < numaContext.numNumaNodes; numa_id++) {
