@@ -29,7 +29,7 @@ RESULT_PREFIX=/gpfs/alpine/scratch/jieyang/csc331/spmv_results
 
 #DATA_PREFIX=./
 #NGPU=6
-NTEST=10
+NTEST=5
 
 PART_OPT=PPP
 MERG_OPT=EEE
