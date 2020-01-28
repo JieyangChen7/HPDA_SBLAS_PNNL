@@ -414,7 +414,7 @@ int main(int argc, char *argv[]) {
   ret = ret2;
   int numa_mapping[6] = {0,0,0,1,1,1};
 
-  int part_opt = 1;
+  int part_opt = 0;
   int merg_opt = 1;
   
   cout << "Starting tests..." << endl;
