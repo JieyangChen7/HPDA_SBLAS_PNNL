@@ -70,6 +70,8 @@ int main(int argc, char *argv[]) {
 
   int part_opt = atoi(argv[5]);
   int merg_opt = atoi(argv[6]);
+
+  cout << "Read arguments..."  << "part_opt " << part_opt << " merg_opt " << merg_opt << endl;
   //int kernel_version = atoi(argv[5]);
   
   //int divide = atoi(argv[7]);
@@ -420,7 +422,7 @@ int main(int argc, char *argv[]) {
   // int part_opt = 0;
   // int merg_opt = 1;
   
-  cout << "Starting tests..."  << "part_opt " << part_opt << "merg_opt" << merg_opt << endl;
+  cout << "Starting tests..."  << "part_opt " << part_opt << " merg_opt " << merg_opt << endl;
 
   for (int i = 0; i < repeat_test; i++) {
     for (int i = 0; i < m; i++) {
