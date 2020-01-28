@@ -45,6 +45,15 @@ struct spmv_ret {
             numa_part_time, part_time, 
             comm_time, comp_time, merg_time);
   }
+  string to_string() {
+    ostringstream stringStream;
+    stringStream << numa_part_time << ","
+                 << part_time << ","
+                 << comm_time << ","
+                 << comp_time << ","
+                 << merg_time << "\n";
+    return stringStream.str();
+  }
 };
 
 struct pCSR {

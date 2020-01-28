@@ -67,6 +67,9 @@ int main(int argc, char *argv[]) {
 
   int ngpu = atoi(argv[3]);
   int repeat_test = atoi(argv[4]);
+
+  int part_opt = atoi(argv[5]);
+  int merg_opt = atoi(argv[6]);
   //int kernel_version = atoi(argv[5]);
   
   //int divide = atoi(argv[7]);
@@ -414,10 +417,10 @@ int main(int argc, char *argv[]) {
   ret = ret2;
   int numa_mapping[6] = {0,0,0,1,1,1};
 
-  int part_opt = 0;
-  int merg_opt = 1;
+  // int part_opt = 0;
+  // int merg_opt = 1;
   
-  cout << "Starting tests..." << endl;
+  cout << "Starting tests..."  << "part_opt " << part_opt << "merg_opt" << merg_opt << endl;
 
   for (int i = 0; i < repeat_test; i++) {
     for (int i = 0; i < m; i++) {
@@ -583,7 +586,17 @@ int main(int argc, char *argv[]) {
   printf("Check: %d/%d\n", pass_static_coo, repeat_test);
   printf("Check: %d/%d\n", pass_dynamic_coo, repeat_test);
 
-  //myfile << avg_time_baseline << "," << avg_time_v1k1 << "," << avg_time_v1k2 << "," << avg_time_v1k3 << "," << avg_time_v2k1 << "," << avg_time_v2k2 << "," << avg_time_v2k3 << "," << avg_time_v1k1s << "," << avg_time_v1k2s << "," << avg_time_v1k3s << "," << avg_time_v2k1s << "," << avg_time_v2k2s << "," << avg_time_v2k3s;  
+  myfile << ret_baseline_csr.to_string();
+  myfile << ret_static_csr.to_string();
+  myfile << ret_dynamic_csr.to_string();
+
+  myfile << ret_baseline_csc.to_string();
+  myfile << ret_static_csc.to_string();
+  myfile << ret_dynamic_csc.to_string();
+
+  myfile << ret_baseline_coo.to_string();
+  myfile << ret_static_coo.to_string();
+  myfile << ret_dynamic_coo.to_string();
 
   cudaFreeHost(cooRowIdx);
   cudaFreeHost(cooColIdx);
