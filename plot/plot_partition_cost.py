@@ -7,6 +7,11 @@ import csv
 import sys
 
 
+def calc_speedup(time_array):
+  speedups = np.array([])
+  for i in range(time_array.size):
+    speedups = np.append(speedups, time_array[0]/time_array[i])
+  return speedups
 
 
 def main(argv):
@@ -75,6 +80,9 @@ def main(argv):
   total_pCOO_opt = np.array([])
 
 
+  
+
+
 
   for ngpu in range(1,7):
     part_opt=0
@@ -133,18 +141,30 @@ def main(argv):
     merg_pCOO = np.append(merg_pCOO, df0.at[7, 'Result Merging'])
     merg_pCOO_opt = np.append(merg_pCOO_opt, df1.at[7, 'Result Merging'])
 
-    total_CSR_baseline = part_CSR_baseline + comp_CSR_baseline + comm_CSR_baseline + merg_CSR_baseline;
-    total_pCSR = part_pCSR + comp_pCSR + comm_pCSR + merg_pCSR;
-    total_pCSR_opt = part_pCSR_opt + comp_pCSR + comm_pCSR + merg_pCSR_opt;
+  total_CSR_baseline = part_CSR_baseline + comp_CSR_baseline + comm_CSR_baseline# + merg_CSR_baseline
+  total_pCSR = part_pCSR + comp_pCSR + comm_pCSR# + merg_pCSR
+  total_pCSR_opt = part_pCSR_opt + comp_pCSR + comm_pCSR# + merg_pCSR_opt
 
-    total_CSC_baseline = part_CSC_baseline + comp_CSC_baseline + comm_CSC_baseline + merg_CSC_baseline;
-    total_pCSC = part_pCSC + comp_pCSC + comm_pCSC + merg_pCSC;
-    total_pCSC_opt = part_pCSC_opt + comp_pCSC + comm_pCSC + merg_pCSC_opt;
+  total_CSC_baseline = part_CSC_baseline + comp_CSC_baseline + comm_CSC_baseline# + merg_CSC_baseline
+  total_pCSC = part_pCSC + comp_pCSC + comm_pCSC# + merg_pCSC;
+  total_pCSC_opt = part_pCSC_opt + comp_pCSC + comm_pCSC# + merg_pCSC_opt
 
-    total_COO_baseline = part_COO_baseline + comp_COO_baseline + comm_COO_baseline + merg_COO_baseline;
-    total_pCOO = part_pCOO + comp_pCOO + comm_pCOO + merg_pCOO;
-    total_pCOO_opt = part_pCOO_opt + comp_pCOO + comm_pCOO + merg_pCOO_opt;
+  total_COO_baseline = part_COO_baseline + comp_COO_baseline + comm_COO_baseline# + merg_COO_baseline
+  total_pCOO = part_pCOO + comp_pCOO + comm_pCOO# + merg_pCOO
+  total_pCOO_opt = part_pCOO_opt + comp_pCOO + comm_pCOO# + merg_pCOO_opt
 
+  speedup_CSR_baseline = calc_speedup(total_CSR_baseline)
+  speedup_pCSR = calc_speedup(total_pCSR)
+  speedup_pCSR_opt = calc_speedup(total_pCSR_opt)
+
+
+  speedup_CSC_baseline = calc_speedup(total_CSC_baseline)
+  speedup_pCSC = calc_speedup(total_pCSC)
+  speedup_pCSC_opt = calc_speedup(total_pCSC_opt)
+
+  speedup_COO_baseline = calc_speedup(total_COO_baseline)
+  speedup_pCOO = calc_speedup(total_pCOO)
+  speedup_pCOO_opt = calc_speedup(total_pCOO_opt)
 
 ############# Parition Time ###############
   fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
@@ -372,6 +392,44 @@ def main(argv):
   plt.tight_layout()
   #plt.show()
   plt.savefig('{}_total_time.pdf'.format(matrix_name))  
+
+  ################ Overall Speedup #################
+  fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
+  width = 0.25 
+  x_idx = ['1','2','3','4','5','6']
+  x_idx = np.arange(6)
+  
+  p1 = ax1.bar(x_idx - width, speedup_CSR_baseline.tolist(), width)
+  p2 = ax1.bar(x_idx, speedup_pCSR.tolist(), width)
+  p3 = ax1.bar(x_idx + width, speedup_pCSR_opt.tolist(), width)
+  ax1.set_xticks(x_idx)
+  ax1.set_xticklabels(('1', '2', '3', '4', '5', '6'))
+  ax1.set_ylabel("Speedup")
+  ax1.set_title("CSR")
+  #ax1.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.55, 1), ncol=1)
+  
+  p1 = ax2.bar(x_idx - width, speedup_CSC_baseline.tolist(), width)
+  p2 = ax2.bar(x_idx, speedup_pCSC.tolist(), width)
+  p3 = ax2.bar(x_idx + width, speedup_pCSC_opt.tolist(), width)
+  ax2.set_xticks(x_idx)
+  ax2.set_xticklabels(('1', '2', '3', '4', '5', '6'))
+  ax2.set_xlabel("Number of GPUs")
+  ax2.set_title("CSC")
+  #ax2.legend((p1[0], p2[0], p3[0]), ('CSC-naive', 'pCSC', 'pCSC-opt'), loc='lower left', bbox_to_anchor= (-0.2, 1.01), ncol=3)
+  
+
+  p1 = ax3.bar(x_idx - width, speedup_COO_baseline.tolist(), width)
+  p2 = ax3.bar(x_idx, speedup_pCOO.tolist(), width)
+  p3 = ax3.bar(x_idx + width, speedup_pCOO_opt.tolist(), width)
+  ax3.set_xticks(x_idx)
+  ax3.set_xticklabels(('1', '2', '3', '4', '5', '6'))
+  ax3.set_title("COO")
+
+  ax3.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (1, 1.01), ncol=1)
+  
+  plt.tight_layout()
+  #plt.show()
+  plt.savefig('{}_total_speedup.pdf'.format(matrix_name))  
 
 if __name__ == "__main__":
    main(sys.argv[1:])

@@ -92,7 +92,7 @@ int main(int argc, char *argv[]) {
   
   //cout << "csv_output" << csv_output << endl;
   int deviceCount;
-  cudaGetDeviceCount(&deviceCount);
+  checkCudaErrors(cudaGetDeviceCount(&deviceCount));
   if (deviceCount < ngpu) {
     cout << "Error: Not enough number of GPUs. Only " << deviceCount << "available." << endl;
     return -1;
@@ -130,9 +130,9 @@ int main(int argc, char *argv[]) {
     //  n = 10;
 
     cout << "m: " << m << " n: " << n << " nnz: " << nnz << endl;
-    cudaMallocHost((void **)&cooRowIdx, nnz * sizeof(int));
-    cudaMallocHost((void **)&cooColIdx, nnz * sizeof(int));
-    cudaMallocHost((void **)&cooVal, nnz * sizeof(double));;
+    checkCudaErrors(cudaMallocHost((void **)&cooRowIdx, nnz * sizeof(int)));
+    checkCudaErrors(cudaMallocHost((void **)&cooColIdx, nnz * sizeof(int)));
+    checkCudaErrors(cudaMallocHost((void **)&cooVal, nnz * sizeof(double)));;
     //Read matrix from file into COO format
     cout << "Start reading data from file" << endl;
     if (mm_is_pattern(matcode)) { // binary input
@@ -197,9 +197,9 @@ int main(int argc, char *argv[]) {
     nnz = p;
     cout << "m: " << m << " n: " << n << " nnz: " << nnz << endl;
     
-    cudaMallocHost((void **)&cooRowIdx, nnz * sizeof(int));
-    cudaMallocHost((void **)&cooColIdx, nnz * sizeof(int));
-    cudaMallocHost((void **)&cooVal, nnz * sizeof(double));
+    checkCudaErrors(cudaMallocHost((void **)&cooRowIdx, nnz * sizeof(int)));
+    checkCudaErrors(cudaMallocHost((void **)&cooColIdx, nnz * sizeof(int)));
+    checkCudaErrors(cudaMallocHost((void **)&cooVal, nnz * sizeof(double)));
     p = 0;
     
     cout << "Start generating data " << std::flush;
@@ -238,9 +238,9 @@ int main(int argc, char *argv[]) {
   double * csrVal;
   int * csrRowPtr;
   int * csrColIdx;
-  cudaMallocHost((void **)&csrVal, nnz * sizeof(double));
-  cudaMallocHost((void **)&csrRowPtr, (m+1) * sizeof(int));
-  cudaMallocHost((void **)&csrColIdx, nnz * sizeof(int));
+  checkCudaErrors(cudaMallocHost((void **)&csrVal, nnz * sizeof(double)));
+  checkCudaErrors(cudaMallocHost((void **)&csrRowPtr, (m+1) * sizeof(int)));
+  checkCudaErrors(cudaMallocHost((void **)&csrColIdx, nnz * sizeof(int)));
 
   long long matrix_data_space = nnz * sizeof(double) + nnz * sizeof(int) + (m+1) * sizeof(int);
 
@@ -270,9 +270,9 @@ int main(int argc, char *argv[]) {
   double * cscVal;
   int * cscColPtr;
   int * cscRowIdx;
-  cudaMallocHost((void **)&cscVal, nnz * sizeof(double));
-  cudaMallocHost((void **)&cscColPtr, (n+1) * sizeof(int));
-  cudaMallocHost((void **)&cscRowIdx, nnz * sizeof(int));
+  checkCudaErrors(cudaMallocHost((void **)&cscVal, nnz * sizeof(double)));
+  checkCudaErrors(cudaMallocHost((void **)&cscColPtr, (n+1) * sizeof(int)));
+  checkCudaErrors(cudaMallocHost((void **)&cscRowIdx, nnz * sizeof(int)));
 
   // csr2csrNcsc(m, n, nnz,
   //            cooVal, cooRowIdx, cooColIdx,
@@ -320,21 +320,21 @@ int main(int argc, char *argv[]) {
 
   printf("Allocate y\n");
 
-  cudaMallocHost((void**)&x, n * sizeof(double));
+  checkCudaErrors(cudaMallocHost((void**)&x, n * sizeof(double)));
 
-  cudaMallocHost((void**)&y_baseline_csr, m * sizeof(double));
-  cudaMallocHost((void**)&y_static_csr, m * sizeof(double));
-  cudaMallocHost((void**)&y_dynamic_csr, m * sizeof(double));
+  checkCudaErrors(cudaMallocHost((void**)&y_baseline_csr, m * sizeof(double)));
+  checkCudaErrors(cudaMallocHost((void**)&y_static_csr, m * sizeof(double)));
+  checkCudaErrors(cudaMallocHost((void**)&y_dynamic_csr, m * sizeof(double)));
 
-  cudaMallocHost((void**)&y_baseline_csc, m * sizeof(double));
-  cudaMallocHost((void**)&y_static_csc, m * sizeof(double));
-  cudaMallocHost((void**)&y_dynamic_csc, m * sizeof(double));
+  checkCudaErrors(cudaMallocHost((void**)&y_baseline_csc, m * sizeof(double)));
+  checkCudaErrors(cudaMallocHost((void**)&y_static_csc, m * sizeof(double)));
+  checkCudaErrors(cudaMallocHost((void**)&y_dynamic_csc, m * sizeof(double)));
 
-  cudaMallocHost((void**)&y_baseline_coo, m * sizeof(double));
-  cudaMallocHost((void**)&y_static_coo, m * sizeof(double));
-  cudaMallocHost((void**)&y_dynamic_coo, m * sizeof(double));
+  checkCudaErrors(cudaMallocHost((void**)&y_baseline_coo, m * sizeof(double)));
+  checkCudaErrors(cudaMallocHost((void**)&y_static_coo, m * sizeof(double)));
+  checkCudaErrors(cudaMallocHost((void**)&y_dynamic_coo, m * sizeof(double)));
 
-  cudaMallocHost((void**)&y_verify, m * sizeof(double));
+  checkCudaErrors(cudaMallocHost((void**)&y_verify, m * sizeof(double)));
 
   cout << "Initializing x" << endl;
   for (int i = 0; i < n; i++)
@@ -602,15 +602,15 @@ int main(int argc, char *argv[]) {
   myfile << ret_static_coo.to_string();
   myfile << ret_dynamic_coo.to_string();
 
-  cudaFreeHost(cooRowIdx);
-  cudaFreeHost(cooColIdx);
-  cudaFreeHost(cooVal);
-  cudaFreeHost(csrVal);
-  cudaFreeHost(csrRowPtr);
-  cudaFreeHost(csrColIdx);
-  cudaFreeHost(cscVal);
-  cudaFreeHost(cscColPtr);
-  cudaFreeHost(cscRowIdx);
+  checkCudaErrors(cudaFreeHost(cooRowIdx));
+  checkCudaErrors(cudaFreeHost(cooColIdx));
+  checkCudaErrors(cudaFreeHost(cooVal));
+  checkCudaErrors(cudaFreeHost(csrVal));
+  checkCudaErrors(cudaFreeHost(csrRowPtr));
+  checkCudaErrors(cudaFreeHost(csrColIdx));
+  checkCudaErrors(cudaFreeHost(cscVal));
+  checkCudaErrors(cudaFreeHost(cscColPtr));
+  checkCudaErrors(cudaFreeHost(cscRowIdx));
 
   myfile.close();
 }
