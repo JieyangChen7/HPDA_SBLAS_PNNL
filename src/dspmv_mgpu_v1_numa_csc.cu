@@ -419,7 +419,11 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
                       pcscGPU[dev_id].m * sizeof(double), cudaMemcpyDeviceToHost, stream)); 
 
       checkCudaErrors(cudaDeviceSynchronize());
+
       #pragma omp barrier
+      if (merg_opt == 1) {
+        merg_time = get_time() - tmp_time;
+      }
       //
       // print_vec(pcscGPU[dev_id].py, m, "py"+to_string(dev_id));
       if (dev_id == 0) {
@@ -437,7 +441,9 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
       // to be done
     }
     #pragma omp barrier
-    merg_time = get_time() - tmp_time;
+    if (merg_opt == 0) {
+      merg_time = get_time() - tmp_time;
+    }
 
     checkCudaErrors(cudaFree(pcscGPU[dev_id].dval));
     checkCudaErrors(cudaFree(pcscGPU[dev_id].dcolPtr));

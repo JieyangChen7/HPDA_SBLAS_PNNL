@@ -16,6 +16,7 @@ def calc_speedup(time_array):
 
 def main(argv):
   matrix_name = argv[0];
+  ngpu = int(argv[1]);
   print("input matrix: " + matrix_name)
 
 
@@ -84,7 +85,7 @@ def main(argv):
 
 
 
-  for ngpu in range(1,7):
+  for ngpu in range(1,ngpu+1):
     part_opt=0
     merg_opt=0
     header = ["NUMA Comm", "Partition", "H2D", "Computation", "Result Merging"]
@@ -166,17 +167,30 @@ def main(argv):
   speedup_pCOO = calc_speedup(total_pCOO)
   speedup_pCOO_opt = calc_speedup(total_pCOO_opt)
 
+############# Constant #############
+
+  xticklabels = ''
+
+  if (ngpu == 6):
+    xticklabels = ('1', '2', '3', '4', '5', '6')
+  elif (ngpu == 8):
+    xticklabels = ('1', '2', '3', '4', '5', '6', '7', '8')
+
+  x_idx = []
+  for i in range(ngpu):
+    x_idx.append(str(i+1))
+
 ############# Parition Time ###############
   fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
   width = 0.25 
-  x_idx = ['1','2','3','4','5','6']
-  x_idx = np.arange(6)
+  #x_idx = ['1','2','3','4','5','6']
+  x_idx = np.arange(ngpu)
   
   p1 = ax1.bar(x_idx - width, part_CSR_baseline.tolist(), width)
   p2 = ax1.bar(x_idx, part_pCSR.tolist(), width)
   p3 = ax1.bar(x_idx + width, part_pCSR_opt.tolist(), width)
   ax1.set_xticks(x_idx)
-  ax1.set_xticklabels(('1', '2', '3', '4', '5', '6'))
+  ax1.set_xticklabels(xticklabels)
   ax1.set_ylabel("Time (s)")
   ax1.set_title("CSR")
   #ax1.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.55, 1), ncol=1)
@@ -185,7 +199,7 @@ def main(argv):
   p2 = ax2.bar(x_idx, part_pCSC.tolist(), width)
   p3 = ax2.bar(x_idx + width, part_pCSC_opt.tolist(), width)
   ax2.set_xticks(x_idx)
-  ax2.set_xticklabels(('1', '2', '3', '4', '5', '6'))
+  ax2.set_xticklabels(xticklabels)
   ax2.set_xlabel("Number of GPUs")
   ax2.set_title("CSC")
   #ax2.legend((p1[0], p2[0], p3[0]), ('CSC-naive', 'pCSC', 'pCSC-opt'), loc='lower left', bbox_to_anchor= (-0.2, 1.01), ncol=3)
@@ -195,7 +209,7 @@ def main(argv):
   p2 = ax3.bar(x_idx, part_pCOO.tolist(), width)
   p3 = ax3.bar(x_idx + width, part_pCOO_opt.tolist(), width)
   ax3.set_xticks(x_idx)
-  ax3.set_xticklabels(('1', '2', '3', '4', '5', '6'))
+  ax3.set_xticklabels(xticklabels)
   ax3.set_title("COO")
 
   ax3.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (1, 1.01), ncol=1)
@@ -207,14 +221,14 @@ def main(argv):
 ############# Parition Overhead ###############
   fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
   width = 0.25 
-  x_idx = ['1','2','3','4','5','6']
-  x_idx = np.arange(6)
+  #x_idx = ['1','2','3','4','5','6']
+  x_idx = np.arange(ngpu)
   
   p1 = ax1.bar(x_idx - width, part_CSR_baseline/(part_CSR_baseline + comp_CSR_baseline + comm_CSR_baseline).tolist(), width)
   p2 = ax1.bar(x_idx, part_pCSR/(part_pCSR + comp_pCSR + comm_pCSR).tolist(), width)
   p3 = ax1.bar(x_idx + width, part_pCSR_opt/(part_pCSR_opt + comp_pCSR + comm_pCSR).tolist(), width)
   ax1.set_xticks(x_idx)
-  ax1.set_xticklabels(('1', '2', '3', '4', '5', '6'))
+  ax1.set_xticklabels(xticklabels)
   ax1.set_ylabel("Overhead")
   ax1.set_title("CSR")
   #ax1.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.55, 1), ncol=1)
@@ -223,7 +237,7 @@ def main(argv):
   p2 = ax2.bar(x_idx, part_pCSC/(part_pCSC + comp_pCSC + comm_pCSC).tolist(), width)
   p3 = ax2.bar(x_idx + width, part_pCSC_opt/(part_pCSC_opt + comp_pCSC + comm_pCSC).tolist(), width)
   ax2.set_xticks(x_idx)
-  ax2.set_xticklabels(('1', '2', '3', '4', '5', '6'))
+  ax2.set_xticklabels(xticklabels)
   ax2.set_xlabel("Number of GPUs")
   ax2.set_title("CSC")
   #ax2.legend((p1[0], p2[0], p3[0]), ('CSC-naive', 'pCSC', 'pCSC-opt'), loc='lower left', bbox_to_anchor= (-0.2, 1.01), ncol=3)
@@ -233,7 +247,7 @@ def main(argv):
   p2 = ax3.bar(x_idx, part_pCOO/(part_pCOO + comp_pCOO + comm_pCOO).tolist(), width)
   p3 = ax3.bar(x_idx + width, part_pCOO_opt/(part_pCOO_opt + comp_pCOO + comm_pCOO).tolist(), width)
   ax3.set_xticks(x_idx)
-  ax3.set_xticklabels(('1', '2', '3', '4', '5', '6'))
+  ax3.set_xticklabels(xticklabels)
   ax3.set_title("COO")
 
   ax3.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (1, 1.01), ncol=1)
@@ -246,14 +260,14 @@ def main(argv):
   ############# Merging Time ###############
   fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
   width = 0.25 
-  x_idx = ['1','2','3','4','5','6']
-  x_idx = np.arange(6)
+  #x_idx = ['1','2','3','4','5','6']
+  x_idx = np.arange(ngpu)
   
   p1 = ax1.bar(x_idx - width, merg_CSR_baseline.tolist(), width)
   p2 = ax1.bar(x_idx, merg_pCSR.tolist(), width)
   p3 = ax1.bar(x_idx + width, merg_pCSR_opt.tolist(), width)
   ax1.set_xticks(x_idx)
-  ax1.set_xticklabels(('1', '2', '3', '4', '5', '6'))
+  ax1.set_xticklabels(xticklabels)
   ax1.set_ylabel("Time (s)")
   ax1.set_title("CSR")
   #ax1.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.55, 1), ncol=1)
@@ -262,7 +276,7 @@ def main(argv):
   p2 = ax2.bar(x_idx, merg_pCSC.tolist(), width)
   p3 = ax2.bar(x_idx + width, merg_pCSC_opt.tolist(), width)
   ax2.set_xticks(x_idx)
-  ax2.set_xticklabels(('1', '2', '3', '4', '5', '6'))
+  ax2.set_xticklabels(xticklabels)
   ax2.set_xlabel("Number of GPUs")
   ax2.set_title("CSC")
   #ax2.legend((p1[0], p2[0], p3[0]), ('CSC-naive', 'pCSC', 'pCSC-opt'), loc='lower left', bbox_to_anchor= (-0.2, 1.01), ncol=3)
@@ -272,7 +286,7 @@ def main(argv):
   p2 = ax3.bar(x_idx, merg_pCOO.tolist(), width)
   p3 = ax3.bar(x_idx + width, merg_pCOO_opt.tolist(), width)
   ax3.set_xticks(x_idx)
-  ax3.set_xticklabels(('1', '2', '3', '4', '5', '6'))
+  ax3.set_xticklabels(xticklabels)
   ax3.set_title("COO")
 
   ax3.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (1, 1.01), ncol=1)
@@ -284,14 +298,14 @@ def main(argv):
 ############# Merging Overhead ###############
   fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
   width = 0.25 
-  x_idx = ['1','2','3','4','5','6']
-  x_idx = np.arange(6)
+  #x_idx = ['1','2','3','4','5','6']
+  x_idx = np.arange(ngpu)
   
   p1 = ax1.bar(x_idx - width, merg_CSR_baseline/(merg_CSR_baseline + comp_CSR_baseline + comm_CSR_baseline).tolist(), width)
   p2 = ax1.bar(x_idx, part_pCSR/(merg_pCSR + comp_pCSR + comm_pCSR).tolist(), width)
   p3 = ax1.bar(x_idx + width, merg_pCSR_opt/(merg_pCSR_opt + comp_pCSR + comm_pCSR).tolist(), width)
   ax1.set_xticks(x_idx)
-  ax1.set_xticklabels(('1', '2', '3', '4', '5', '6'))
+  ax1.set_xticklabels(xticklabels)
   ax1.set_ylabel("Overhead")
   ax1.set_title("CSR")
   #ax1.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.55, 1), ncol=1)
@@ -300,7 +314,7 @@ def main(argv):
   p2 = ax2.bar(x_idx, merg_pCSC/(merg_pCSC + comp_pCSC + comm_pCSC).tolist(), width)
   p3 = ax2.bar(x_idx + width, merg_pCSC_opt/(merg_pCSC_opt + comp_pCSC + comm_pCSC).tolist(), width)
   ax2.set_xticks(x_idx)
-  ax2.set_xticklabels(('1', '2', '3', '4', '5', '6'))
+  ax2.set_xticklabels(xticklabels)
   ax2.set_xlabel("Number of GPUs")
   ax2.set_title("CSC")
   #ax2.legend((p1[0], p2[0], p3[0]), ('CSC-naive', 'pCSC', 'pCSC-opt'), loc='lower left', bbox_to_anchor= (-0.2, 1.01), ncol=3)
@@ -310,7 +324,7 @@ def main(argv):
   p2 = ax3.bar(x_idx, merg_pCOO/(merg_pCOO + comp_pCOO + comm_pCOO).tolist(), width)
   p3 = ax3.bar(x_idx + width, merg_pCOO_opt/(merg_pCOO_opt + comp_pCOO + comm_pCOO).tolist(), width)
   ax3.set_xticks(x_idx)
-  ax3.set_xticklabels(('1', '2', '3', '4', '5', '6'))
+  ax3.set_xticklabels(xticklabels)
   ax3.set_title("COO")
 
   ax3.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (1, 1.01), ncol=1)
@@ -323,13 +337,13 @@ def main(argv):
 ################ Comm Time #################
   fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
   width = 0.25 
-  x_idx = ['1','2','3','4','5','6']
-  x_idx = np.arange(6)
+  #x_idx = ['1','2','3','4','5','6']
+  x_idx = np.arange(ngpu)
   
   p1 = ax1.bar(x_idx - width, comm_CSR_baseline.tolist(), width)
   p2 = ax1.bar(x_idx, comm_pCSR.tolist(), width)
   ax1.set_xticks(x_idx)
-  ax1.set_xticklabels(('1', '2', '3', '4', '5', '6'))
+  ax1.set_xticklabels(xticklabels)
   ax1.set_ylabel("Time (s)")
   ax1.set_title("CSR")
   #ax1.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.55, 1), ncol=1)
@@ -337,7 +351,7 @@ def main(argv):
   p1 = ax2.bar(x_idx - width, comm_CSC_baseline.tolist(), width)
   p2 = ax2.bar(x_idx, comm_pCSC.tolist(), width)
   ax2.set_xticks(x_idx)
-  ax2.set_xticklabels(('1', '2', '3', '4', '5', '6'))
+  ax2.set_xticklabels(xticklabels)
   ax2.set_xlabel("Number of GPUs")
   ax2.set_title("CSC")
   #ax2.legend((p1[0], p2[0], p3[0]), ('CSC-naive', 'pCSC', 'pCSC-opt'), loc='lower left', bbox_to_anchor= (-0.2, 1.01), ncol=3)
@@ -346,7 +360,7 @@ def main(argv):
   p1 = ax3.bar(x_idx - width, comm_COO_baseline.tolist(), width)
   p2 = ax3.bar(x_idx, comm_pCOO.tolist(), width)
   ax3.set_xticks(x_idx)
-  ax3.set_xticklabels(('1', '2', '3', '4', '5', '6'))
+  ax3.set_xticklabels(xticklabels)
   ax3.set_title("COO")
 
   ax3.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*'), loc='upper left', bbox_to_anchor= (1, 1.01), ncol=1)
@@ -358,14 +372,14 @@ def main(argv):
   ################ Overall Time #################
   fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
   width = 0.25 
-  x_idx = ['1','2','3','4','5','6']
-  x_idx = np.arange(6)
+  #x_idx = ['1','2','3','4','5','6']
+  x_idx = np.arange(ngpu)
   
   p1 = ax1.bar(x_idx - width, total_CSR_baseline.tolist(), width)
   p2 = ax1.bar(x_idx, total_pCSR.tolist(), width)
   p3 = ax1.bar(x_idx + width, total_pCSR_opt.tolist(), width)
   ax1.set_xticks(x_idx)
-  ax1.set_xticklabels(('1', '2', '3', '4', '5', '6'))
+  ax1.set_xticklabels(xticklabels)
   ax1.set_ylabel("Time (s)")
   ax1.set_title("CSR")
   #ax1.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.55, 1), ncol=1)
@@ -374,7 +388,7 @@ def main(argv):
   p2 = ax2.bar(x_idx, total_pCSC.tolist(), width)
   p3 = ax2.bar(x_idx + width, total_pCSC_opt.tolist(), width)
   ax2.set_xticks(x_idx)
-  ax2.set_xticklabels(('1', '2', '3', '4', '5', '6'))
+  ax2.set_xticklabels(xticklabels)
   ax2.set_xlabel("Number of GPUs")
   ax2.set_title("CSC")
   #ax2.legend((p1[0], p2[0], p3[0]), ('CSC-naive', 'pCSC', 'pCSC-opt'), loc='lower left', bbox_to_anchor= (-0.2, 1.01), ncol=3)
@@ -384,7 +398,7 @@ def main(argv):
   p2 = ax3.bar(x_idx, total_pCOO.tolist(), width)
   p3 = ax3.bar(x_idx + width, total_pCOO_opt.tolist(), width)
   ax3.set_xticks(x_idx)
-  ax3.set_xticklabels(('1', '2', '3', '4', '5', '6'))
+  ax3.set_xticklabels(xticklabels)
   ax3.set_title("COO")
 
   ax3.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (1, 1.01), ncol=1)
@@ -396,14 +410,14 @@ def main(argv):
   ################ Overall Speedup #################
   fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
   width = 0.25 
-  x_idx = ['1','2','3','4','5','6']
-  x_idx = np.arange(6)
+  #x_idx = ['1','2','3','4','5','6']
+  x_idx = np.arange(ngpu)
   
   p1 = ax1.bar(x_idx - width, speedup_CSR_baseline.tolist(), width)
   p2 = ax1.bar(x_idx, speedup_pCSR.tolist(), width)
   p3 = ax1.bar(x_idx + width, speedup_pCSR_opt.tolist(), width)
   ax1.set_xticks(x_idx)
-  ax1.set_xticklabels(('1', '2', '3', '4', '5', '6'))
+  ax1.set_xticklabels(xticklabels)
   ax1.set_ylabel("Speedup")
   ax1.set_title("CSR")
   #ax1.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.55, 1), ncol=1)
@@ -412,7 +426,7 @@ def main(argv):
   p2 = ax2.bar(x_idx, speedup_pCSC.tolist(), width)
   p3 = ax2.bar(x_idx + width, speedup_pCSC_opt.tolist(), width)
   ax2.set_xticks(x_idx)
-  ax2.set_xticklabels(('1', '2', '3', '4', '5', '6'))
+  ax2.set_xticklabels(xticklabels)
   ax2.set_xlabel("Number of GPUs")
   ax2.set_title("CSC")
   #ax2.legend((p1[0], p2[0], p3[0]), ('CSC-naive', 'pCSC', 'pCSC-opt'), loc='lower left', bbox_to_anchor= (-0.2, 1.01), ncol=3)
@@ -422,7 +436,7 @@ def main(argv):
   p2 = ax3.bar(x_idx, speedup_pCOO.tolist(), width)
   p3 = ax3.bar(x_idx + width, speedup_pCOO_opt.tolist(), width)
   ax3.set_xticks(x_idx)
-  ax3.set_xticklabels(('1', '2', '3', '4', '5', '6'))
+  ax3.set_xticklabels(xticklabels)
   ax3.set_title("COO")
 
   ax3.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (1, 1.01), ncol=1)
