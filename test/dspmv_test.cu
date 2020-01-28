@@ -68,10 +68,12 @@ int main(int argc, char *argv[]) {
   int ngpu = atoi(argv[3]);
   int repeat_test = atoi(argv[4]);
 
-  int part_opt = atoi(argv[5]);
-  int merg_opt = atoi(argv[6]);
+  char * csv_output = argv[5];
 
-  cout << "Read arguments..."  << "part_opt " << part_opt << " merg_opt " << merg_opt << endl;
+  int part_opt = atoi(argv[6]);
+  int merg_opt = atoi(argv[7]);
+
+  cout << "Read" << " arguments..."  << "part_opt " << part_opt << " merg_opt " << merg_opt << endl;
   //int kernel_version = atoi(argv[5]);
   
   //int divide = atoi(argv[7]);
@@ -87,7 +89,7 @@ int main(int argc, char *argv[]) {
   double * cooVal;
   
 
-  char * csv_output = argv[5];
+  
   //cout << "csv_output" << csv_output << endl;
   int deviceCount;
   cudaGetDeviceCount(&deviceCount);
