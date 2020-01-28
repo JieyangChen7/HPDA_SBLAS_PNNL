@@ -26,5 +26,5 @@ download SNAP com-Orkut
 download SNAP cit-Patents
 download SNAP com-LiveJournal
 download Gleich wb-edu
-download LAW uk-2005
+#download LAW uk-2005
 

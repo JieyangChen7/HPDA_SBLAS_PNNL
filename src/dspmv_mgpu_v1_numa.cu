@@ -703,8 +703,8 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     checkCudaErrors(cudaEventElapsedTime(&elapsedTime, comm_start, comm_stop));
     elapsedTime /= 1000.0;
     comm_time += elapsedTime;
-    printf("omp thread %d, elapsedTime %f comm_time1 %f size %d\n", dev_id, elapsedTime, comm_time,
-        pcsrGPU[dev_id].nnz * sizeof(int) + pcsrGPU[dev_id].nnz * sizeof(double)+pcsrGPU[dev_id].m*sizeof(double)+pcsrGPU[dev_id].n*sizeof(double));
+    // printf("omp thread %d, elapsedTime %f comm_time1 %f size %d\n", dev_id, elapsedTime, comm_time,
+    //     pcsrGPU[dev_id].nnz * sizeof(int) + pcsrGPU[dev_id].nnz * sizeof(double)+pcsrGPU[dev_id].m*sizeof(double)+pcsrGPU[dev_id].n*sizeof(double));
 
     checkCudaErrors(cudaEventSynchronize(comp_stop));
     elapsedTime = 0.0;
