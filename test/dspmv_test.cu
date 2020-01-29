@@ -247,25 +247,7 @@ int main(int argc, char *argv[]) {
   double matrix_size_in_gb = (double)matrix_data_space / 1e9;
   cout << "Matrix space size: " << matrix_size_in_gb << " GB." << endl;
 
-  // int * counter = new int[m];
-  // for (int i = 0; i < m; i++) {
-  //   counter[i] = 0;
-  // }
-  // for (int i = 0; i < nnz; i++) {
-  //   counter[cooRowIndex[i]]++;
-  // }
-  // int t = 0;
-  // for (int i = 0; i < m; i++) {
-  //   t += counter[i];
-  // }
-  // csrRowPtr[0] = 0;
-  // for (int i = 1; i <= m; i++) {
-  //   csrRowPtr[i] = csrRowPtr[i - 1] + counter[i - 1];
-  // }
-
-  // csrVal = cooVal;
-  // csrColIdx = cooColIndex;
-
+  
   // CSR to CSC
   double * cscVal;
   int * cscColPtr;
@@ -280,15 +262,56 @@ int main(int argc, char *argv[]) {
   //            cscVal, cscColPtr, cscRowIdx);
   printf("Converting COO to CSR and CSC\n");
 
-  coo2csr(m, n, nnz,
-          cooVal, cooRowIdx, cooColIdx,
-          csrVal, csrRowPtr, csrColIdx);
+  // coo2csr(m, n, nnz,
+  //         cooVal, cooRowIdx, cooColIdx,
+  //         csrVal, csrRowPtr, csrColIdx);
 
-  coo2csc(m, n, nnz,
-          cooVal, cooRowIdx, cooColIdx,
-          cscVal, cscColPtr, cscRowIdx);
+  // coo2csc(m, n, nnz,
+  //         cooVal, cooRowIdx, cooColIdx,
+  //         cscVal, cscColPtr, cscRowIdx);
 
-  sortCOORow(m, n, nnz, cooVal, cooRowIdx, cooColIdx);
+  // sortCOORow(m, n, nnz, cooVal, cooRowIdx, cooColIdx);
+
+  omp_set_num_threads(ngpu);
+  int * counter = new int[m];
+  for (int i = 0; i < m; i++) {
+    counter[i] = 0;
+  }
+
+  #pragma omp parallel for
+  for (int i = 0; i < nnz; i++) {
+    counter[cooRowIdx[i]]++;
+  }
+  int t = 0;
+  for (int i = 0; i < m; i++) {
+    t += counter[i];
+  }
+  csrRowPtr[0] = 0;
+  for (int i = 1; i <= m; i++) {
+    csrRowPtr[i] = csrRowPtr[i - 1] + counter[i - 1];
+  }
+
+  csrVal = cooVal;
+  csrColIdx = cooColIdx;
+
+
+  int * counter2 = new int[n];
+  for (int i = 0; i < n; i++) {
+    counter2[i] = 0;
+  }
+
+  #pragma omp parallel for
+  for (int i = 0; i < nnz; i++) {
+    counter2[cooColIdx[i]]++;
+  }
+  int t = 0;
+  for (int i = 0; i < n; i++) {
+    t += counter2[i];
+  }
+  cscColPtr[0] = 0;
+  for (int i = 1; i <= n; i++) {
+    cscColPtr[i] = cscColPtr[i - 1] + counter2[i - 1];
+  }
 
   printf("Done converting\n");
 
