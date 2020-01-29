@@ -68,18 +68,18 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
       double tmp_time = get_time();
 
       int tmp1 = numaContext.workload[numa_id] * nnz; 
-      printf("thread %d hw tmp1\n", dev_id, tmp1);
+      printf("thread %d hw tmp1 %d\n", dev_id, tmp1);
       int tmp2 = numaContext.workload[numa_id + 1] * nnz;
-      printf("thread %d hw tmp2\n", dev_id, tmp2);
+      printf("thread %d hw tmp2 %d\n", dev_id, tmp2);
 
       pcooNuma[numa_id].startIdx = floor((double)tmp1 / ngpu);
-      printf("thread %d hw startIdx\n", dev_id, pcooNuma[numa_id].startIdx);
+      printf("thread %d hw startIdx %d\n", dev_id, pcooNuma[numa_id].startIdx);
       pcooNuma[numa_id].endIdx = floor((double)tmp2 / ngpu) - 1;
-      printf("thread %d hw endIdx\n", dev_id, pcooNuma[numa_id].endIdx);
+      printf("thread %d hw endIdx %d\n", dev_id, pcooNuma[numa_id].endIdx);
       pcooNuma[numa_id].startRow = cooRowIdx[pcooNuma[numa_id].startIdx];
-      printf("thread %d hw startRow\n", dev_id, pcooNuma[numa_id].startRow);
+      printf("thread %d hw startRow %d\n", dev_id, pcooNuma[numa_id].startRow);
       pcooNuma[numa_id].endRow = cooRowIdx[pcooNuma[numa_id].endIdx];
-      printf("thread %d hw endRow\n", dev_id, pcooNuma[numa_id].endRow);
+      printf("thread %d hw endRow %d\n", dev_id, pcooNuma[numa_id].endRow);
 
       printf("thread %d hw done1\n", dev_id);
 
