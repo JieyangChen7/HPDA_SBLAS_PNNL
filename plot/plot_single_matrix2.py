@@ -7,10 +7,22 @@ import csv
 import sys
 
 
-def calc_speedup(time_array, baseline):
+SMALL_SIZE = 8
+MEDIUM_SIZE = 12
+BIGGER_SIZE = 12
+
+plt.rc('font', size=MEDIUM_SIZE)          # controls default text sizes
+plt.rc('axes', titlesize=MEDIUM_SIZE)     # fontsize of the axes title
+plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+plt.rc('xtick', labelsize=MEDIUM_SIZE)    # fontsize of the tick labels
+plt.rc('ytick', labelsize=MEDIUM_SIZE)    # fontsize of the tick labels
+plt.rc('legend', fontsize=MEDIUM_SIZE)    # legend fontsize
+plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+
+def calc_speedup(time_array):
   speedups = np.array([])
   for i in range(time_array.size):
-    speedups = np.append(speedups, baseline/time_array[i])
+    speedups = np.append(speedups, time_array[0]/time_array[i])
   return speedups
 
 
@@ -46,12 +58,15 @@ def main(argv):
 
   comm_CSR_baseline = np.array([])
   comm_pCSR = np.array([])
+  comm_pCSR_numa = np.array([])
 
   comm_CSC_baseline = np.array([])
   comm_pCSC = np.array([])
+  comm_pCSC_numa = np.array([])
 
   comm_COO_baseline = np.array([])
   comm_pCOO = np.array([])
+  comm_pCOO_numa = np.array([])
 
 
   merg_CSR_baseline = np.array([])
@@ -82,6 +97,19 @@ def main(argv):
   total_pCOO_opt = np.array([])
 
 
+
+  total_pCSR_numa = np.array([])
+  total_pCSR_opt_numa = np.array([])
+
+
+
+  total_pCSC_numa = np.array([])
+  total_pCSC_opt_numa = np.array([])
+
+
+  total_pCOO_numa = np.array([])
+  total_pCOO_opt_numa = np.array([])
+
   
 
 
@@ -89,15 +117,24 @@ def main(argv):
   for ngpu in range(1,ngpu+1):
     part_opt=0
     merg_opt=0
+    numa=0
     header = ["NUMA Comm", "Partition", "H2D", "Computation", "Result Merging"]
-    csv_file = "./data/{}_{}_{}_{}.csv".format(matrix_file, ngpu, part_opt, merg_opt)
+    csv_file = "./data/{}_{}_{}_{}_{}.csv".format(matrix_file, ngpu, part_opt, merg_opt, numa)
     df0 = pd.read_csv(csv_file, names=header)
 
     part_opt=1
     merg_opt=1
+    numa=0
     header = ["NUMA Comm", "Partition", "H2D", "Computation", "Result Merging"]
-    csv_file = "./data/{}_{}_{}_{}.csv".format(matrix_file, ngpu, part_opt, merg_opt)
+    csv_file = "./data/{}_{}_{}_{}_{}.csv".format(matrix_file, ngpu, part_opt, merg_opt, numa)
     df1 = pd.read_csv(csv_file, names=header)
+
+    part_opt=1
+    merg_opt=1
+    numa=1
+    header = ["NUMA Comm", "Partition", "H2D", "Computation", "Result Merging"]
+    csv_file = "./data/{}_{}_{}_{}_{}.csv".format(matrix_file, ngpu, part_opt, merg_opt, numa)
+    df2 = pd.read_csv(csv_file, names=header)
 
     part_CSR_baseline = np.append(part_CSR_baseline, df0.at[0, 'Partition'])
     part_pCSR = np.append(part_pCSR, df0.at[1, 'Partition'])
@@ -123,12 +160,15 @@ def main(argv):
 
     comm_CSR_baseline = np.append(comm_CSR_baseline, df0.at[0, 'H2D'])
     comm_pCSR = np.append(comm_pCSR, df0.at[1, 'H2D'])
+    comm_pCSR_numa = np.append(comm_pCSR_numa, df2.at[1, 'H2D'])
 
     comm_CSC_baseline = np.append(comm_CSC_baseline, df0.at[3, 'H2D'])
     comm_pCSC = np.append(comm_pCSC, df0.at[4, 'H2D'])
+    comm_pCSC_numa = np.append(comm_pCSC_numa, df2.at[4, 'H2D'])
 
     comm_COO_baseline = np.append(comm_COO_baseline, df0.at[6, 'H2D'])
     comm_pCOO = np.append(comm_pCOO, df0.at[7, 'Computation'])
+    comm_pCOO_numa = np.append(comm_pCOO_numa, df2.at[7, 'Computation'])
 
 
     merg_CSR_baseline = np.append(merg_CSR_baseline, df0.at[0, 'Result Merging'])
@@ -147,26 +187,38 @@ def main(argv):
   total_pCSR = part_pCSR + comp_pCSR + comm_pCSR + merg_pCSR
   total_pCSR_opt = part_pCSR_opt + comp_pCSR + comm_pCSR + merg_pCSR_opt
 
+  total_pCSR_opt_numa = part_pCSR_opt + comp_pCSR + comm_pCSR_numa + merg_pCSR_opt
+
   total_CSC_baseline = part_CSC_baseline + comp_CSC_baseline + comm_CSC_baseline + merg_CSC_baseline
   total_pCSC = part_pCSC + comp_pCSC + comm_pCSC + merg_pCSC;
   total_pCSC_opt = part_pCSC_opt + comp_pCSC + comm_pCSC + merg_pCSC_opt
 
-  total_COO_baseline = part_COO_baseline + comp_COO_baseline + comm_COO_baseline + merg_COO_baseline
+  total_pCSC_opt_numa = part_pCSC_opt + comp_pCSC + comm_pCSC_numa + merg_pCSC_opt
+
+  total_COO_baseline = part_COO_baseline + comp_COO_baseline + comm_COO_baseline# + merg_COO_baseline
   total_pCOO = part_pCOO + comp_pCOO + comm_pCOO + merg_pCOO
   total_pCOO_opt = part_pCOO_opt + comp_pCOO + comm_pCOO + merg_pCOO_opt
 
-  speedup_CSR_baseline = calc_speedup(total_CSR_baseline, total_CSR_baseline[0])
-  speedup_pCSR = calc_speedup(total_pCSR, total_CSR_baseline[0])
-  speedup_pCSR_opt = calc_speedup(total_pCSR_opt, total_CSR_baseline[0])
+  total_pCOO_opt_numa = part_pCOO_opt + comp_pCOO + comm_pCOO_numa + merg_pCOO_opt
+
+  speedup_CSR_baseline = calc_speedup(total_CSR_baseline)
+  speedup_pCSR = calc_speedup(total_pCSR)
+  speedup_pCSR_opt = calc_speedup(total_pCSR_opt)
+
+  speedup_pCSR_opt_numa = calc_speedup(total_pCSR_opt_numa)
 
 
-  speedup_CSC_baseline = calc_speedup(total_CSC_baseline, total_CSC_baseline[0])
-  speedup_pCSC = calc_speedup(total_pCSC, total_CSC_baseline[0])
-  speedup_pCSC_opt = calc_speedup(total_pCSC_opt, total_CSC_baseline[0])
+  speedup_CSC_baseline = calc_speedup(total_CSC_baseline)
+  speedup_pCSC = calc_speedup(total_pCSC)
+  speedup_pCSC_opt = calc_speedup(total_pCSC_opt)
 
-  speedup_COO_baseline = calc_speedup(total_COO_baseline, total_COO_baseline[0])
-  speedup_pCOO = calc_speedup(total_pCOO, total_COO_baseline[0])
-  speedup_pCOO_opt = calc_speedup(total_pCOO_opt, total_COO_baseline[0])
+  speedup_pCSC_opt_numa = calc_speedup(total_pCSC_opt_numa)
+
+  speedup_COO_baseline = calc_speedup(total_COO_baseline)
+  speedup_pCOO = calc_speedup(total_pCOO)
+  speedup_pCOO_opt = calc_speedup(total_pCOO_opt)
+
+  speedup_pCOO_opt_numa = calc_speedup(total_pCOO_opt_numa)
 
 ############# Constant #############
 
@@ -416,7 +468,7 @@ def main(argv):
   
   p1 = ax1.bar(x_idx - width, speedup_CSR_baseline.tolist(), width)
   p2 = ax1.bar(x_idx, speedup_pCSR.tolist(), width)
-  p3 = ax1.bar(x_idx + width, speedup_pCSR_opt.tolist(), width)
+  p3 = ax1.bar(x_idx + width, speedup_pCSR_opt_numa.tolist(), width)
   ax1.set_xticks(x_idx)
   ax1.set_xticklabels(xticklabels)
   ax1.set_ylabel("Speedup")
@@ -425,7 +477,7 @@ def main(argv):
   
   p1 = ax2.bar(x_idx - width, speedup_CSC_baseline.tolist(), width)
   p2 = ax2.bar(x_idx, speedup_pCSC.tolist(), width)
-  p3 = ax2.bar(x_idx + width, speedup_pCSC_opt.tolist(), width)
+  p3 = ax2.bar(x_idx + width, speedup_pCSC_opt_numa.tolist(), width)
   ax2.set_xticks(x_idx)
   ax2.set_xticklabels(xticklabels)
   ax2.set_xlabel("Number of GPUs")
@@ -435,7 +487,7 @@ def main(argv):
 
   p1 = ax3.bar(x_idx - width, speedup_COO_baseline.tolist(), width)
   p2 = ax3.bar(x_idx, speedup_pCOO.tolist(), width)
-  p3 = ax3.bar(x_idx + width, speedup_pCOO_opt.tolist(), width)
+  p3 = ax3.bar(x_idx + width, speedup_pCOO_opt_numa.tolist(), width)
   ax3.set_xticks(x_idx)
   ax3.set_xticklabels(xticklabels)
   ax3.set_title("COO")
@@ -445,6 +497,41 @@ def main(argv):
   plt.tight_layout()
   #plt.show()
   plt.savefig('{}_total_speedup.pdf'.format(matrix_name))  
+
+  ################ NUMA Speedup #################
+  fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
+  width = 0.25 
+  #x_idx = ['1','2','3','4','5','6']
+  x_idx = np.arange(ngpu)
+  
+  p2 = ax1.bar(x_idx, speedup_pCSR_opt.tolist(), width)
+  p3 = ax1.bar(x_idx + width, speedup_pCSR_opt_numa.tolist(), width)
+  ax1.set_xticks(x_idx)
+  ax1.set_xticklabels(xticklabels)
+  ax1.set_ylabel("Speedup")
+  ax1.set_title("CSR")
+  #ax1.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.55, 1), ncol=1)
+  
+  p2 = ax2.bar(x_idx, speedup_pCSC_opt.tolist(), width)
+  p3 = ax2.bar(x_idx + width, speedup_pCSC_opt_numa.tolist(), width)
+  ax2.set_xticks(x_idx)
+  ax2.set_xticklabels(xticklabels)
+  ax2.set_xlabel("Number of GPUs")
+  ax2.set_title("CSC")
+  #ax2.legend((p1[0], p2[0], p3[0]), ('CSC-naive', 'pCSC', 'pCSC-opt'), loc='lower left', bbox_to_anchor= (-0.2, 1.01), ncol=3)
+  
+
+  p2 = ax3.bar(x_idx, speedup_pCOO_opt.tolist(), width)
+  p3 = ax3.bar(x_idx + width, speedup_pCOO_opt_numa.tolist(), width)
+  ax3.set_xticks(x_idx)
+  ax3.set_xticklabels(xticklabels)
+  ax3.set_title("COO")
+
+  ax3.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (1, 1.01), ncol=1)
+  
+  plt.tight_layout()
+  #plt.show()
+  plt.savefig('{}_numa_speedup.pdf'.format(matrix_name))  
 
 if __name__ == "__main__":
    main(sys.argv[1:])
