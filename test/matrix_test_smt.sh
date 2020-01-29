@@ -46,6 +46,6 @@ do
     #NVPROF_CMD=${NVPROF}' '${_PROF_OUTPUT}.prof
     [ -f ${_CSV_OUTPUT}.csv ] && rm ${_CSV_OUTPUT}.csv
     [ -f ${_PROF_OUTPUT}.prof ] && rm ${_PROF_OUTPUT}.prof
-    $JSRUN ${NVPROF_CMD} ./test_spmv f $DATA_PREFIX/$matrix_file $NGPU $NTEST ${_CSV_OUTPUT} ${PART_OPT} ${MERG_OPT}
+    $JSRUN ${NVPROF_CMD} ./test_spmv_smt f $DATA_PREFIX/$matrix_file $NGPU $NTEST ${_CSV_OUTPUT} ${PART_OPT} ${MERG_OPT}
   done
 done
