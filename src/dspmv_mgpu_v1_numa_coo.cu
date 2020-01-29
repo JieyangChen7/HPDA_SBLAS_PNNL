@@ -110,7 +110,7 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
       cudaMallocHost((void**)&(pcooNuma[numa_id].x), pcooNuma[numa_id].n * sizeof(double));
       cudaMallocHost((void**)&(pcooNuma[numa_id].y), pcooNuma[numa_id].m * sizeof(double));
 
-      printf("done pin allocation")
+      printf("done pin allocation"); 
       tmp_time = get_time();
 
       for (int i = pcooNuma[numa_id].startIdx; i <= pcooNuma[numa_id].endIdx; i++) {
