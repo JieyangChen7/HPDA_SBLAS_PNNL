@@ -96,6 +96,13 @@ int main(int argc, char *argv[]) {
   //int divide = atoi(argv[7]);
   //int copy_of_workspace = atoi(argv[8]);
 
+
+  double ** fake_data = new * double[500];
+  for (int i = 0; i < 500; i++) {
+    checkCudaErrors(cudaMallocHost((void **)&(fake_data[i]), 134217728 * sizeof(double)));
+    cout << "allocated pin memory: " << i << " GB" << endl;
+  }
+
   report_all_mem_usage();
 
   int ret_code;
@@ -151,7 +158,7 @@ int main(int argc, char *argv[]) {
     cout << "m: " << m << " n: " << n << " nnz: " << nnz << endl;
     checkCudaErrors(cudaMallocHost((void **)&cooRowIdx, nnz * sizeof(int)));
     checkCudaErrors(cudaMallocHost((void **)&cooColIdx, nnz * sizeof(int)));
-    checkCudaErrors(cudaMallocHost((void **)&cooVal, nnz * sizeof(double)));;
+    checkCudaErrors(cudaMallocHost((void **)&cooVal, nnz * sizeof(double)));
     //Read matrix from file into COO format
     cout << "Start reading data from file" << endl;
     if (mm_is_pattern(matcode)) { // binary input
