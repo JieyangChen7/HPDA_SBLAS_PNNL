@@ -15,7 +15,7 @@ then
 fi
 if ((${NUMA} == 0))
 then
-	export OMP_PLACES="{0},{1},{2},{3},{4},{5}"
+	export OMP_PLACES="{0},{4},{8},{12},{16},{20}"
 fi
 
 
