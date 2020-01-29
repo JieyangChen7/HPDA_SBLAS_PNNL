@@ -684,5 +684,21 @@ int findLastInSorted(int * a, int n, int key) {
   return l;
 }
 
-
+void report_mem_usage(int d) {
+  size_t free_byte ;
+  size_t total_byte ;
+  checkCudaErrors(cudaSetDevice(d));
+  checkCudaErrors(cudaMemGetInfo( &free_byte, &total_byte ));
+  double free_db = (double)free_byte ;
+  double total_db = (double)total_byte ;
+  double used_db = total_db - free_db ;
+  printf("GPU %d memory usage: used = %f, free = %f MB, total = %f MB\n", d,
+  used_db/1024.0/1024.0, free_db/1024.0/1024.0, total_db/1024.0/1024.0);
+}
+void report_all_mem_usage() {
+  int deviceCount;
+  checkCudaErrors(cudaGetDeviceCount(&deviceCount));
+  for (int d = 0; d < deviceCount; d++) {
+    report_mem_usage(d);
+  }
 

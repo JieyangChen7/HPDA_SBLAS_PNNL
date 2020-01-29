@@ -347,5 +347,7 @@ void coo2csc(int m, int n, int nnz,
 
 int findFirstInSorted(int * a, int n, int key);
 int findLastInSorted(int * a, int n, int key);
+void report_mem_usage(int d);
+void report_all_mem_usage();
 
 #endif /* SPMV_KERNEL */
