@@ -165,16 +165,17 @@ spmv_ret spMV_mgpu_baseline(int m, int n, int nnz, double * alpha,
   merg_time = get_time() - curr_time;
 
   for (int d = 0; d < ngpu; d++) {
-    cudaSetDevice(d);
-    cudaFree(dev_csrVal[d]);
-    cudaFree(dev_csrRowPtr[d]);
-    cudaFree(dev_csrColIndex[d]);
-    cudaFree(dev_x[d]);
-    cudaFree(dev_y[d]);
-    cudaEventDestroy(comp_start[d]);
-    cudaEventDestroy(comp_stop[d]);
-    cudaEventDestroy(comm_start[d]);
-    cudaEventDestroy(comm_stop[d]);
+    checkCudaErrors(cudaSetDevice(d));
+    checkCudaErrors(cudaFree(dev_csrVal[d]));
+    checkCudaErrors(cudaFree(dev_csrRowPtr[d]));
+    checkCudaErrors(cudaFree(dev_csrColIndex[d]));
+    checkCudaErrors(cudaFree(dev_x[d]));
+    checkCudaErrors(cudaFree(dev_y[d]));
+    checkCudaErrors(cudaFreeHost(host_csrRowPtr[d]));
+    checkCudaErrors(cudaEventDestroy(comp_start[d]));
+    checkCudaErrors(cudaEventDestroy(comp_stop[d]));
+    checkCudaErrors(cudaEventDestroy(comm_start[d]));
+    checkCudaErrors(cudaEventDestroy(comm_stop[d]));
   }
 
   delete[] dev_csrVal;

@@ -555,6 +555,10 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
 
     //cudaProfilerStop();
 
+    checkCudaErrors(cudaFree(dev_csrVal));
+    checkCudaErrors(cudaFree(dev_csrRowPtr));
+    checkCudaErrors(cudaFree(dev_csrColIdx));
+
     checkCudaErrors(cudaFree(pcooGPU[dev_id].dval));
     checkCudaErrors(cudaFree(pcooGPU[dev_id].drowIdx));
     checkCudaErrors(cudaFree(pcooGPU[dev_id].dcolIdx));

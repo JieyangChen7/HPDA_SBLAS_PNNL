@@ -162,7 +162,7 @@ struct NumaContext {
     for (int i = 0; i < num_numa_nodes; i++) {
       for (int j = 0; j < ngpu; j++) {
         if (numaMapping[j] == i) {
-          representive_threads[i] = j;
+          //representive_threads[i] = j;
           printf("%d ", j);
           representive_threads[j] = true;
           break;
