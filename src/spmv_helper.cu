@@ -701,4 +701,4 @@ void report_all_mem_usage() {
   for (int d = 0; d < deviceCount; d++) {
     report_mem_usage(d);
   }
-
+}
