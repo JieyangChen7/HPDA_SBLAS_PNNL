@@ -97,11 +97,11 @@ int main(int argc, char *argv[]) {
   //int copy_of_workspace = atoi(argv[8]);
 
 
-  double ** fake_data = new double*[500];
-  for (int i = 0; i < 500; i++) {
-    checkCudaErrors(cudaMallocHost((void **)&(fake_data[i]), 134217728 * sizeof(double)));
-    cout << "allocated pin memory: " << i << " GB" << endl;
-  }
+  // double ** fake_data = new double*[500];
+  // for (int i = 0; i < 500; i++) {
+  //   checkCudaErrors(cudaMallocHost((void **)&(fake_data[i]), 134217728 * sizeof(double)));
+  //   cout << "allocated pin memory: " << i << " GB" << endl;
+  // }
 
   report_all_mem_usage();
 
