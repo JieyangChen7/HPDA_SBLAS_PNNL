@@ -5,7 +5,7 @@ job_script_template=matrix_test_smt.sh
 
 for matrix_file in $1
 do
-  for NGPU in 1 2 3 4 5 6
+  for NGPU in 6 #5 4 3 2 1
   do
   	PART_OPT=0
 	  MERG_OPT=0

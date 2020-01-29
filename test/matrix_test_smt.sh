@@ -3,7 +3,7 @@
 ### Begin BSUB Options 
 #BSUB -P csc143 
 #BSUB -J SP_test 
-#BSUB -W 00:20 
+#BSUB -W 01:00 
 #BSUB -nnodes 1 
 #BSUB -alloc_flags "smt1"
 ### End BSUB Options and begin shell commands
