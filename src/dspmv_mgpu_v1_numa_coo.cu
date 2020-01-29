@@ -75,10 +75,13 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
       pcooNuma[numa_id].startRow = cooRowIdx[pcooNuma[numa_id].startIdx];
       pcooNuma[numa_id].endRow = cooRowIdx[pcooNuma[numa_id].endIdx];
 
+      printf("thread %d hw done1 %d\n", dev_id);
+
       pcooNuma[numa_id].m = pcooNuma[numa_id].endRow - pcooNuma[numa_id].startRow + 1;
       pcooNuma[numa_id].n = n;
       pcooNuma[numa_id].nnz  = pcooNuma[numa_id].endIdx - pcooNuma[numa_id].startIdx + 1;
 
+      printf("thread %d hw done2 %d\n", dev_id);
       // Mark imcomplete rows
       // True: imcomplete
       if (pcooNuma[numa_id].startIdx > findFirstInSorted(cooRowIdx, nnz, pcooNuma[numa_id].startRow)) {
@@ -87,6 +90,7 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
       } else {
         pcooNuma[numa_id].startFlag = false;
       }
+      printf("thread %d hw done3 %d\n", dev_id);
 
       // Mark imcomplete rows
       // True: imcomplete
@@ -95,7 +99,7 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
       } else {
         pcooNuma[numa_id].endFlag = false;
       }
-
+      printf("thread %d hw done4 %d\n", dev_id);
     
       printf("numa_id %d, numa_start_idx %d, numa_end_idx %d\n",numa_id, pcooNuma[numa_id].startIdx, pcooNuma[numa_id].endIdx);
       printf("numa_id %d, numa_start_row %d, numa_end_row %d\n",numa_id, pcooNuma[numa_id].startRow, pcooNuma[numa_id].endRow);
