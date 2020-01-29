@@ -5,7 +5,7 @@ job_script_template=matrix_test_dgx1.sh
 
 for matrix_file in $1
 do
-  for NGPU in 8 7 6 5 4 3 2 1
+  for NGPU in 8 #7 6 5 4 3 2 1
   do
   	PART_OPT=0
 	MERG_OPT=0
