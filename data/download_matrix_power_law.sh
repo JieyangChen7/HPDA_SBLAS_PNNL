@@ -28,7 +28,7 @@ download() {
 # download Gleich wb-edu
 
 #download DIMACS10 europe_osm
-#download LAW uk-2005
+download LAW uk-2005
 
 download Fluorem HV15R
 
