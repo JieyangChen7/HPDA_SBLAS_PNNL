@@ -52,6 +52,23 @@ void csr_spmv_cpu(int m, int n, int nnz,
 }
 
 
+void coo_spmv_cpu(int m, int n, int nnz, double * alpha,
+                  double * cooVal, int * cooRowIdx, int * cooColIdx,
+                   double * x, double * beta, double * y) { 
+  double * sum = new double[m];
+  for(int i = 0; i < m; i++) {
+    sum[i] = 0.0;
+  }
+  for (int i = 0; i < nnz; i++) {
+    sum[cooRowIdx[i]] += cooVal[i] * x[cooColIdx[i]];
+  }
+  for(int i = 0; i < m; i++) {
+    y[i] = (*alpha) * sum[i] + (*beta) * y[i]; 
+  }
+  delete [] sum;
+}
+
+
 int main(int argc, char *argv[]) {
 
 
@@ -237,7 +254,7 @@ int main(int argc, char *argv[]) {
   // Convert COO to CSR
   
 
-  long long matrix_data_space = nnz * sizeof(double) + nnz * sizeof(int) + (m+1) * sizeof(int);
+  long long matrix_data_space = nnz * sizeof(double) + nnz * sizeof(int) + (nnz) * sizeof(int);
 
   double matrix_size_in_gb = (double)matrix_data_space / 1e9;
   cout << "Matrix space size: " << matrix_size_in_gb << " GB." << endl;
@@ -250,7 +267,7 @@ int main(int argc, char *argv[]) {
   //            cooVal, cooRowIdx, cooColIdx,
   //            csrVal, csrRowPtr, csrColIdx,
   //            cscVal, cscColPtr, cscRowIdx);
-  printf("Converting COO to CSR and CSC\n");
+  // printf("Converting COO to CSR and CSC\n");
 
   
 
@@ -388,9 +405,15 @@ int main(int argc, char *argv[]) {
   
   cout << "Compute CPU version" << endl;
   for (int i = 0; i < m; i++) y_verify[i] = 0.0;
-  csr_spmv_cpu(m, n, nnz,
+  // csr_spmv_cpu(m, n, nnz,
+  //              &ALPHA,
+  //              csrVal, csrRowPtr, csrColIdx,
+  //              x,
+  //              &BETA,
+  //              y_verify);
+  coo_spmv_cpu(m, n, nnz,
                &ALPHA,
-               csrVal, csrRowPtr, csrColIdx,
+               cooVal, cooRowIdx, cooColIdx, 
                x,
                &BETA,
                y_verify);
