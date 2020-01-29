@@ -104,11 +104,11 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
       numa_part_time += get_time() - tmp_time;
 
       // preparing data on host 
-      cudaMallocHost((void**)&(pcooNuma[numa_id].val),    pcooNuma[numa_id].nnz * sizeof(double));
-      cudaMallocHost((void**)&(pcooNuma[numa_id].rowIdx), pcooNuma[numa_id].nnz * sizeof(int));
-      cudaMallocHost((void**)&(pcooNuma[numa_id].colIdx), pcooNuma[numa_id].nnz * sizeof(int));
-      cudaMallocHost((void**)&(pcooNuma[numa_id].x), pcooNuma[numa_id].n * sizeof(double));
-      cudaMallocHost((void**)&(pcooNuma[numa_id].y), pcooNuma[numa_id].m * sizeof(double));
+      // cudaMallocHost((void**)&(pcooNuma[numa_id].val),    pcooNuma[numa_id].nnz * sizeof(double));
+      // cudaMallocHost((void**)&(pcooNuma[numa_id].rowIdx), pcooNuma[numa_id].nnz * sizeof(int));
+      // cudaMallocHost((void**)&(pcooNuma[numa_id].colIdx), pcooNuma[numa_id].nnz * sizeof(int));
+      // cudaMallocHost((void**)&(pcooNuma[numa_id].x), pcooNuma[numa_id].n * sizeof(double));
+      // cudaMallocHost((void**)&(pcooNuma[numa_id].y), pcooNuma[numa_id].m * sizeof(double));
 
       printf("done pin allocation\n"); 
       tmp_time = get_time();
