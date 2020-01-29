@@ -24,7 +24,7 @@ export OMP_PROC_BIND=close
 JSRUN='jsrun -n 1 -a 1 -c 42 -g 6 -r 1 -l CPU-CPU -d packed -b packed:42 --smpiargs="-disable_gpu_hooks"'
 
 
-DATA_PREFIX=../data
+DATA_PREFIX=/gpfs/alpine/scratch/jieyang/csc331/spmv_matrix
 RESULT_PREFIX=/gpfs/alpine/scratch/jieyang/csc331/spmv_results
 
 #DATA_PREFIX=./

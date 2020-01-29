@@ -22,13 +22,18 @@ download() {
 # download Belcastro mouse_gene
 
 # download LAW hollywood-2009
-# download SNAP com-Orkut
+
 # download SNAP cit-Patents
 # download SNAP com-LiveJournal
 # download Gleich wb-edu
 
 #download DIMACS10 europe_osm
-download LAW uk-2005
 
-download Fluorem HV15R
-
+# large
+#download SNAP com-Orkut
+#download GAP GAP-twitter
+#download LAW uk-2005
+#download Fluorem HV15R
+download SNAP twitter7
+download GAP GAP-web
+download GAP GAP-road

@@ -24,7 +24,7 @@ export OMP_PROC_BIND=close
 #JSRUN='jsrun -n 1 -a 1 -c 42 -g 6 -r 1 -l CPU-CPU -d packed -b packed:42 --smpiargs="-disable_gpu_hooks"'
 
 
-DATA_PREFIX=../data
+DATA_PREFIX=/raid/data/SuiteSparse/jieyang
 RESULT_PREFIX=.
 
 #DATA_PREFIX=./
