@@ -235,12 +235,7 @@ int main(int argc, char *argv[]) {
   
 
   // Convert COO to CSR
-  double * csrVal;
-  int * csrRowPtr;
-  int * csrColIdx;
-  checkCudaErrors(cudaMallocHost((void **)&csrVal, nnz * sizeof(double)));
-  checkCudaErrors(cudaMallocHost((void **)&csrRowPtr, (m+1) * sizeof(int)));
-  checkCudaErrors(cudaMallocHost((void **)&csrColIdx, nnz * sizeof(int)));
+  
 
   long long matrix_data_space = nnz * sizeof(double) + nnz * sizeof(int) + (m+1) * sizeof(int);
 
@@ -249,12 +244,7 @@ int main(int argc, char *argv[]) {
 
   
   // CSR to CSC
-  double * cscVal;
-  int * cscColPtr;
-  int * cscRowIdx;
-  checkCudaErrors(cudaMallocHost((void **)&cscVal, nnz * sizeof(double)));
-  checkCudaErrors(cudaMallocHost((void **)&cscColPtr, (n+1) * sizeof(int)));
-  checkCudaErrors(cudaMallocHost((void **)&cscRowIdx, nnz * sizeof(int)));
+  
 
   // csr2csrNcsc(m, n, nnz,
   //            cooVal, cooRowIdx, cooColIdx,
@@ -262,13 +252,9 @@ int main(int argc, char *argv[]) {
   //            cscVal, cscColPtr, cscRowIdx);
   printf("Converting COO to CSR and CSC\n");
 
-  coo2csr(m, n, nnz,
-          cooVal, cooRowIdx, cooColIdx,
-          csrVal, csrRowPtr, csrColIdx);
+  
 
-  coo2csc(m, n, nnz,
-          cooVal, cooRowIdx, cooColIdx,
-          cscVal, cscColPtr, cscRowIdx);
+  
 
   sortCOORow(m, n, nnz, cooVal, cooRowIdx, cooColIdx);
 
@@ -304,7 +290,7 @@ int main(int argc, char *argv[]) {
   // for (int i = 1; i <= n; i++) {
   //   cscColPtr[i] = cscColPtr[i - 1] + counter2[i - 1];
   // }
-  
+
   // cscVal = cooVal;
   // cscRowIdx = cooRowIdx;
 
@@ -438,6 +424,7 @@ int main(int argc, char *argv[]) {
   struct spmv_ret ret2;
   ret = ret2;
   int numa_mapping[8] = {0,0,0,0,1,1,1,1};
+  double E = 1e-3;
 
   // int part_opt = 0;
   // int merg_opt = 1;
@@ -446,51 +433,10 @@ int main(int argc, char *argv[]) {
 
   for (int i = 0; i < repeat_test; i++) {
     for (int i = 0; i < m; i++) {
-      y_baseline_csr[i] = 0.0;
-      y_static_csr[i] = 0.0;
-      y_dynamic_csr[i] = 0.0;
-
-      y_baseline_csc[i] = 0.0;
-      y_static_csc[i] = 0.0;
-      y_dynamic_csc[i] = 0.0;
-
       y_baseline_coo[i] = 0.0;
       y_static_coo[i] = 0.0;
       y_dynamic_coo[i] = 0.0;
     }
-    ret = spMV_mgpu_baseline(m, n, nnz, &ALPHA,
-                            csrVal, csrRowPtr, csrColIdx, 
-                            x, &BETA,
-                            y_baseline_csr,
-                            ngpu);
-    ret_baseline_csr.add(ret);
-
-    ret = spMV_mgpu_v1_numa(m, n, nnz, &ALPHA,
-                            csrVal, csrRowPtr, csrColIdx,
-                            x, &BETA,
-                            y_static_csr,
-                            ngpu,
-                            1,
-                            numa_mapping,
-                            part_opt, merg_opt); //kernel 1
-    ret_static_csr.add(ret);
-
-    ret = spMV_mgpu_baseline_csc(m, n, nnz, &ALPHA,
-                                cscVal, cscColPtr, cscRowIdx,
-                                x, &BETA,
-                                y_baseline_csc,
-                                ngpu);
-    ret_baseline_csc.add(ret);
-
-    ret = spMV_mgpu_v1_numa_csc(m, n, nnz, &ALPHA,
-                                cscVal, cscColPtr, cscRowIdx,
-                                x, &BETA,
-                                y_static_csc,
-                                ngpu,
-                                1,
-                                numa_mapping,
-                                part_opt, merg_opt); //kernel 1
-    ret_static_csc.add(ret);
 
     ret = spMV_mgpu_baseline_coo(m, n, nnz, &ALPHA,
                                 cooVal, cooRowIdx, cooColIdx, 
@@ -509,43 +455,10 @@ int main(int argc, char *argv[]) {
                                 part_opt, merg_opt); //kernel 1
     ret_static_coo.add(ret);
 
-    
-
-    bool correct_baseline_csr = true;
-    bool correct_static_csr = true;
-    bool correct_dynamic_csr = true;
-
-    bool correct_baseline_csc = true;
-    bool correct_static_csc = true;
-    bool correct_dynamic_csc = true;
-
     bool correct_baseline_coo = true;
     bool correct_static_coo = true;
     bool correct_dynamic_coo = true;
-    
-
-    double E = 1e-3;
     for(int i = 0; i < m; i++) {
-      if (abs(y_verify[i] - y_baseline_csr[i]) > E) {
-        correct_baseline_csr = false;
-      }
-      if (abs(y_verify[i] - y_static_csr[i]) > E) {
-        correct_static_csr = false;
-      }
-      if (abs(y_verify[i] - y_dynamic_csr[i]) > E) {
-        correct_dynamic_csr = false;
-      }
-
-      if (abs(y_verify[i] - y_baseline_csc[i]) > E) {
-        correct_baseline_csc = false;
-      }
-      if (abs(y_verify[i] - y_static_csc[i]) > E) {
-        correct_static_csc = false;
-      }
-      if (abs(y_verify[i] - y_dynamic_csc[i]) > E) {
-        correct_dynamic_csc = false;
-      }
-
       if (abs(y_verify[i] - y_baseline_coo[i]) > E) {
         correct_baseline_coo = false;
       }
@@ -556,47 +469,151 @@ int main(int argc, char *argv[]) {
         correct_dynamic_coo = false;
       }
     }
-
-    if (correct_baseline_csr) pass_baseline_csr++;
-    if (correct_static_csr) pass_static_csr++;
-    if (correct_dynamic_csr) pass_dynamic_csr++;
-
-    if (correct_baseline_csc) pass_baseline_csc++;
-    if (correct_static_csc) pass_static_csc++;
-    if (correct_dynamic_csc) pass_dynamic_csc++;
-
     if (correct_baseline_coo) pass_baseline_coo++;
     if (correct_static_coo) pass_static_coo++;
     if (correct_dynamic_coo) pass_dynamic_coo++;
-    
-
-    ret_baseline_csr.avg(repeat_test);
-    ret_static_csr.avg(repeat_test);
-    ret_dynamic_csr.avg(repeat_test);
-
-    ret_baseline_csc.avg(repeat_test);
-    ret_static_csc.avg(repeat_test);
-    ret_dynamic_csc.avg(repeat_test);
-
-    ret_baseline_coo.avg(repeat_test);
-    ret_static_coo.avg(repeat_test);
-    ret_dynamic_coo.avg(repeat_test);
   }
+
+
+  double * csrVal;
+  int * csrRowPtr;
+  int * csrColIdx;
+  checkCudaErrors(cudaMallocHost((void **)&csrVal, nnz * sizeof(double)));
+  checkCudaErrors(cudaMallocHost((void **)&csrRowPtr, (m+1) * sizeof(int)));
+  checkCudaErrors(cudaMallocHost((void **)&csrColIdx, nnz * sizeof(int)));
+
+  coo2csr(m, n, nnz,
+          cooVal, cooRowIdx, cooColIdx,
+          csrVal, csrRowPtr, csrColIdx);
+
+  for (int i = 0; i < repeat_test; i++) {
+    for (int i = 0; i < m; i++) {
+      y_baseline_csr[i] = 0.0;
+      y_static_csr[i] = 0.0;
+      y_dynamic_csr[i] = 0.0;
+    }
+    ret = spMV_mgpu_baseline(m, n, nnz, &ALPHA,
+                            csrVal, csrRowPtr, csrColIdx, 
+                            x, &BETA,
+                            y_baseline_csr,
+                            ngpu);
+    ret_baseline_csr.add(ret);
+
+    ret = spMV_mgpu_v1_numa(m, n, nnz, &ALPHA,
+                            csrVal, csrRowPtr, csrColIdx,
+                            x, &BETA,
+                            y_static_csr,
+                            ngpu,
+                            1,
+                            numa_mapping,
+                            part_opt, merg_opt); //kernel 1
+    ret_static_csr.add(ret);
+
+    bool correct_baseline_csr = true;
+    bool correct_static_csr = true;
+    bool correct_dynamic_csr = true;
+    for(int i = 0; i < m; i++) {
+      if (abs(y_verify[i] - y_baseline_csr[i]) > E) {
+        correct_baseline_csr = false;
+      }
+      if (abs(y_verify[i] - y_static_csr[i]) > E) {
+        correct_static_csr = false;
+      }
+      if (abs(y_verify[i] - y_dynamic_csr[i]) > E) {
+        correct_dynamic_csr = false;
+      }
+    }
+    if (correct_baseline_csr) pass_baseline_csr++;
+    if (correct_static_csr) pass_static_csr++;
+    if (correct_dynamic_csr) pass_dynamic_csr++;
+  }
+  checkCudaErrors(cudaFreeHost(csrVal));
+  checkCudaErrors(cudaFreeHost(csrRowPtr));
+  checkCudaErrors(cudaFreeHost(csrColIdx));
+
+  double * cscVal;
+  int * cscColPtr;
+  int * cscRowIdx;
+  checkCudaErrors(cudaMallocHost((void **)&cscVal, nnz * sizeof(double)));
+  checkCudaErrors(cudaMallocHost((void **)&cscColPtr, (n+1) * sizeof(int)));
+  checkCudaErrors(cudaMallocHost((void **)&cscRowIdx, nnz * sizeof(int)));
+
+  coo2csc(m, n, nnz,
+          cooVal, cooRowIdx, cooColIdx,
+          cscVal, cscColPtr, cscRowIdx);
+
+  for (int i = 0; i < repeat_test; i++) {
+    for (int i = 0; i < m; i++) {
+      y_baseline_csc[i] = 0.0;
+      y_static_csc[i] = 0.0;
+      y_dynamic_csc[i] = 0.0;
+    }
+
+    ret = spMV_mgpu_baseline_csc(m, n, nnz, &ALPHA,
+                                cscVal, cscColPtr, cscRowIdx,
+                                x, &BETA,
+                                y_baseline_csc,
+                                ngpu);
+    ret_baseline_csc.add(ret);
+    ret = spMV_mgpu_v1_numa_csc(m, n, nnz, &ALPHA,
+                                cscVal, cscColPtr, cscRowIdx,
+                                x, &BETA,
+                                y_static_csc,
+                                ngpu,
+                                1,
+                                numa_mapping,
+                                part_opt, merg_opt); //kernel 1
+    ret_static_csc.add(ret);
+    bool correct_baseline_csc = true;
+    bool correct_static_csc = true;
+    bool correct_dynamic_csc = true;  
+    for(int i = 0; i < m; i++) {
+      if (abs(y_verify[i] - y_baseline_csc[i]) > E) {
+        correct_baseline_csc = false;
+      }
+      if (abs(y_verify[i] - y_static_csc[i]) > E) {
+        correct_static_csc = false;
+      }
+      if (abs(y_verify[i] - y_dynamic_csc[i]) > E) {
+        correct_dynamic_csc = false;
+      }
+    }
+    if (correct_baseline_csc) pass_baseline_csc++;
+    if (correct_static_csc) pass_static_csc++;
+    if (correct_dynamic_csc) pass_dynamic_csc++;
+  }
+  checkCudaErrors(cudaFreeHost(cscVal));
+  checkCudaErrors(cudaFreeHost(cscColPtr));
+  checkCudaErrors(cudaFreeHost(cscRowIdx));
+
+  checkCudaErrors(cudaFreeHost(cooRowIdx));
+  checkCudaErrors(cudaFreeHost(cooColIdx));
+  checkCudaErrors(cudaFreeHost(cooVal));
+
+  ret_baseline_csr.avg(repeat_test);
+  ret_static_csr.avg(repeat_test);
+  ret_dynamic_csr.avg(repeat_test);
+
+  ret_baseline_csc.avg(repeat_test);
+  ret_static_csc.avg(repeat_test);
+  ret_dynamic_csc.avg(repeat_test);
+
+  ret_baseline_coo.avg(repeat_test);
+  ret_static_coo.avg(repeat_test);
+  ret_dynamic_coo.avg(repeat_test);
+
 
   ret_baseline_csr.print();
   ret_static_csr.print();
   ret_dynamic_csr.print();
   
-
   ret_baseline_csc.print();
   ret_static_csc.print();
   ret_dynamic_csc.print();
   
-
   ret_baseline_coo.print();
   ret_static_coo.print();
   ret_dynamic_coo.print();
-  
 
   printf("Check: %d/%d\n", pass_baseline_csr, repeat_test);
   printf("Check: %d/%d\n", pass_static_csr, repeat_test);
@@ -619,16 +636,6 @@ int main(int argc, char *argv[]) {
   myfile << ret_baseline_coo.to_string();
   myfile << ret_static_coo.to_string();
   myfile << ret_dynamic_coo.to_string();
-
-  checkCudaErrors(cudaFreeHost(cooRowIdx));
-  checkCudaErrors(cudaFreeHost(cooColIdx));
-  checkCudaErrors(cudaFreeHost(cooVal));
-  checkCudaErrors(cudaFreeHost(csrVal));
-  checkCudaErrors(cudaFreeHost(csrRowPtr));
-  checkCudaErrors(cudaFreeHost(csrColIdx));
-  checkCudaErrors(cudaFreeHost(cscVal));
-  checkCudaErrors(cudaFreeHost(cscColPtr));
-  checkCudaErrors(cudaFreeHost(cscRowIdx));
 
   myfile.close();
 }
