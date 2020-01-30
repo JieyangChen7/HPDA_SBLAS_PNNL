@@ -426,11 +426,13 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     double tmp_time = get_time();
 
     // Calculate the start and end index
-    int tmp1 = local_dev_id * pcsrNuma[numa_id].nnz;
-    int tmp2 = (local_dev_id + 1) * pcsrNuma[numa_id].nnz;
+    // int tmp1 = local_dev_id * pcsrNuma[numa_id].nnz;
+    // int tmp2 = (local_dev_id + 1) * pcsrNuma[numa_id].nnz;
 
-    pcsrGPU[dev_id].startIdx = floor((double)tmp1 / numaContext.numGPUs[numa_id]);
-    pcsrGPU[dev_id].endIdx   = floor((double)tmp2 / numaContext.numGPUs[numa_id]) - 1;
+    double tmp = (double)pcsrNuma[numa_id].nnz / numaContext.numGPUs[numa_id];
+
+    pcsrGPU[dev_id].startIdx = floor(local_dev_id * tmp);
+    pcsrGPU[dev_id].endIdx   = floor((local_dev_id + 1) * tmp) - 1;
 
 
     // int tmp1 = local_dev_id * numa_nnz[numa_id];

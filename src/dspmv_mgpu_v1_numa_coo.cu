@@ -76,7 +76,9 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
 
 
       pcooNuma[numa_id].startIdx = floor(numaContext.workload[numa_id] * tmp);
+      // printf("thread %d hw startIdx %d\n", dev_id, pcooNuma[numa_id].startIdx);
       pcooNuma[numa_id].endIdx = floor(numaContext.workload[numa_id + 1] * tmp) - 1;
+      // printf("thread %d hw endIdx %d\n", dev_id, pcooNuma[numa_id].endIdx);
       pcooNuma[numa_id].startRow = cooRowIdx[pcooNuma[numa_id].startIdx];
       // printf("thread %d hw startRow %d\n", dev_id, pcooNuma[numa_id].startRow);
       pcooNuma[numa_id].endRow = cooRowIdx[pcooNuma[numa_id].endIdx];
@@ -325,88 +327,88 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
 
     
 
-    // original partition*******************************************
-    int tmp1 = dev_id * nnz;
-    int tmp2 = (dev_id + 1) * nnz;
+  //   // original partition*******************************************
+  //   int tmp1 = dev_id * nnz;
+  //   int tmp2 = (dev_id + 1) * nnz;
 
-    start_idx = floor((double)tmp1 / ngpu);
-    end_idx   = floor((double)tmp2 / ngpu) - 1;
+  //   start_idx = floor((double)tmp1 / ngpu);
+  //   end_idx   = floor((double)tmp2 / ngpu) - 1;
 
-    // Calculate the start and end row
-    start_row = get_row_from_index(m, csrRowPtr, start_idx);
-    // Mark imcomplete rows
-    // True: imcomplete
-    if (start_idx > csrRowPtr[start_row]) {
-      start_flag = true;
-      y2 = y[start_row];
-      org_y[dev_id] = y[start_row]; //use dev_id for global merge
-      start_rows[dev_id] = start_row;
-    } else {
-      start_flag = false;
-    }
-    start_flags[dev_id] = start_flag;
+  //   // Calculate the start and end row
+  //   start_row = get_row_from_index(m, csrRowPtr, start_idx);
+  //   // Mark imcomplete rows
+  //   // True: imcomplete
+  //   if (start_idx > csrRowPtr[start_row]) {
+  //     start_flag = true;
+  //     y2 = y[start_row];
+  //     org_y[dev_id] = y[start_row]; //use dev_id for global merge
+  //     start_rows[dev_id] = start_row;
+  //   } else {
+  //     start_flag = false;
+  //   }
+  //   start_flags[dev_id] = start_flag;
 
-    end_row = get_row_from_index(m, csrRowPtr, end_idx);
-    // Mark imcomplete rows
-    // True: imcomplete
-    if (end_idx < csrRowPtr[end_row + 1] - 1)  {
-      end_flag = true;
-    } else {
-      end_flag = false;
-    }
+  //   end_row = get_row_from_index(m, csrRowPtr, end_idx);
+  //   // Mark imcomplete rows
+  //   // True: imcomplete
+  //   if (end_idx < csrRowPtr[end_row + 1] - 1)  {
+  //     end_flag = true;
+  //   } else {
+  //     end_flag = false;
+  //   }
     
-    // Cacluclate dimensions
-    dev_m = end_row - start_row + 1;
-    dev_n = n;
-    dev_nnz   = (int)(end_idx - start_idx + 1);
+  //   // Cacluclate dimensions
+  //   dev_m = end_row - start_row + 1;
+  //   dev_n = n;
+  //   dev_nnz   = (int)(end_idx - start_idx + 1);
 
 
     
 
-    part_time = get_time() - tmp_time;  
+  //   part_time = get_time() - tmp_time;  
 
-    printf("omp thread %d, dev_m %d, dev_n %d, dev_nnz %d, start_idx %d, end_idx %d, start_row %d, end_row %d\n", dev_id, dev_m, dev_n, dev_nnz, start_idx, end_idx, start_row, end_row);
+  //   printf("omp thread %d, dev_m %d, dev_n %d, dev_nnz %d, start_idx %d, end_idx %d, start_row %d, end_row %d\n", dev_id, dev_m, dev_n, dev_nnz, start_idx, end_idx, start_row, end_row);
 
-    // preparing data on host 
-    cudaMallocHost((void**)&host_csrVal, dev_nnz * sizeof(double));
-    cudaMallocHost((void**)&host_csrRowPtr, (dev_m + 1)*sizeof(int));
-    cudaMallocHost((void**)&host_csrColIndex, dev_nnz * sizeof(int));
-    cudaMallocHost((void**)&host_x, dev_n * sizeof(double));
-    cudaMallocHost((void**)&host_y, dev_m * sizeof(double));
+  //   // preparing data on host 
+  //   cudaMallocHost((void**)&host_csrVal, dev_nnz * sizeof(double));
+  //   cudaMallocHost((void**)&host_csrRowPtr, (dev_m + 1)*sizeof(int));
+  //   cudaMallocHost((void**)&host_csrColIndex, dev_nnz * sizeof(int));
+  //   cudaMallocHost((void**)&host_x, dev_n * sizeof(double));
+  //   cudaMallocHost((void**)&host_y, dev_m * sizeof(double));
 
-    tmp_time = get_time();
-    for (int i = start_idx; i <= end_idx; i++) {
-      host_csrVal[i - start_idx] = csrVal[i];
-    }
-    //host_csrVal = &numa_csrVal[numa_id][start_idx];
+  //   tmp_time = get_time();
+  //   for (int i = start_idx; i <= end_idx; i++) {
+  //     host_csrVal[i - start_idx] = csrVal[i];
+  //   }
+  //   //host_csrVal = &numa_csrVal[numa_id][start_idx];
 
-    host_csrRowPtr[0] = 0;
-    host_csrRowPtr[dev_m] = dev_nnz;
-    for (int j = 1; j < dev_m; j++) {
-      host_csrRowPtr[j] = (int)(csrRowPtr[start_row + j] - start_idx);
-    }
-    //host_csrRowPtr = &numa_csrRowPtr[numa_id][start_row];
+  //   host_csrRowPtr[0] = 0;
+  //   host_csrRowPtr[dev_m] = dev_nnz;
+  //   for (int j = 1; j < dev_m; j++) {
+  //     host_csrRowPtr[j] = (int)(csrRowPtr[start_row + j] - start_idx);
+  //   }
+  //   //host_csrRowPtr = &numa_csrRowPtr[numa_id][start_row];
 
-    printf("dev %d: %d %d %d %d %d\n", host_csrRowPtr[0],host_csrRowPtr[1],host_csrRowPtr[2],host_csrRowPtr[3],host_csrRowPtr[4]);
+  //   printf("dev %d: %d %d %d %d %d\n", host_csrRowPtr[0],host_csrRowPtr[1],host_csrRowPtr[2],host_csrRowPtr[3],host_csrRowPtr[4]);
 
-    for (int i = start_idx; i <= end_idx; i++) {
-      host_csrColIndex[i - start_idx] = csrColIndex[i];
-    }
-    //host_csrColIndex = &numa_csrColIndex[numa_id][start_idx];
+  //   for (int i = start_idx; i <= end_idx; i++) {
+  //     host_csrColIndex[i - start_idx] = csrColIndex[i];
+  //   }
+  //   //host_csrColIndex = &numa_csrColIndex[numa_id][start_idx];
 
-    for (int i = 0; i < dev_n; i++) {
-      host_x[i] = x[i];
-    }
-    //host_x = numa_x[numa_id];
+  //   for (int i = 0; i < dev_n; i++) {
+  //     host_x[i] = x[i];
+  //   }
+  //   //host_x = numa_x[numa_id];
 
-    for (int i = 0; i < dev_m; i++) {
-      host_y[i] = y[start_row + i];
-    }
-    //host_y = &numa_y[numa_id][start_row];
+  //   for (int i = 0; i < dev_m; i++) {
+  //     host_y[i] = y[start_row + i];
+  //   }
+  //   //host_y = &numa_y[numa_id][start_row];
 
-    part_time += get_time() - tmp_time;
+  //   part_time += get_time() - tmp_time;
 
-    // end of original partition*********************************
+  //   // end of original partition*********************************
 
     
 

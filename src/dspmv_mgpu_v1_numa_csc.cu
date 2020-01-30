@@ -217,11 +217,11 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
     double tmp_time = get_time();
 
     // Calculate the start and end index
-    long long tmp1 = local_dev_id * pcscNuma[numa_id].nnz;
-    long long tmp2 = (local_dev_id + 1) * pcscNuma[numa_id].nnz;
+    double tmp = (double)pcscNuma[numa_id].nnz / numaContext.numGPUs[numa_id];
 
-    pcscGPU[dev_id].startIdx = floor((double)tmp1 / numaContext.numGPUs[numa_id]);
-    pcscGPU[dev_id].endIdx   = floor((double)tmp2 / numaContext.numGPUs[numa_id]) - 1;
+    pcscGPU[dev_id].startIdx = floor(local_dev_id * tmp);
+    pcscGPU[dev_id].endIdx   = floor((local_dev_id + 1) * tmp) - 1;
+
   
     // Calculate the start and end col
     pcscGPU[dev_id].startCol = get_row_from_index(pcscNuma[numa_id].n, pcscNuma[numa_id].colPtr, pcscGPU[dev_id].startIdx);
