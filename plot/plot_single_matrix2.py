@@ -178,8 +178,8 @@ def main(argv):
     comm_pCSC_numa = np.append(comm_pCSC_numa, df2.at[4, 'H2D'])
 
     comm_COO_baseline = np.append(comm_COO_baseline, df0.at[6, 'H2D'])
-    comm_pCOO = np.append(comm_pCOO, df0.at[7, 'Computation'])
-    comm_pCOO_numa = np.append(comm_pCOO_numa, df2.at[7, 'Computation'])
+    comm_pCOO = np.append(comm_pCOO, df0.at[7, 'H2D'])
+    comm_pCOO_numa = np.append(comm_pCOO_numa, df2.at[7, 'H2D'])
 
 
     merg_CSR_baseline = np.append(merg_CSR_baseline, df0.at[0, 'Result Merging'])
@@ -193,6 +193,10 @@ def main(argv):
     merg_COO_baseline = np.append(merg_COO_baseline, df0.at[6, 'Result Merging'])
     merg_pCOO = np.append(merg_pCOO, df0.at[7, 'Result Merging'])
     merg_pCOO_opt = np.append(merg_pCOO_opt, df1.at[7, 'Result Merging'])
+
+  print comm_pCOO
+  print comm_COO_baseline
+  print comm_pCOO_numa
 
   total_CSR_baseline = part_CSR_baseline + comp_CSR_baseline + comm_CSR_baseline + merg_CSR_baseline
   total_pCSR = part_pCSR + comp_pCSR + comm_pCSR + merg_pCSR
