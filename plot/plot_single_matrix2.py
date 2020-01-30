@@ -32,10 +32,13 @@ def main(argv):
   matrix_name = matrix_file[0:-4]
 
   ngpu = 0
+  gpu_list = []
   if (platform == 'smt'):
     ngpu = 6
+    gpu_list = [1,2,3,4,5,6]
   elif (platform == 'dgx1'):
     ngpu = 8
+    gpu_list = [1,2,3,4,5,6,7,8]
 
   print("input matrix: " + matrix_name)
   print("platform: " + platform)
@@ -122,7 +125,7 @@ def main(argv):
 
 
 
-  for ngpu in range(1,ngpu+1):
+  for ngpu in gpu_list:
     part_opt=0
     merg_opt=0
     numa=0
@@ -216,40 +219,40 @@ def main(argv):
   speedup_pCSR_opt_numa = calc_speedup(total_pCSR_opt_numa, total_CSR_baseline[0])
 
 
-  speedup_CSC_baseline = calc_speedup(total_CSC_baseline, total_CSC_baseline[0])
-  speedup_pCSC = calc_speedup(total_pCSC, total_CSC_baseline[0])
-  speedup_pCSC_opt = calc_speedup(total_pCSC_opt, total_CSC_baseline[0])
+  speedup_CSC_baseline = calc_speedup(total_CSC_baseline, total_CSR_baseline[0])
+  speedup_pCSC = calc_speedup(total_pCSC, total_CSR_baseline[0])
+  speedup_pCSC_opt = calc_speedup(total_pCSC_opt, total_CSR_baseline[0])
 
-  speedup_pCSC_opt_numa = calc_speedup(total_pCSC_opt_numa, total_CSC_baseline[0])
+  speedup_pCSC_opt_numa = calc_speedup(total_pCSC_opt_numa, total_CSR_baseline[0])
 
-  speedup_COO_baseline = calc_speedup(total_COO_baseline, total_COO_baseline[0])
-  speedup_pCOO = calc_speedup(total_pCOO, total_COO_baseline[0])
-  speedup_pCOO_opt = calc_speedup(total_pCOO_opt, total_COO_baseline[0])
+  speedup_COO_baseline = calc_speedup(total_COO_baseline, total_CSR_baseline[0])
+  speedup_pCOO = calc_speedup(total_pCOO, total_CSR_baseline[0])
+  speedup_pCOO_opt = calc_speedup(total_pCOO_opt, total_CSR_baseline[0])
 
-  speedup_pCOO_opt_numa = calc_speedup(total_pCOO_opt_numa, total_COO_baseline[0])
+  speedup_pCOO_opt_numa = calc_speedup(total_pCOO_opt_numa, total_CSR_baseline[0])
 
 ############# Constant #############
 
   xticklabels = ''
 
   if (ngpu == 6):
-    xticklabels = ('1', '2', '3', '4', '5', '6')
+    xticklabels = gpu_list
   elif (ngpu == 8):
-    xticklabels = ('1', '2', '3', '4', '5', '6', '7', '8')
+    xticklabels = gpu_list
 
-  x_idx = []
-  for i in range(ngpu):
-    x_idx.append(str(i+1))
+  # x_idx = []
+  # for i in range(ngpu):
+  #   x_idx.append(str(i+1))
 
 ############# Parition Time ###############
   fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
   width = 0.25 
   #x_idx = ['1','2','3','4','5','6']
-  x_idx = np.arange(ngpu)
+  x_idx = np.array(gpu_list)
   
-  p1 = ax1.bar(x_idx - width, part_CSR_baseline.tolist(), width)
-  p2 = ax1.bar(x_idx, part_pCSR.tolist(), width)
-  p3 = ax1.bar(x_idx + width, part_pCSR_opt.tolist(), width)
+  p1 = ax1.bar(x_idx - width, part_CSR_baseline, width)
+  p2 = ax1.bar(x_idx, part_pCSR, width)
+  p3 = ax1.bar(x_idx + width, part_pCSR_opt, width)
   ax1.set_xticks(x_idx)
   ax1.set_xticklabels(xticklabels)
   ax1.set_ylabel("Time (s)")
@@ -286,7 +289,7 @@ def main(argv):
   fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
   width = 0.25 
   #x_idx = ['1','2','3','4','5','6']
-  x_idx = np.arange(ngpu)
+  #x_idx = np.arange(ngpu)
   
   p1 = ax1.bar(x_idx - width, part_CSR_baseline/(part_CSR_baseline + comp_CSR_baseline + comm_CSR_baseline).tolist(), width)
   p2 = ax1.bar(x_idx, part_pCSR/(part_pCSR + comp_pCSR + comm_pCSR).tolist(), width)
@@ -325,7 +328,7 @@ def main(argv):
   fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
   width = 0.25 
   #x_idx = ['1','2','3','4','5','6']
-  x_idx = np.arange(ngpu)
+  #x_idx = np.arange(ngpu)
   
   p1 = ax1.bar(x_idx - width, merg_CSR_baseline.tolist(), width)
   p2 = ax1.bar(x_idx, merg_pCSR.tolist(), width)
@@ -366,7 +369,7 @@ def main(argv):
   fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
   width = 0.25 
   #x_idx = ['1','2','3','4','5','6']
-  x_idx = np.arange(ngpu)
+  #x_idx = np.arange(ngpu)
   
   p1 = ax1.bar(x_idx - width, merg_CSR_baseline/(merg_CSR_baseline + comp_CSR_baseline + comm_CSR_baseline).tolist(), width)
   p2 = ax1.bar(x_idx, part_pCSR/(merg_pCSR + comp_pCSR + comm_pCSR).tolist(), width)
@@ -405,7 +408,7 @@ def main(argv):
   fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
   width = 0.25 
   #x_idx = ['1','2','3','4','5','6']
-  x_idx = np.arange(ngpu)
+  #x_idx = np.arange(ngpu)
   
   p1 = ax1.bar(x_idx - width, comm_CSR_baseline.tolist(), width)
   p2 = ax1.bar(x_idx, comm_pCSR.tolist(), width)
@@ -440,7 +443,7 @@ def main(argv):
   fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
   width = 0.25 
   #x_idx = ['1','2','3','4','5','6']
-  x_idx = np.arange(ngpu)
+  #x_idx = np.arange(ngpu)
   
   p1 = ax1.bar(x_idx - width, total_CSR_baseline.tolist(), width)
   p2 = ax1.bar(x_idx, total_pCSR.tolist(), width)
@@ -478,7 +481,7 @@ def main(argv):
   fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
   width = 0.25 
   #x_idx = ['1','2','3','4','5','6']
-  x_idx = np.arange(ngpu)
+  #x_idx = np.arange(ngpu)
   
   p1 = ax1.bar(x_idx - width, speedup_CSR_baseline.tolist(), width)
   p2 = ax1.bar(x_idx, speedup_pCSR.tolist(), width)
@@ -516,7 +519,7 @@ def main(argv):
   fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
   width = 0.25 
   #x_idx = ['1','2','3','4','5','6']
-  x_idx = np.arange(ngpu)
+  #x_idx = np.arange(ngpu)
   
   p1 = ax1.bar(x_idx - width/2, speedup_pCSR_opt.tolist(), width)
   p2 = ax1.bar(x_idx + width/2, speedup_pCSR_opt_numa.tolist(), width)
