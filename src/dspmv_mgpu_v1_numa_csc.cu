@@ -76,11 +76,9 @@ spmv_ret spMV_mgpu_v1_numa_csc(int m, int n, long long nnz, double * alpha,
 
       double tmp_time = get_time();
 
-      int tmp1 = numaContext.workload[numa_id] * nnz;
-      int tmp2 = numaContext.workload[numa_id + 1] * nnz;
-
-      pcscNuma[numa_id].startIdx = floor((double)tmp1 / ngpu);
-      pcscNuma[numa_id].endIdx = floor((double)tmp2 / ngpu) - 1;
+      double tmp = (double)nnz / ngpu;
+      pcscNuma[numa_id].startIdx = floor(numaContext.workload[numa_id] * tmp);
+      pcscNuma[numa_id].endIdx = floor(numaContext.workload[numa_id + 1] * tmp) - 1;
 
 
       // Calculate the start and end row

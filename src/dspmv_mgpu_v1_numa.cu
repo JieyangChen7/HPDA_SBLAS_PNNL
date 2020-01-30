@@ -207,11 +207,11 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
 
       double tmp_time = get_time();
 
-      int tmp1 = numaContext.workload[numa_id] * nnz;
-      int tmp2 = numaContext.workload[numa_id + 1] * nnz;
+      double tmp = (double)nnz / ngpu;
 
-      pcsrNuma[numa_id].startIdx = floor((double)tmp1 / ngpu);
-      pcsrNuma[numa_id].endIdx = floor((double)tmp2 / ngpu) - 1;
+
+      pcsrNuma[numa_id].startIdx = floor(numaContext.workload[numa_id] * tmp);
+      pcsrNuma[numa_id].endIdx = floor(numaContext.workload[numa_id + 1] * tmp) - 1;
       // numa_start_idx[numa_id] = floor((double)tmp1 / ngpu);
       // numa_end_idx[numa_id]   = floor((double)tmp2 / ngpu) - 1;
 
