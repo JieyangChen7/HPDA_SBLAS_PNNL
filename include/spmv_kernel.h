@@ -155,24 +155,24 @@ struct NumaContext {
       }
     }
     num_numa_nodes += 1;
-    printf("# of NUMA nodes: %d\n", num_numa_nodes);
-    printf("Representive threads: ");
+    // printf("# of NUMA nodes: %d\n", num_numa_nodes);
+    // printf("Representive threads: ");
     bool * representive_threads = new bool[ngpu];
     for (int i = 0; i < ngpu; i++) representive_threads[i] = false;
     for (int i = 0; i < num_numa_nodes; i++) {
       for (int j = 0; j < ngpu; j++) {
         if (numaMapping[j] == i) {
           //representive_threads[i] = j;
-          printf("%d ", j);
+          // printf("%d ", j);
           representive_threads[j] = true;
           break;
         }
         
       }
     }
-    printf("\n");
+    // printf("\n");
 
-    printf("# of GPU distribution: ");
+    // printf("# of GPU distribution: ");
     int * num_gpus = new int [num_numa_nodes];
     for (int j = 0; j < num_numa_nodes; j++) {
       num_gpus[j] = 0;
@@ -181,9 +181,9 @@ struct NumaContext {
       num_gpus[numaMapping[j]]++;
     }
     for (int i = 0; i < num_numa_nodes; i++) {
-      printf("%d ", num_gpus[i]);
+      // printf("%d ", num_gpus[i]);
     }
-    printf("\n");
+    // printf("\n");
 
     int * workload = new int [num_numa_nodes+1];
       workload[0] = 0;
@@ -191,7 +191,7 @@ struct NumaContext {
     for (int i = 2; i < num_numa_nodes+1; i++) {
       workload[i] = workload[i-1] + num_gpus[i-1];
     }
-    print_vec(workload, num_numa_nodes+1, "workload: ");
+    // print_vec(workload, num_numa_nodes+1, "workload: ");
 
     this->numaMapping = numaMapping;
     this->numNumaNodes = num_numa_nodes;

@@ -63,7 +63,7 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
     numa_part_time = 0;
   
     if (numaContext.representiveThreads[dev_id]) {
-      printf("represent thread %d hw thread %d\n", dev_id, hwthread);
+      // printf("represent thread %d hw thread %d\n", dev_id, hwthread);
 
       double tmp_time = get_time();
 
@@ -110,8 +110,8 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
       }
       // printf("thread %d hw done4\n", dev_id);
     
-      printf("numa_id %d, numa_start_idx %d, numa_end_idx %d\n",numa_id, pcooNuma[numa_id].startIdx, pcooNuma[numa_id].endIdx);
-      printf("numa_id %d, numa_start_row %d, numa_end_row %d\n",numa_id, pcooNuma[numa_id].startRow, pcooNuma[numa_id].endRow);
+      // printf("numa_id %d, numa_start_idx %d, numa_end_idx %d\n",numa_id, pcooNuma[numa_id].startIdx, pcooNuma[numa_id].endIdx);
+      // printf("numa_id %d, numa_start_row %d, numa_end_row %d\n",numa_id, pcooNuma[numa_id].startRow, pcooNuma[numa_id].endRow);
     
 
       numa_part_time += get_time() - tmp_time;
@@ -204,15 +204,15 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
       if (numa_id == numaContext.numaMapping[i]) local_dev_id++;
     }
 
-    printf("omp thread %d, hw thread %d, numa_id %d, local_id %d\n", dev_id, hwthread, numa_id, local_dev_id);  
+    // printf("omp thread %d, hw thread %d, numa_id %d, local_id %d\n", dev_id, hwthread, numa_id, local_dev_id);  
     double tmp_time = get_time();
 
     // Calculate the start and end index
-    int tmp1 = local_dev_id * pcooNuma[numa_id].nnz;
-    int tmp2 = (local_dev_id + 1) * pcooNuma[numa_id].nnz;
+    double tmp = (double)pcooNuma[numa_id].nnz / numaContext.numGPUs[numa_id];
 
-    pcooGPU[dev_id].startIdx = floor((double)tmp1 / numaContext.numGPUs[numa_id]);
-    pcooGPU[dev_id].endIdx   = floor((double)tmp2 / numaContext.numGPUs[numa_id]) - 1;
+    pcooGPU[dev_id].startIdx = floor(local_dev_id * tmp);
+    pcooGPU[dev_id].endIdx   = floor((local_dev_id + 1) * tmp) - 1;
+
     pcooGPU[dev_id].startRow = pcooNuma[numa_id].rowIdx[pcooGPU[dev_id].startIdx];
     pcooGPU[dev_id].endRow = pcooNuma[numa_id].rowIdx[pcooGPU[dev_id].endIdx];
 
@@ -251,9 +251,9 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
     
 
 
-    printf("omp thread %d, dev_m %d, dev_n %d, dev_nnz %d, start_idx %d, end_idx %d, start_row %d, end_row %d\n", 
-           dev_id, pcooGPU[dev_id].m, pcooGPU[dev_id].n, pcooGPU[dev_id].nnz, pcooGPU[dev_id].startIdx, pcooGPU[dev_id].endIdx, 
-           pcooGPU[dev_id].startRow, pcooGPU[dev_id].endRow);
+    // printf("omp thread %d, dev_m %d, dev_n %d, dev_nnz %d, start_idx %d, end_idx %d, start_row %d, end_row %d\n", 
+    //        dev_id, pcooGPU[dev_id].m, pcooGPU[dev_id].n, pcooGPU[dev_id].nnz, pcooGPU[dev_id].startIdx, pcooGPU[dev_id].endIdx, 
+    //        pcooGPU[dev_id].startRow, pcooGPU[dev_id].endRow);
 
 
     // preparing data on host 
