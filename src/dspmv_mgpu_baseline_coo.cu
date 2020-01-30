@@ -154,29 +154,29 @@ spmv_ret spMV_mgpu_baseline_coo(int m, int n, int nnz, double * alpha,
     // print_vec_gpu(dev_csrRowPtr[d], dev_m[d]+1, "dev_csrRowPtr"+to_string(d));
     // print_vec_gpu(dev_csrColIdx[d], dev_nnz[d], "dev_csrColIdx"+to_string(d));
 
-    cudaEventRecord(comp_start[d], stream[d]);
+    checkCudaErrors(cudaEventRecord(comp_start[d], stream[d]));
     checkCudaErrors(cusparseDcsrmv(handle[d],CUSPARSE_OPERATION_NON_TRANSPOSE, 
                                dev_m[d], dev_n[d], dev_nnz[d], 
                                alpha, descr[d], dev_csrVal[d], 
                                dev_csrRowPtr[d], dev_csrColIdx[d], 
                                dev_x[d], beta, dev_y[d]));    
-    cudaEventRecord(comp_stop[d], stream[d]);
+    checkCudaErrors(cudaEventRecord(comp_stop[d], stream[d]));
 
   } 
 
   for (int d = 0; d < ngpu; ++d) {
     checkCudaErrors(cudaSetDevice(d));
-    cudaEventSynchronize(comm_stop[d]);
+    checkCudaErrors(cudaEventSynchronize(comm_stop[d]));
     float elapsedTime;
-    cudaEventElapsedTime(&elapsedTime, comm_start[d], comm_stop[d]);
+    checkCudaErrors(cudaEventElapsedTime(&elapsedTime, comm_start[d], comm_stop[d]));
     elapsedTime /= 1000.0;
     if (elapsedTime > comm_time) comm_time = elapsedTime;
 
     // printf("dev %d, comm_time %f elapsedTime %f\n", d, comm_time, elapsedTime);
 
-    cudaEventSynchronize(comp_stop[d]);
+    checkCudaErrors(cudaEventSynchronize(comp_stop[d]));
     elapsedTime = 0;
-    cudaEventElapsedTime(&elapsedTime, comp_start[d], comp_stop[d]);
+    checkCudaErrors(cudaEventElapsedTime(&elapsedTime, comp_start[d], comp_stop[d]));
     elapsedTime /= 1000.0;
     if (elapsedTime > comp_time) comp_time = elapsedTime;
     

@@ -396,7 +396,7 @@ def plot_single(platform, matrix_file, plot=True):
     ax3.set_xticklabels(xticklabels)
     ax3.set_title("COO")
 
-    ax3.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (1, 1.01), ncol=1)
+    ax1.legend((p1[0], p2[0], p3[0]), ('Baseline', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.3, -0.08), ncol=3)
     
     plt.tight_layout()
     #plt.show()
@@ -476,7 +476,7 @@ def plot_single(platform, matrix_file, plot=True):
     ax3.set_xticklabels(xticklabels)
     ax3.set_title("COO")
 
-    ax3.legend((p1[0], p2[0], p3[0]), ('Baseline', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (1, 1.01), ncol=1)
+    ax1.legend((p1[0], p2[0], p3[0]), ('Baseline', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.3, -0.08), ncol=3)
     
     plt.tight_layout()
     #plt.show()
@@ -600,10 +600,7 @@ def plot_single(platform, matrix_file, plot=True):
     #x_idx = ['1','2','3','4','5','6']
     #x_idx = np.arange(ngpu)
 
-    if (platform == 'dgx1'):
-      y_idx = np.array(range(8))
-    if (platform == 'smt'):
-      y_idx = np.array(range(6))
+    y_idx = np.array(range(ngpu+1))
     
     p1 = ax1.bar(x_idx - width, speedup_CSR_baseline.tolist(), width)
     p2 = ax1.bar(x_idx, speedup_pCSR.tolist(), width)
@@ -646,10 +643,8 @@ def plot_single(platform, matrix_file, plot=True):
     #x_idx = ['1','2','3','4','5','6']
     #x_idx = np.arange(ngpu)
 
-    if (platform == 'dgx1'):
-      y_idx = np.array(range(8))
-    if (platform == 'smt'):
-      y_idx = np.array(range(6))
+    y_idx = np.array(range(ngpu+1))
+
     
     
     p1 = ax1.bar(x_idx - width/2, speedup_pCSR_opt.tolist(), width)

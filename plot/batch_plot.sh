@@ -15,5 +15,5 @@
 # done
 
 
-#./plot_single_matrix2.py dgx1 com-Orkut.mtx 
+./plot_single_matrix2.py dgx1 com-Orkut.mtx 
 ./plot_single_matrix2.py smt com-Orkut.mtx 
