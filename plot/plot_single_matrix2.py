@@ -27,10 +27,18 @@ def calc_speedup(time_array):
 
 
 def main(argv):
-  matrix_file = argv[0];
+  platform = str(argv[0])
+  matrix_file = argv[1]
   matrix_name = matrix_file[0:-4]
-  ngpu = int(argv[1]);
+
+  ngpu = 0
+  if (platform == 'smt'):
+    ngpu = 6
+  elif (pltform == 'dgx1'):
+    ngpu = 8
+
   print("input matrix: " + matrix_name)
+  print("platform: " + platform)
 
 
   part_CSR_baseline = np.array([])
@@ -119,21 +127,21 @@ def main(argv):
     merg_opt=0
     numa=0
     header = ["NUMA Comm", "Partition", "H2D", "Computation", "Result Merging"]
-    csv_file = "./data/{}_{}_{}_{}_{}.csv".format(matrix_file, ngpu, part_opt, merg_opt, numa)
+    csv_file = "./data/{}/{}/{}_{}_{}_{}_{}.csv".format(platform, matrix_name, matrix_file, ngpu, part_opt, merg_opt, numa)
     df0 = pd.read_csv(csv_file, names=header)
 
     part_opt=1
     merg_opt=1
     numa=0
     header = ["NUMA Comm", "Partition", "H2D", "Computation", "Result Merging"]
-    csv_file = "./data/{}_{}_{}_{}_{}.csv".format(matrix_file, ngpu, part_opt, merg_opt, numa)
+    csv_file = "./data/{}/{}/{}_{}_{}_{}_{}.csv".format(platform, matrix_name, matrix_file, ngpu, part_opt, merg_opt, numa)
     df1 = pd.read_csv(csv_file, names=header)
 
     part_opt=1
     merg_opt=1
     numa=1
     header = ["NUMA Comm", "Partition", "H2D", "Computation", "Result Merging"]
-    csv_file = "./data/{}_{}_{}_{}_{}.csv".format(matrix_file, ngpu, part_opt, merg_opt, numa)
+    csv_file = "./data/{}/{}/{}_{}_{}_{}_{}.csv".format(platform, matrix_name, matrix_file, ngpu, part_opt, merg_opt, numa)
     df2 = pd.read_csv(csv_file, names=header)
 
     part_CSR_baseline = np.append(part_CSR_baseline, df0.at[0, 'Partition'])

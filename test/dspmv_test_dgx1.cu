@@ -103,8 +103,6 @@ int main(int argc, char *argv[]) {
   //   cout << "allocated pin memory: " << i << " GB" << endl;
   // }
 
-  report_all_mem_usage();
-
   int ret_code;
   MM_typecode matcode;
   FILE *f;
@@ -322,7 +320,7 @@ int main(int argc, char *argv[]) {
   // cscRowIdx = cooRowIdx;
 
   printf("Done sorting\n");
-  report_all_mem_usage();
+  // report_all_mem_usage();
 
   // printf("csrRowPtr: %d - %d\n", csrRowPtr[0], csrRowPtr[m]);
   // printf("cscColPtr: %d - %d\n", cscColPtr[0], cscColPtr[n]);
@@ -465,17 +463,17 @@ int main(int argc, char *argv[]) {
   
   cout << "Starting tests..."  << "part_opt " << part_opt << " merg_opt " << merg_opt << endl;
 
-  cout << "start test coo\n";
-  report_all_mem_usage();
+  // cout << "start test coo\n";
+  // report_all_mem_usage();
   for (int j = 0; j < repeat_test; j++) {
     for (int i = 0; i < m; i++) {
       y_baseline_coo[i] = 0.0;
       y_static_coo[i] = 0.0;
       y_dynamic_coo[i] = 0.0;
     }
-    cout << "Iter:" << j << endl;
-    cout << "before baseline\n";
-    report_all_mem_usage();
+    // cout << "Iter:" << j << endl;
+    // cout << "before baseline\n";
+    // report_all_mem_usage();
     ret = spMV_mgpu_baseline_coo(m, n, nnz, &ALPHA,
                                 cooVal, cooRowIdx, cooColIdx, 
                                 x, &BETA,
@@ -483,8 +481,8 @@ int main(int argc, char *argv[]) {
                                 ngpu);
     ret_baseline_coo.add(ret);
     
-    cout << "in-between baseline and v1\n";
-    report_all_mem_usage();
+    // cout << "in-between baseline and v1\n";
+    // report_all_mem_usage();
     
     ret = spMV_mgpu_v1_numa_coo(m, n, nnz, &ALPHA,
                                 cooVal, cooRowIdx, cooColIdx, 
@@ -495,8 +493,8 @@ int main(int argc, char *argv[]) {
                                 numa_mapping,
                                 part_opt, merg_opt); //kernel 1
     ret_static_coo.add(ret);
-    cout << "after v1\n";
-    report_all_mem_usage();
+    // cout << "after v1\n";
+    // report_all_mem_usage();
 
     bool correct_baseline_coo = true;
     bool correct_static_coo = true;
@@ -517,8 +515,8 @@ int main(int argc, char *argv[]) {
     if (correct_dynamic_coo) pass_dynamic_coo++;
   }
 
-  cout << "in-between coo test and allocate csr\n";
-  report_all_mem_usage();
+  // cout << "in-between coo test and allocate csr\n";
+  // report_all_mem_usage();
   double * csrVal;
   int * csrRowPtr;
   int * csrColIdx;
@@ -526,13 +524,13 @@ int main(int argc, char *argv[]) {
   checkCudaErrors(cudaMallocHost((void **)&csrRowPtr, (m+1) * sizeof(int)));
   checkCudaErrors(cudaMallocHost((void **)&csrColIdx, nnz * sizeof(int)));
 
-  cout << "in-between allocate csr and coo2csr\n";
-  report_all_mem_usage();
+  // cout << "in-between allocate csr and coo2csr\n";
+  // report_all_mem_usage();
   coo2csr(m, n, nnz,
           cooVal, cooRowIdx, cooColIdx,
           csrVal, csrRowPtr, csrColIdx);
-  cout << "in-between coo2csr and csr test\n";
-  report_all_mem_usage();
+  // cout << "in-between coo2csr and csr test\n";
+  // report_all_mem_usage();
 
   for (int j = 0; j < repeat_test; j++) {
     for (int i = 0; i < m; i++) {
@@ -540,17 +538,17 @@ int main(int argc, char *argv[]) {
       y_static_csr[i] = 0.0;
       y_dynamic_csr[i] = 0.0;
     }
-    cout << "Iter:" << j << endl;
-    cout << "before baseline\n";
-    report_all_mem_usage();
+    // cout << "Iter:" << j << endl;
+    // cout << "before baseline\n";
+    // report_all_mem_usage();
     ret = spMV_mgpu_baseline(m, n, nnz, &ALPHA,
                             csrVal, csrRowPtr, csrColIdx, 
                             x, &BETA,
                             y_baseline_csr,
                             ngpu);
     ret_baseline_csr.add(ret);
-    cout << "in-between baseline and v1\n";
-    report_all_mem_usage();
+    // cout << "in-between baseline and v1\n";
+    // report_all_mem_usage();
 
     ret = spMV_mgpu_v1_numa(m, n, nnz, &ALPHA,
                             csrVal, csrRowPtr, csrColIdx,
@@ -561,8 +559,8 @@ int main(int argc, char *argv[]) {
                             numa_mapping,
                             part_opt, merg_opt); //kernel 1
     ret_static_csr.add(ret);
-    cout << "after v1\n";
-    report_all_mem_usage();
+    // cout << "after v1\n";
+    // report_all_mem_usage();
 
     bool correct_baseline_csr = true;
     bool correct_static_csr = true;
@@ -583,13 +581,13 @@ int main(int argc, char *argv[]) {
     if (correct_dynamic_csr) pass_dynamic_csr++;
   }
 
-  cout << "in-between coo test and free csr\n";
-  report_all_mem_usage();
+  // cout << "in-between coo test and free csr\n";
+  // report_all_mem_usage();
   checkCudaErrors(cudaFreeHost(csrVal));
   checkCudaErrors(cudaFreeHost(csrRowPtr));
   checkCudaErrors(cudaFreeHost(csrColIdx));
-  cout << "in-between csr free and allocate csc\n";
-  report_all_mem_usage();
+  // cout << "in-between csr free and allocate csc\n";
+  // report_all_mem_usage();
   double * cscVal;
   int * cscColPtr;
   int * cscRowIdx;
@@ -598,13 +596,13 @@ int main(int argc, char *argv[]) {
   checkCudaErrors(cudaMallocHost((void **)&cscRowIdx, nnz * sizeof(int)));
 
 
-  cout << "in-between allocate csc and coo2csc\n";
-  report_all_mem_usage();
+  // cout << "in-between allocate csc and coo2csc\n";
+  // report_all_mem_usage();
   coo2csc(m, n, nnz,
           cooVal, cooRowIdx, cooColIdx,
           cscVal, cscColPtr, cscRowIdx);
-  cout << "in-between coo2csc and csc test\n";
-  report_all_mem_usage();
+  // cout << "in-between coo2csc and csc test\n";
+  // report_all_mem_usage();
 
   for (int j = 0; j < repeat_test; j++) {
     for (int i = 0; i < m; i++) {
@@ -612,17 +610,17 @@ int main(int argc, char *argv[]) {
       y_static_csc[i] = 0.0;
       y_dynamic_csc[i] = 0.0;
     }
-    cout << "Iter:" << j << endl;
-    cout << "before baseline\n";
-    report_all_mem_usage();
+    // cout << "Iter:" << j << endl;
+    // cout << "before baseline\n";
+    // report_all_mem_usage();
     ret = spMV_mgpu_baseline_csc(m, n, nnz, &ALPHA,
                                 cscVal, cscColPtr, cscRowIdx,
                                 x, &BETA,
                                 y_baseline_csc,
                                 ngpu);
     ret_baseline_csc.add(ret);
-    cout << "in-between baseline and v1\n";
-    report_all_mem_usage();
+    // cout << "in-between baseline and v1\n";
+    // report_all_mem_usage();
     ret = spMV_mgpu_v1_numa_csc(m, n, nnz, &ALPHA,
                                 cscVal, cscColPtr, cscRowIdx,
                                 x, &BETA,
@@ -632,8 +630,8 @@ int main(int argc, char *argv[]) {
                                 numa_mapping,
                                 part_opt, merg_opt); //kernel 1
     ret_static_csc.add(ret);
-    cout << "after v1\n";
-    report_all_mem_usage();
+    // cout << "after v1\n";
+    // report_all_mem_usage();
     bool correct_baseline_csc = true;
     bool correct_static_csc = true;
     bool correct_dynamic_csc = true;  
@@ -653,20 +651,20 @@ int main(int argc, char *argv[]) {
     if (correct_dynamic_csc) pass_dynamic_csc++;
   }
 
-  cout << "in-between csc test and free csc v1\n";
-  report_all_mem_usage();
+  // cout << "in-between csc test and free csc v1\n";
+  // report_all_mem_usage();
   checkCudaErrors(cudaFreeHost(cscVal));
   checkCudaErrors(cudaFreeHost(cscColPtr));
   checkCudaErrors(cudaFreeHost(cscRowIdx));
 
-  cout << "in-between free csc test and free coo v1\n";
-  report_all_mem_usage();
+  // cout << "in-between free csc test and free coo v1\n";
+  // report_all_mem_usage();
   checkCudaErrors(cudaFreeHost(cooRowIdx));
   checkCudaErrors(cudaFreeHost(cooColIdx));
   checkCudaErrors(cudaFreeHost(cooVal));
 
-  cout << "after free csc v1\n";
-  report_all_mem_usage();
+  // cout << "after free csc v1\n";
+  // report_all_mem_usage();
 
   ret_baseline_csr.avg(repeat_test);
   ret_static_csr.avg(repeat_test);
