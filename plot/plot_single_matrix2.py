@@ -7,22 +7,22 @@ import csv
 import sys
 
 
-SMALL_SIZE = 8
-MEDIUM_SIZE = 12
-BIGGER_SIZE = 12
+SMALL_SIZE = 14
+MEDIUM_SIZE = 16
+BIGGER_SIZE = 14
 
 plt.rc('font', size=MEDIUM_SIZE)          # controls default text sizes
 plt.rc('axes', titlesize=MEDIUM_SIZE)     # fontsize of the axes title
 plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
 plt.rc('xtick', labelsize=MEDIUM_SIZE)    # fontsize of the tick labels
-plt.rc('ytick', labelsize=MEDIUM_SIZE)    # fontsize of the tick labels
-plt.rc('legend', fontsize=MEDIUM_SIZE)    # legend fontsize
+plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
 plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
-def calc_speedup(time_array):
+def calc_speedup(time_array, baseline):
   speedups = np.array([])
   for i in range(time_array.size):
-    speedups = np.append(speedups, time_array[0]/time_array[i])
+    speedups = np.append(speedups, baseline/time_array[i])
   return speedups
 
 
@@ -34,7 +34,7 @@ def main(argv):
   ngpu = 0
   if (platform == 'smt'):
     ngpu = 6
-  elif (pltform == 'dgx1'):
+  elif (platform == 'dgx1'):
     ngpu = 8
 
   print("input matrix: " + matrix_name)
@@ -209,24 +209,24 @@ def main(argv):
 
   total_pCOO_opt_numa = part_pCOO_opt + comp_pCOO + comm_pCOO_numa + merg_pCOO_opt
 
-  speedup_CSR_baseline = calc_speedup(total_CSR_baseline)
-  speedup_pCSR = calc_speedup(total_pCSR)
-  speedup_pCSR_opt = calc_speedup(total_pCSR_opt)
+  speedup_CSR_baseline = calc_speedup(total_CSR_baseline, total_CSR_baseline[0])
+  speedup_pCSR = calc_speedup(total_pCSR, total_CSR_baseline[0])
+  speedup_pCSR_opt = calc_speedup(total_pCSR_opt, total_CSR_baseline[0])
 
-  speedup_pCSR_opt_numa = calc_speedup(total_pCSR_opt_numa)
+  speedup_pCSR_opt_numa = calc_speedup(total_pCSR_opt_numa, total_CSR_baseline[0])
 
 
-  speedup_CSC_baseline = calc_speedup(total_CSC_baseline)
-  speedup_pCSC = calc_speedup(total_pCSC)
-  speedup_pCSC_opt = calc_speedup(total_pCSC_opt)
+  speedup_CSC_baseline = calc_speedup(total_CSC_baseline, total_CSC_baseline[0])
+  speedup_pCSC = calc_speedup(total_pCSC, total_CSC_baseline[0])
+  speedup_pCSC_opt = calc_speedup(total_pCSC_opt, total_CSC_baseline[0])
 
-  speedup_pCSC_opt_numa = calc_speedup(total_pCSC_opt_numa)
+  speedup_pCSC_opt_numa = calc_speedup(total_pCSC_opt_numa, total_CSC_baseline[0])
 
-  speedup_COO_baseline = calc_speedup(total_COO_baseline)
-  speedup_pCOO = calc_speedup(total_pCOO)
-  speedup_pCOO_opt = calc_speedup(total_pCOO_opt)
+  speedup_COO_baseline = calc_speedup(total_COO_baseline, total_COO_baseline[0])
+  speedup_pCOO = calc_speedup(total_pCOO, total_COO_baseline[0])
+  speedup_pCOO_opt = calc_speedup(total_pCOO_opt, total_COO_baseline[0])
 
-  speedup_pCOO_opt_numa = calc_speedup(total_pCOO_opt_numa)
+  speedup_pCOO_opt_numa = calc_speedup(total_pCOO_opt_numa, total_COO_baseline[0])
 
 ############# Constant #############
 
@@ -253,6 +253,7 @@ def main(argv):
   ax1.set_xticks(x_idx)
   ax1.set_xticklabels(xticklabels)
   ax1.set_ylabel("Time (s)")
+  ax1.ticklabel_format(axis='y', style='scientific', scilimits=(0,0))
   ax1.set_title("CSR")
   #ax1.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.55, 1), ncol=1)
   
@@ -262,6 +263,7 @@ def main(argv):
   ax2.set_xticks(x_idx)
   ax2.set_xticklabels(xticklabels)
   ax2.set_xlabel("Number of GPUs")
+  ax2.ticklabel_format(axis='y', style='scientific', scilimits=(0,0))
   ax2.set_title("CSC")
   #ax2.legend((p1[0], p2[0], p3[0]), ('CSC-naive', 'pCSC', 'pCSC-opt'), loc='lower left', bbox_to_anchor= (-0.2, 1.01), ncol=3)
   
@@ -271,13 +273,14 @@ def main(argv):
   p3 = ax3.bar(x_idx + width, part_pCOO_opt.tolist(), width)
   ax3.set_xticks(x_idx)
   ax3.set_xticklabels(xticklabels)
+  ax3.ticklabel_format(axis='y', style='scientific', scilimits=(0,0))
   ax3.set_title("COO")
 
-  ax3.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (1, 1.01), ncol=1)
+  ax1.legend((p1[0], p2[0], p3[0]), ('Baseline', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.3, -0.08), ncol=3)
   
   plt.tight_layout()
   #plt.show()
-  plt.savefig('{}_partition_time.pdf'.format(matrix_name))  
+  plt.savefig('{}_partition_time_{}.pdf'.format(matrix_name, platform))  
 
 ############# Parition Overhead ###############
   fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
@@ -315,7 +318,7 @@ def main(argv):
   
   plt.tight_layout()
   #plt.show()
-  plt.savefig('{}_partition_overhead.pdf'.format(matrix_name))
+  plt.savefig('{}_partition_overhead_{}.pdf'.format(matrix_name, platform))
 
 
   ############# Merging Time ###############
@@ -329,6 +332,7 @@ def main(argv):
   p3 = ax1.bar(x_idx + width, merg_pCSR_opt.tolist(), width)
   ax1.set_xticks(x_idx)
   ax1.set_xticklabels(xticklabels)
+  ax1.ticklabel_format(axis='y', style='scientific', scilimits=(0,0))
   ax1.set_ylabel("Time (s)")
   ax1.set_title("CSR")
   #ax1.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.55, 1), ncol=1)
@@ -338,6 +342,7 @@ def main(argv):
   p3 = ax2.bar(x_idx + width, merg_pCSC_opt.tolist(), width)
   ax2.set_xticks(x_idx)
   ax2.set_xticklabels(xticklabels)
+  ax2.ticklabel_format(axis='y', style='scientific', scilimits=(0,0))
   ax2.set_xlabel("Number of GPUs")
   ax2.set_title("CSC")
   #ax2.legend((p1[0], p2[0], p3[0]), ('CSC-naive', 'pCSC', 'pCSC-opt'), loc='lower left', bbox_to_anchor= (-0.2, 1.01), ncol=3)
@@ -348,13 +353,14 @@ def main(argv):
   p3 = ax3.bar(x_idx + width, merg_pCOO_opt.tolist(), width)
   ax3.set_xticks(x_idx)
   ax3.set_xticklabels(xticklabels)
+  ax3.ticklabel_format(axis='y', style='scientific', scilimits=(0,0))
   ax3.set_title("COO")
 
-  ax3.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (1, 1.01), ncol=1)
+  ax1.legend((p1[0], p2[0], p3[0]), ('Baseline', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.3, -0.08), ncol=3)
   
   plt.tight_layout()
   #plt.show()
-  plt.savefig('{}_merge_time.pdf'.format(matrix_name))  
+  plt.savefig('{}_merge_time_{}.pdf'.format(matrix_name, platform))  
 
 ############# Merging Overhead ###############
   fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
@@ -388,11 +394,11 @@ def main(argv):
   ax3.set_xticklabels(xticklabels)
   ax3.set_title("COO")
 
-  ax3.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (1, 1.01), ncol=1)
+  ax3.legend((p1[0], p2[0], p3[0]), ('Baseline', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (1, 1.01), ncol=1)
   
   plt.tight_layout()
   #plt.show()
-  plt.savefig('{}_merg_overhead.pdf'.format(matrix_name))
+  plt.savefig('{}_merg_overhead_{}.pdf'.format(matrix_name, platform))
 
 
 ################ Comm Time #################
@@ -428,7 +434,7 @@ def main(argv):
   
   plt.tight_layout()
   #plt.show()
-  plt.savefig('{}_comm_time.pdf'.format(matrix_name))  
+  plt.savefig('{}_comm_time_{}.pdf'.format(matrix_name, platform))  
 
   ################ Overall Time #################
   fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
@@ -466,7 +472,7 @@ def main(argv):
   
   plt.tight_layout()
   #plt.show()
-  plt.savefig('{}_total_time.pdf'.format(matrix_name))  
+  plt.savefig('{}_total_time_{}.pdf'.format(matrix_name, platform))  
 
   ################ Overall Speedup #################
   fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
@@ -500,11 +506,11 @@ def main(argv):
   ax3.set_xticklabels(xticklabels)
   ax3.set_title("COO")
 
-  ax3.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (1, 1.01), ncol=1)
+  ax1.legend((p1[0], p2[0], p3[0]), ('Baseline', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.3, -0.08), ncol=3)
   
   plt.tight_layout()
   #plt.show()
-  plt.savefig('{}_total_speedup.pdf'.format(matrix_name))  
+  plt.savefig('{}_total_speedup_{}.pdf'.format(matrix_name, platform))  
 
   ################ NUMA Speedup #################
   fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
@@ -512,16 +518,16 @@ def main(argv):
   #x_idx = ['1','2','3','4','5','6']
   x_idx = np.arange(ngpu)
   
-  p2 = ax1.bar(x_idx, speedup_pCSR_opt.tolist(), width)
-  p3 = ax1.bar(x_idx + width, speedup_pCSR_opt_numa.tolist(), width)
+  p1 = ax1.bar(x_idx - width/2, speedup_pCSR_opt.tolist(), width)
+  p2 = ax1.bar(x_idx + width/2, speedup_pCSR_opt_numa.tolist(), width)
   ax1.set_xticks(x_idx)
   ax1.set_xticklabels(xticklabels)
   ax1.set_ylabel("Speedup")
   ax1.set_title("CSR")
   #ax1.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.55, 1), ncol=1)
   
-  p2 = ax2.bar(x_idx, speedup_pCSC_opt.tolist(), width)
-  p3 = ax2.bar(x_idx + width, speedup_pCSC_opt_numa.tolist(), width)
+  p1 = ax2.bar(x_idx - width/2, speedup_pCSC_opt.tolist(), width)
+  p2 = ax2.bar(x_idx + width/2, speedup_pCSC_opt_numa.tolist(), width)
   ax2.set_xticks(x_idx)
   ax2.set_xticklabels(xticklabels)
   ax2.set_xlabel("Number of GPUs")
@@ -529,17 +535,17 @@ def main(argv):
   #ax2.legend((p1[0], p2[0], p3[0]), ('CSC-naive', 'pCSC', 'pCSC-opt'), loc='lower left', bbox_to_anchor= (-0.2, 1.01), ncol=3)
   
 
-  p2 = ax3.bar(x_idx, speedup_pCOO_opt.tolist(), width)
-  p3 = ax3.bar(x_idx + width, speedup_pCOO_opt_numa.tolist(), width)
+  p1 = ax3.bar(x_idx - width/2, speedup_pCOO_opt.tolist(), width)
+  p2 = ax3.bar(x_idx + width/2, speedup_pCOO_opt_numa.tolist(), width)
   ax3.set_xticks(x_idx)
   ax3.set_xticklabels(xticklabels)
   ax3.set_title("COO")
 
-  ax3.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (1, 1.01), ncol=1)
+  ax1.legend((p1[0], p2[0]), ('w/o NUMA-aware', 'w/ NUMA-aware'), loc='upper left', bbox_to_anchor= (0, -0.1), ncol=1)
   
   plt.tight_layout()
   #plt.show()
-  plt.savefig('{}_numa_speedup.pdf'.format(matrix_name))  
+  plt.savefig('{}_numa_speedup_{}.pdf'.format(matrix_name, platform))  
 
 if __name__ == "__main__":
    main(sys.argv[1:])

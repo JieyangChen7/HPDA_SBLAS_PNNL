@@ -440,7 +440,7 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
     //cudaDeviceSynchronize();
   
     //print_vec_gpu(dev_x, dev_n, "x"+to_string(dev_id));
-    checkCudaErrors(cudaEventRecord(comp_start, stream));
+    
     coo2csrGPU(handle, stream, pcooGPU[dev_id].m, pcooGPU[dev_id].n, pcooGPU[dev_id].nnz,
                 pcooGPU[dev_id].dval, pcooGPU[dev_id].drowIdx, pcooGPU[dev_id].dcolIdx,
                 dev_csrVal, dev_csrRowPtr, dev_csrColIdx);
@@ -452,7 +452,7 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
     // print_vec_gpu(dev_csrRowPtr, pcooGPU[dev_id].m+1, "dev_csrRowPtr"+to_string(dev_id));
     // print_vec_gpu(dev_csrColIdx, pcooGPU[dev_id].nnz, "dev_csrColIdx"+to_string(dev_id));
     // }
-  
+    checkCudaErrors(cudaEventRecord(comp_start, stream));
     checkCudaErrors(cusparseDcsrmv(handle,CUSPARSE_OPERATION_NON_TRANSPOSE, 
                               pcooGPU[dev_id].m, pcooGPU[dev_id].n, pcooGPU[dev_id].nnz, 
                               alpha, descr, dev_csrVal, dev_csrRowPtr, dev_csrColIdx, 

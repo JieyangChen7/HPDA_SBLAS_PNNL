@@ -11,11 +11,11 @@ NUMA=AAA
 
 if ((${NUMA} == 1))
 then
-	export OMP_PLACES="{0},{1},{2},{3},{20},{21},{22},{23}"
+	export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7}"
 fi
 if ((${NUMA} == 0))
 then
-	export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7}"
+  export OMP_PLACES="{0},{1},{2},{3},{20},{21},{22},{23}"
 fi
 
 
@@ -29,7 +29,7 @@ RESULT_PREFIX=.
 
 #DATA_PREFIX=./
 #NGPU=6
-NTEST=5
+NTEST=10
 
 PART_OPT=PPP
 MERG_OPT=EEE
