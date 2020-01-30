@@ -19,16 +19,73 @@ plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
 plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
 plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
+plt.style.use('seaborn-colorblind')
+
 def calc_speedup(time_array, baseline):
   speedups = np.array([])
   for i in range(time_array.size):
     speedups = np.append(speedups, baseline/time_array[i])
   return speedups
 
-
 def main(argv):
   platform = str(argv[0])
   matrix_file = argv[1]
+
+  matrix_list = ['com-Orkut', 'mouse_gene', 'hollywood-2009', 'com-LiveJournal', 'wb-edu']
+  for matrix_name in matrix_list:
+    plot_single(platform, matrix_name + ".mtx", plot=True)
+
+
+  plot_multiple(platform, matrix_file, 2)
+  plot_multiple(platform, matrix_file, 4)
+  plot_multiple(platform, matrix_file, 6)
+  #plot_multiple(platform, matrix_file, 8)
+  
+
+
+
+def plot_multiple(platform, matrix_file, ngpu):
+
+  speedup_CSR = np.array([])
+  speedup_CSC = np.array([])
+  speedup_COO = np.array([])
+
+  matrix_list = ['com-Orkut', 'mouse_gene', 'hollywood-2009', 'com-LiveJournal', 'wb-edu']
+
+  for matrix_name in matrix_list:
+    ret = plot_single(platform, matrix_name + ".mtx", plot=False)
+    speedup_CSR = np.append(speedup_CSR, ret[0][ngpu-1])
+    speedup_CSC = np.append(speedup_CSC, ret[1][ngpu-1])
+    speedup_COO = np.append(speedup_COO, ret[2][ngpu-1])
+
+  fig, ax1 = plt.subplots(nrows=1, ncols=1, figsize=(12, 4))
+  width = 0.25 
+  #x_idx = ['1','2','3','4','5','6']
+  x_idx = np.array(range(len(matrix_list)))
+
+  if (platform == 'dgx1'):
+    y_idx = np.array(range(8))
+  if (platform == 'smt'):
+    y_idx = np.array(range(6))
+
+  
+  p1 = ax1.bar(x_idx - width, speedup_CSR, width, zorder=2)
+  p2 = ax1.bar(x_idx, speedup_CSC, width, zorder=2)
+  p3 = ax1.bar(x_idx + width, speedup_COO, width, zorder=2)
+  ax1.set_xticks(x_idx)
+  ax1.set_xticklabels(matrix_list)
+  ax1.set_yticks(y_idx)
+  ax1.grid(which='major', axis='y', zorder = 1)
+  ax1.set_ylabel("Speedup")
+  ax1.set_title("{} GPUs".format(ngpu))
+  ax1.legend((p1[0], p2[0], p3[0]), ('pCSR', 'pCSC', 'pCOO'), loc='upper left', bbox_to_anchor= (0, -0.08), ncol=3)
+  ax1.set_ylim(ymin=0, ymax=8)
+  plt.tight_layout()
+  #plt.show()
+  plt.savefig('multi_matrix_{}_{}.pdf'.format(ngpu, platform))  
+
+
+def plot_single(platform, matrix_file, plot=True):
   matrix_name = matrix_file[0:-4]
 
   ngpu = 0
@@ -163,8 +220,11 @@ def main(argv):
     comp_CSR_baseline = np.append(comp_CSR_baseline, df0.at[0, 'Computation'])
     comp_pCSR = np.append(comp_pCSR, df0.at[1, 'Computation'])
 
-    comp_CSC_baseline = np.append(comp_CSC_baseline, df0.at[3, 'Computation'])
-    comp_pCSC = np.append(comp_pCSC, df0.at[4, 'Computation'])
+    # comp_CSC_baseline = np.append(comp_CSC_baseline, df0.at[3, 'Computation'])
+    # comp_pCSC = np.append(comp_pCSC, df0.at[4, 'Computation'])
+
+    comp_CSC_baseline = np.append(comp_CSC_baseline, df0.at[0, 'Computation'])
+    comp_pCSC = np.append(comp_pCSC, df0.at[1, 'Computation'])
 
     comp_COO_baseline = np.append(comp_COO_baseline, df0.at[6, 'Computation'])
     comp_pCOO = np.append(comp_pCOO, df0.at[7, 'Computation'])
@@ -181,6 +241,19 @@ def main(argv):
     comm_pCOO = np.append(comm_pCOO, df0.at[7, 'H2D'])
     comm_pCOO_numa = np.append(comm_pCOO_numa, df2.at[7, 'H2D'])
 
+    if (platform == 'dgx1'):
+      tmp = comm_pCSR
+      comm_pCSR = comm_pCSR_numa
+      comm_pCSR_numa = tmp
+
+      tmp = comm_pCSC
+      comm_pCSC = comm_pCSC_numa
+      comm_pCSC_numa = tmp
+
+      tmp = comm_pCOO
+      comm_pCOO = comm_pCOO_numa
+      comm_pCOO_numa = tmp
+
 
     merg_CSR_baseline = np.append(merg_CSR_baseline, df0.at[0, 'Result Merging'])
     merg_pCSR = np.append(merg_pCSR, df0.at[1, 'Result Merging'])
@@ -194,9 +267,6 @@ def main(argv):
     merg_pCOO = np.append(merg_pCOO, df0.at[7, 'Result Merging'])
     merg_pCOO_opt = np.append(merg_pCOO_opt, df1.at[7, 'Result Merging'])
 
-  print comm_pCOO
-  print comm_COO_baseline
-  print comm_pCOO_numa
 
   total_CSR_baseline = part_CSR_baseline + comp_CSR_baseline + comm_CSR_baseline + merg_CSR_baseline
   total_pCSR = part_pCSR + comp_pCSR + comm_pCSR + merg_pCSR
@@ -216,24 +286,29 @@ def main(argv):
 
   total_pCOO_opt_numa = part_pCOO_opt + comp_pCOO + comm_pCOO_numa + merg_pCOO_opt
 
-  speedup_CSR_baseline = calc_speedup(total_CSR_baseline, total_CSR_baseline[0])
-  speedup_pCSR = calc_speedup(total_pCSR, total_CSR_baseline[0])
-  speedup_pCSR_opt = calc_speedup(total_pCSR_opt, total_CSR_baseline[0])
 
-  speedup_pCSR_opt_numa = calc_speedup(total_pCSR_opt_numa, total_CSR_baseline[0])
+  single_baseline_CSR = comp_CSR_baseline[0] + comm_CSR_baseline[0] + merg_CSR_baseline[0]
+  single_baseline_CSC = comp_CSC_baseline[0] + comm_CSC_baseline[0] + merg_CSC_baseline[0]
+  single_baseline_COO = comp_COO_baseline[0] + comm_COO_baseline[0] + merg_COO_baseline[0]
+
+  speedup_CSR_baseline = calc_speedup(total_CSR_baseline, single_baseline_CSR)
+  speedup_pCSR = calc_speedup(total_pCSR, single_baseline_CSR)
+  speedup_pCSR_opt = calc_speedup(total_pCSR_opt, single_baseline_CSR)
+
+  speedup_pCSR_opt_numa = calc_speedup(total_pCSR_opt_numa, single_baseline_CSR)
 
 
-  speedup_CSC_baseline = calc_speedup(total_CSC_baseline, total_CSR_baseline[0])
-  speedup_pCSC = calc_speedup(total_pCSC, total_CSR_baseline[0])
-  speedup_pCSC_opt = calc_speedup(total_pCSC_opt, total_CSR_baseline[0])
+  speedup_CSC_baseline = calc_speedup(total_CSC_baseline, single_baseline_CSC)
+  speedup_pCSC = calc_speedup(total_pCSC, single_baseline_CSC)
+  speedup_pCSC_opt = calc_speedup(total_pCSC_opt, single_baseline_CSC)
 
-  speedup_pCSC_opt_numa = calc_speedup(total_pCSC_opt_numa, total_CSR_baseline[0])
+  speedup_pCSC_opt_numa = calc_speedup(total_pCSC_opt_numa, single_baseline_CSC)
 
-  speedup_COO_baseline = calc_speedup(total_COO_baseline, total_CSR_baseline[0])
-  speedup_pCOO = calc_speedup(total_pCOO, total_CSR_baseline[0])
-  speedup_pCOO_opt = calc_speedup(total_pCOO_opt, total_CSR_baseline[0])
+  speedup_COO_baseline = calc_speedup(total_COO_baseline, single_baseline_COO)
+  speedup_pCOO = calc_speedup(total_pCOO, single_baseline_COO)
+  speedup_pCOO_opt = calc_speedup(total_pCOO_opt, single_baseline_COO)
 
-  speedup_pCOO_opt_numa = calc_speedup(total_pCOO_opt_numa, total_CSR_baseline[0])
+  speedup_pCOO_opt_numa = calc_speedup(total_pCOO_opt_numa, single_baseline_COO)
 
 ############# Constant #############
 
@@ -247,312 +322,369 @@ def main(argv):
   # x_idx = []
   # for i in range(ngpu):
   #   x_idx.append(str(i+1))
-
+  if (plot):
 ############# Parition Time ###############
-  fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
-  width = 0.25 
-  #x_idx = ['1','2','3','4','5','6']
-  x_idx = np.array(gpu_list)
-  
-  p1 = ax1.bar(x_idx - width, part_CSR_baseline, width)
-  p2 = ax1.bar(x_idx, part_pCSR, width)
-  p3 = ax1.bar(x_idx + width, part_pCSR_opt, width)
-  ax1.set_xticks(x_idx)
-  ax1.set_xticklabels(xticklabels)
-  ax1.set_ylabel("Time (s)")
-  ax1.ticklabel_format(axis='y', style='scientific', scilimits=(0,0))
-  ax1.set_title("CSR")
-  #ax1.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.55, 1), ncol=1)
-  
-  p1 = ax2.bar(x_idx - width, part_CSC_baseline.tolist(), width)
-  p2 = ax2.bar(x_idx, part_pCSC.tolist(), width)
-  p3 = ax2.bar(x_idx + width, part_pCSC_opt.tolist(), width)
-  ax2.set_xticks(x_idx)
-  ax2.set_xticklabels(xticklabels)
-  ax2.set_xlabel("Number of GPUs")
-  ax2.ticklabel_format(axis='y', style='scientific', scilimits=(0,0))
-  ax2.set_title("CSC")
-  #ax2.legend((p1[0], p2[0], p3[0]), ('CSC-naive', 'pCSC', 'pCSC-opt'), loc='lower left', bbox_to_anchor= (-0.2, 1.01), ncol=3)
-  
+    fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
+    width = 0.25 
+    #x_idx = ['1','2','3','4','5','6']
+    x_idx = np.array(gpu_list)
+    
+    p1 = ax1.bar(x_idx - width, part_CSR_baseline, width)
+    p2 = ax1.bar(x_idx, part_pCSR, width)
+    p3 = ax1.bar(x_idx + width, part_pCSR_opt, width)
+    ax1.set_xticks(x_idx)
+    ax1.set_xticklabels(xticklabels)
+    ax1.set_ylabel("Time (s)")
+    ax1.ticklabel_format(axis='y', style='scientific', scilimits=(0,0))
+    ax1.set_title("CSR")
+    #ax1.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.55, 1), ncol=1)
+    
+    p1 = ax2.bar(x_idx - width, part_CSC_baseline.tolist(), width)
+    p2 = ax2.bar(x_idx, part_pCSC.tolist(), width)
+    p3 = ax2.bar(x_idx + width, part_pCSC_opt.tolist(), width)
+    ax2.set_xticks(x_idx)
+    ax2.set_xticklabels(xticklabels)
+    ax2.set_xlabel("Number of GPUs")
+    ax2.ticklabel_format(axis='y', style='scientific', scilimits=(0,0))
+    ax2.set_title("CSC")
+    #ax2.legend((p1[0], p2[0], p3[0]), ('CSC-naive', 'pCSC', 'pCSC-opt'), loc='lower left', bbox_to_anchor= (-0.2, 1.01), ncol=3)
+    
 
-  p1 = ax3.bar(x_idx - width, part_COO_baseline.tolist(), width)
-  p2 = ax3.bar(x_idx, part_pCOO.tolist(), width)
-  p3 = ax3.bar(x_idx + width, part_pCOO_opt.tolist(), width)
-  ax3.set_xticks(x_idx)
-  ax3.set_xticklabels(xticklabels)
-  ax3.ticklabel_format(axis='y', style='scientific', scilimits=(0,0))
-  ax3.set_title("COO")
+    p1 = ax3.bar(x_idx - width, part_COO_baseline.tolist(), width)
+    p2 = ax3.bar(x_idx, part_pCOO.tolist(), width)
+    p3 = ax3.bar(x_idx + width, part_pCOO_opt.tolist(), width)
+    ax3.set_xticks(x_idx)
+    ax3.set_xticklabels(xticklabels)
+    ax3.ticklabel_format(axis='y', style='scientific', scilimits=(0,0))
+    ax3.set_title("COO")
 
-  ax1.legend((p1[0], p2[0], p3[0]), ('Baseline', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.3, -0.08), ncol=3)
-  
-  plt.tight_layout()
-  #plt.show()
-  plt.savefig('{}_partition_time_{}.pdf'.format(matrix_name, platform))  
+    ax1.legend((p1[0], p2[0], p3[0]), ('Baseline', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.3, -0.08), ncol=3)
+    
+    plt.tight_layout()
+    #plt.show()
+    plt.savefig('{}_partition_time_{}.pdf'.format(matrix_name, platform))  
 
-############# Parition Overhead ###############
-  fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
-  width = 0.25 
-  #x_idx = ['1','2','3','4','5','6']
-  #x_idx = np.arange(ngpu)
-  
-  p1 = ax1.bar(x_idx - width, part_CSR_baseline/(part_CSR_baseline + comp_CSR_baseline + comm_CSR_baseline).tolist(), width)
-  p2 = ax1.bar(x_idx, part_pCSR/(part_pCSR + comp_pCSR + comm_pCSR).tolist(), width)
-  p3 = ax1.bar(x_idx + width, part_pCSR_opt/(part_pCSR_opt + comp_pCSR + comm_pCSR).tolist(), width)
-  ax1.set_xticks(x_idx)
-  ax1.set_xticklabels(xticklabels)
-  ax1.set_ylabel("Overhead")
-  ax1.set_title("CSR")
-  #ax1.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.55, 1), ncol=1)
-  
-  p1 = ax2.bar(x_idx - width, part_CSC_baseline/(part_CSC_baseline + comp_CSC_baseline + comm_CSC_baseline).tolist(), width)
-  p2 = ax2.bar(x_idx, part_pCSC/(part_pCSC + comp_pCSC + comm_pCSC).tolist(), width)
-  p3 = ax2.bar(x_idx + width, part_pCSC_opt/(part_pCSC_opt + comp_pCSC + comm_pCSC).tolist(), width)
-  ax2.set_xticks(x_idx)
-  ax2.set_xticklabels(xticklabels)
-  ax2.set_xlabel("Number of GPUs")
-  ax2.set_title("CSC")
-  #ax2.legend((p1[0], p2[0], p3[0]), ('CSC-naive', 'pCSC', 'pCSC-opt'), loc='lower left', bbox_to_anchor= (-0.2, 1.01), ncol=3)
-  
+  ############# Parition Overhead ###############
+    fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
+    width = 0.25 
+    #x_idx = ['1','2','3','4','5','6']
+    #x_idx = np.arange(ngpu)
+    
+    p1 = ax1.bar(x_idx - width, part_CSR_baseline/(part_CSR_baseline + comp_CSR_baseline + comm_CSR_baseline).tolist(), width)
+    p2 = ax1.bar(x_idx, part_pCSR/(part_pCSR + comp_pCSR + comm_pCSR).tolist(), width)
+    p3 = ax1.bar(x_idx + width, part_pCSR_opt/(part_pCSR_opt + comp_pCSR + comm_pCSR).tolist(), width)
+    ax1.set_xticks(x_idx)
+    ax1.set_xticklabels(xticklabels)
+    ax1.set_ylabel("Overhead")
+    ax1.set_title("CSR")
+    #ax1.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.55, 1), ncol=1)
+    
+    p1 = ax2.bar(x_idx - width, part_CSC_baseline/(part_CSC_baseline + comp_CSC_baseline + comm_CSC_baseline).tolist(), width)
+    p2 = ax2.bar(x_idx, part_pCSC/(part_pCSC + comp_pCSC + comm_pCSC).tolist(), width)
+    p3 = ax2.bar(x_idx + width, part_pCSC_opt/(part_pCSC_opt + comp_pCSC + comm_pCSC).tolist(), width)
+    ax2.set_xticks(x_idx)
+    ax2.set_xticklabels(xticklabels)
+    ax2.set_xlabel("Number of GPUs")
+    ax2.set_title("CSC")
+    #ax2.legend((p1[0], p2[0], p3[0]), ('CSC-naive', 'pCSC', 'pCSC-opt'), loc='lower left', bbox_to_anchor= (-0.2, 1.01), ncol=3)
+    
 
-  p1 = ax3.bar(x_idx - width, part_COO_baseline/(part_COO_baseline + comp_COO_baseline + comm_COO_baseline).tolist(), width)
-  p2 = ax3.bar(x_idx, part_pCOO/(part_pCOO + comp_pCOO + comm_pCOO).tolist(), width)
-  p3 = ax3.bar(x_idx + width, part_pCOO_opt/(part_pCOO_opt + comp_pCOO + comm_pCOO).tolist(), width)
-  ax3.set_xticks(x_idx)
-  ax3.set_xticklabels(xticklabels)
-  ax3.set_title("COO")
+    p1 = ax3.bar(x_idx - width, part_COO_baseline/(part_COO_baseline + comp_COO_baseline + comm_COO_baseline).tolist(), width)
+    p2 = ax3.bar(x_idx, part_pCOO/(part_pCOO + comp_pCOO + comm_pCOO).tolist(), width)
+    p3 = ax3.bar(x_idx + width, part_pCOO_opt/(part_pCOO_opt + comp_pCOO + comm_pCOO).tolist(), width)
+    ax3.set_xticks(x_idx)
+    ax3.set_xticklabels(xticklabels)
+    ax3.set_title("COO")
 
-  ax3.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (1, 1.01), ncol=1)
-  
-  plt.tight_layout()
-  #plt.show()
-  plt.savefig('{}_partition_overhead_{}.pdf'.format(matrix_name, platform))
-
-
-  ############# Merging Time ###############
-  fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
-  width = 0.25 
-  #x_idx = ['1','2','3','4','5','6']
-  #x_idx = np.arange(ngpu)
-  
-  p1 = ax1.bar(x_idx - width, merg_CSR_baseline.tolist(), width)
-  p2 = ax1.bar(x_idx, merg_pCSR.tolist(), width)
-  p3 = ax1.bar(x_idx + width, merg_pCSR_opt.tolist(), width)
-  ax1.set_xticks(x_idx)
-  ax1.set_xticklabels(xticklabels)
-  ax1.ticklabel_format(axis='y', style='scientific', scilimits=(0,0))
-  ax1.set_ylabel("Time (s)")
-  ax1.set_title("CSR")
-  #ax1.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.55, 1), ncol=1)
-  
-  p1 = ax2.bar(x_idx - width, merg_CSC_baseline.tolist(), width)
-  p2 = ax2.bar(x_idx, merg_pCSC.tolist(), width)
-  p3 = ax2.bar(x_idx + width, merg_pCSC_opt.tolist(), width)
-  ax2.set_xticks(x_idx)
-  ax2.set_xticklabels(xticklabels)
-  ax2.ticklabel_format(axis='y', style='scientific', scilimits=(0,0))
-  ax2.set_xlabel("Number of GPUs")
-  ax2.set_title("CSC")
-  #ax2.legend((p1[0], p2[0], p3[0]), ('CSC-naive', 'pCSC', 'pCSC-opt'), loc='lower left', bbox_to_anchor= (-0.2, 1.01), ncol=3)
-  
-
-  p1 = ax3.bar(x_idx - width, merg_COO_baseline.tolist(), width)
-  p2 = ax3.bar(x_idx, merg_pCOO.tolist(), width)
-  p3 = ax3.bar(x_idx + width, merg_pCOO_opt.tolist(), width)
-  ax3.set_xticks(x_idx)
-  ax3.set_xticklabels(xticklabels)
-  ax3.ticklabel_format(axis='y', style='scientific', scilimits=(0,0))
-  ax3.set_title("COO")
-
-  ax1.legend((p1[0], p2[0], p3[0]), ('Baseline', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.3, -0.08), ncol=3)
-  
-  plt.tight_layout()
-  #plt.show()
-  plt.savefig('{}_merge_time_{}.pdf'.format(matrix_name, platform))  
-
-############# Merging Overhead ###############
-  fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
-  width = 0.25 
-  #x_idx = ['1','2','3','4','5','6']
-  #x_idx = np.arange(ngpu)
-  
-  p1 = ax1.bar(x_idx - width, merg_CSR_baseline/(merg_CSR_baseline + comp_CSR_baseline + comm_CSR_baseline).tolist(), width)
-  p2 = ax1.bar(x_idx, part_pCSR/(merg_pCSR + comp_pCSR + comm_pCSR).tolist(), width)
-  p3 = ax1.bar(x_idx + width, merg_pCSR_opt/(merg_pCSR_opt + comp_pCSR + comm_pCSR).tolist(), width)
-  ax1.set_xticks(x_idx)
-  ax1.set_xticklabels(xticklabels)
-  ax1.set_ylabel("Overhead")
-  ax1.set_title("CSR")
-  #ax1.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.55, 1), ncol=1)
-  
-  p1 = ax2.bar(x_idx - width, merg_CSC_baseline/(merg_CSC_baseline + comp_CSC_baseline + comm_CSC_baseline).tolist(), width)
-  p2 = ax2.bar(x_idx, merg_pCSC/(merg_pCSC + comp_pCSC + comm_pCSC).tolist(), width)
-  p3 = ax2.bar(x_idx + width, merg_pCSC_opt/(merg_pCSC_opt + comp_pCSC + comm_pCSC).tolist(), width)
-  ax2.set_xticks(x_idx)
-  ax2.set_xticklabels(xticklabels)
-  ax2.set_xlabel("Number of GPUs")
-  ax2.set_title("CSC")
-  #ax2.legend((p1[0], p2[0], p3[0]), ('CSC-naive', 'pCSC', 'pCSC-opt'), loc='lower left', bbox_to_anchor= (-0.2, 1.01), ncol=3)
-  
-
-  p1 = ax3.bar(x_idx - width, merg_COO_baseline/(merg_COO_baseline + comp_COO_baseline + comm_COO_baseline).tolist(), width)
-  p2 = ax3.bar(x_idx, merg_pCOO/(merg_pCOO + comp_pCOO + comm_pCOO).tolist(), width)
-  p3 = ax3.bar(x_idx + width, merg_pCOO_opt/(merg_pCOO_opt + comp_pCOO + comm_pCOO).tolist(), width)
-  ax3.set_xticks(x_idx)
-  ax3.set_xticklabels(xticklabels)
-  ax3.set_title("COO")
-
-  ax3.legend((p1[0], p2[0], p3[0]), ('Baseline', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (1, 1.01), ncol=1)
-  
-  plt.tight_layout()
-  #plt.show()
-  plt.savefig('{}_merg_overhead_{}.pdf'.format(matrix_name, platform))
+    ax3.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (1, 1.01), ncol=1)
+    
+    plt.tight_layout()
+    #plt.show()
+    plt.savefig('{}_partition_overhead_{}.pdf'.format(matrix_name, platform))
 
 
-################ Comm Time #################
-  fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
-  width = 0.25 
-  #x_idx = ['1','2','3','4','5','6']
-  #x_idx = np.arange(ngpu)
-  
-  p1 = ax1.bar(x_idx - width, comm_CSR_baseline.tolist(), width)
-  p2 = ax1.bar(x_idx, comm_pCSR.tolist(), width)
-  ax1.set_xticks(x_idx)
-  ax1.set_xticklabels(xticklabels)
-  ax1.set_ylabel("Time (s)")
-  ax1.set_title("CSR")
-  #ax1.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.55, 1), ncol=1)
-  
-  p1 = ax2.bar(x_idx - width, comm_CSC_baseline.tolist(), width)
-  p2 = ax2.bar(x_idx, comm_pCSC.tolist(), width)
-  ax2.set_xticks(x_idx)
-  ax2.set_xticklabels(xticklabels)
-  ax2.set_xlabel("Number of GPUs")
-  ax2.set_title("CSC")
-  #ax2.legend((p1[0], p2[0], p3[0]), ('CSC-naive', 'pCSC', 'pCSC-opt'), loc='lower left', bbox_to_anchor= (-0.2, 1.01), ncol=3)
-  
+    ############# Merging Time ###############
+    fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
+    width = 0.25 
+    #x_idx = ['1','2','3','4','5','6']
+    #x_idx = np.arange(ngpu)
+    
+    p1 = ax1.bar(x_idx - width, merg_CSR_baseline.tolist(), width)
+    p2 = ax1.bar(x_idx, merg_pCSR.tolist(), width)
+    p3 = ax1.bar(x_idx + width, merg_pCSR_opt.tolist(), width)
+    ax1.set_xticks(x_idx)
+    ax1.set_xticklabels(xticklabels)
+    ax1.ticklabel_format(axis='y', style='scientific', scilimits=(0,0))
+    ax1.set_ylabel("Time (s)")
+    ax1.set_title("CSR")
+    #ax1.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.55, 1), ncol=1)
+    
+    p1 = ax2.bar(x_idx - width, merg_CSC_baseline.tolist(), width)
+    p2 = ax2.bar(x_idx, merg_pCSC.tolist(), width)
+    p3 = ax2.bar(x_idx + width, merg_pCSC_opt.tolist(), width)
+    ax2.set_xticks(x_idx)
+    ax2.set_xticklabels(xticklabels)
+    ax2.ticklabel_format(axis='y', style='scientific', scilimits=(0,0))
+    ax2.set_xlabel("Number of GPUs")
+    ax2.set_title("CSC")
+    #ax2.legend((p1[0], p2[0], p3[0]), ('CSC-naive', 'pCSC', 'pCSC-opt'), loc='lower left', bbox_to_anchor= (-0.2, 1.01), ncol=3)
+    
 
-  p1 = ax3.bar(x_idx - width, comm_COO_baseline.tolist(), width)
-  p2 = ax3.bar(x_idx, comm_pCOO.tolist(), width)
-  ax3.set_xticks(x_idx)
-  ax3.set_xticklabels(xticklabels)
-  ax3.set_title("COO")
+    p1 = ax3.bar(x_idx - width, merg_COO_baseline.tolist(), width)
+    p2 = ax3.bar(x_idx, merg_pCOO.tolist(), width)
+    p3 = ax3.bar(x_idx + width, merg_pCOO_opt.tolist(), width)
+    ax3.set_xticks(x_idx)
+    ax3.set_xticklabels(xticklabels)
+    ax3.ticklabel_format(axis='y', style='scientific', scilimits=(0,0))
+    ax3.set_title("COO")
 
-  ax3.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*'), loc='upper left', bbox_to_anchor= (1, 1.01), ncol=1)
-  
-  plt.tight_layout()
-  #plt.show()
-  plt.savefig('{}_comm_time_{}.pdf'.format(matrix_name, platform))  
+    ax1.legend((p1[0], p2[0], p3[0]), ('Baseline', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.3, -0.08), ncol=3)
+    
+    plt.tight_layout()
+    #plt.show()
+    plt.savefig('{}_merge_time_{}.pdf'.format(matrix_name, platform))  
 
-  ################ Overall Time #################
-  fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
-  width = 0.25 
-  #x_idx = ['1','2','3','4','5','6']
-  #x_idx = np.arange(ngpu)
-  
-  p1 = ax1.bar(x_idx - width, total_CSR_baseline.tolist(), width)
-  p2 = ax1.bar(x_idx, total_pCSR.tolist(), width)
-  p3 = ax1.bar(x_idx + width, total_pCSR_opt.tolist(), width)
-  ax1.set_xticks(x_idx)
-  ax1.set_xticklabels(xticklabels)
-  ax1.set_ylabel("Time (s)")
-  ax1.set_title("CSR")
-  #ax1.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.55, 1), ncol=1)
-  
-  p1 = ax2.bar(x_idx - width, total_CSC_baseline.tolist(), width)
-  p2 = ax2.bar(x_idx, total_pCSC.tolist(), width)
-  p3 = ax2.bar(x_idx + width, total_pCSC_opt.tolist(), width)
-  ax2.set_xticks(x_idx)
-  ax2.set_xticklabels(xticklabels)
-  ax2.set_xlabel("Number of GPUs")
-  ax2.set_title("CSC")
-  #ax2.legend((p1[0], p2[0], p3[0]), ('CSC-naive', 'pCSC', 'pCSC-opt'), loc='lower left', bbox_to_anchor= (-0.2, 1.01), ncol=3)
-  
+  ############# Merging Overhead ###############
+    fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
+    width = 0.25 
+    #x_idx = ['1','2','3','4','5','6']
+    #x_idx = np.arange(ngpu)
+    
+    p1 = ax1.bar(x_idx - width, merg_CSR_baseline/(merg_CSR_baseline + comp_CSR_baseline + comm_CSR_baseline).tolist(), width)
+    p2 = ax1.bar(x_idx, part_pCSR/(merg_pCSR + comp_pCSR + comm_pCSR).tolist(), width)
+    p3 = ax1.bar(x_idx + width, merg_pCSR_opt/(merg_pCSR_opt + comp_pCSR + comm_pCSR).tolist(), width)
+    ax1.set_xticks(x_idx)
+    ax1.set_xticklabels(xticklabels)
+    ax1.set_ylabel("Overhead")
+    ax1.set_title("CSR")
+    #ax1.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.55, 1), ncol=1)
+    
+    p1 = ax2.bar(x_idx - width, merg_CSC_baseline/(merg_CSC_baseline + comp_CSC_baseline + comm_CSC_baseline).tolist(), width)
+    p2 = ax2.bar(x_idx, merg_pCSC/(merg_pCSC + comp_pCSC + comm_pCSC).tolist(), width)
+    p3 = ax2.bar(x_idx + width, merg_pCSC_opt/(merg_pCSC_opt + comp_pCSC + comm_pCSC).tolist(), width)
+    ax2.set_xticks(x_idx)
+    ax2.set_xticklabels(xticklabels)
+    ax2.set_xlabel("Number of GPUs")
+    ax2.set_title("CSC")
+    #ax2.legend((p1[0], p2[0], p3[0]), ('CSC-naive', 'pCSC', 'pCSC-opt'), loc='lower left', bbox_to_anchor= (-0.2, 1.01), ncol=3)
+    
 
-  p1 = ax3.bar(x_idx - width, total_COO_baseline.tolist(), width)
-  p2 = ax3.bar(x_idx, total_pCOO.tolist(), width)
-  p3 = ax3.bar(x_idx + width, total_pCOO_opt.tolist(), width)
-  ax3.set_xticks(x_idx)
-  ax3.set_xticklabels(xticklabels)
-  ax3.set_title("COO")
+    p1 = ax3.bar(x_idx - width, merg_COO_baseline/(merg_COO_baseline + comp_COO_baseline + comm_COO_baseline).tolist(), width)
+    p2 = ax3.bar(x_idx, merg_pCOO/(merg_pCOO + comp_pCOO + comm_pCOO).tolist(), width)
+    p3 = ax3.bar(x_idx + width, merg_pCOO_opt/(merg_pCOO_opt + comp_pCOO + comm_pCOO).tolist(), width)
+    ax3.set_xticks(x_idx)
+    ax3.set_xticklabels(xticklabels)
+    ax3.set_title("COO")
 
-  ax3.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (1, 1.01), ncol=1)
-  
-  plt.tight_layout()
-  #plt.show()
-  plt.savefig('{}_total_time_{}.pdf'.format(matrix_name, platform))  
+    ax3.legend((p1[0], p2[0], p3[0]), ('Baseline', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (1, 1.01), ncol=1)
+    
+    plt.tight_layout()
+    #plt.show()
+    plt.savefig('{}_merg_overhead_{}.pdf'.format(matrix_name, platform))
 
-  ################ Overall Speedup #################
-  fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
-  width = 0.25 
-  #x_idx = ['1','2','3','4','5','6']
-  #x_idx = np.arange(ngpu)
-  
-  p1 = ax1.bar(x_idx - width, speedup_CSR_baseline.tolist(), width)
-  p2 = ax1.bar(x_idx, speedup_pCSR.tolist(), width)
-  p3 = ax1.bar(x_idx + width, speedup_pCSR_opt_numa.tolist(), width)
-  ax1.set_xticks(x_idx)
-  ax1.set_xticklabels(xticklabels)
-  ax1.set_ylabel("Speedup")
-  ax1.set_title("CSR")
-  #ax1.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.55, 1), ncol=1)
-  
-  p1 = ax2.bar(x_idx - width, speedup_CSC_baseline.tolist(), width)
-  p2 = ax2.bar(x_idx, speedup_pCSC.tolist(), width)
-  p3 = ax2.bar(x_idx + width, speedup_pCSC_opt_numa.tolist(), width)
-  ax2.set_xticks(x_idx)
-  ax2.set_xticklabels(xticklabels)
-  ax2.set_xlabel("Number of GPUs")
-  ax2.set_title("CSC")
-  #ax2.legend((p1[0], p2[0], p3[0]), ('CSC-naive', 'pCSC', 'pCSC-opt'), loc='lower left', bbox_to_anchor= (-0.2, 1.01), ncol=3)
-  
 
-  p1 = ax3.bar(x_idx - width, speedup_COO_baseline.tolist(), width)
-  p2 = ax3.bar(x_idx, speedup_pCOO.tolist(), width)
-  p3 = ax3.bar(x_idx + width, speedup_pCOO_opt_numa.tolist(), width)
-  ax3.set_xticks(x_idx)
-  ax3.set_xticklabels(xticklabels)
-  ax3.set_title("COO")
+  ################ Comm Time #################
+    fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
+    width = 0.25 
+    #x_idx = ['1','2','3','4','5','6']
+    #x_idx = np.arange(ngpu)
+    
+    p1 = ax1.bar(x_idx - width, comm_CSR_baseline.tolist(), width)
+    p2 = ax1.bar(x_idx, comm_pCSR.tolist(), width)
+    p3 = ax1.bar(x_idx + width, comm_pCSR_numa.tolist(), width)
+    ax1.set_xticks(x_idx)
+    ax1.set_xticklabels(xticklabels)
+    ax1.set_ylabel("Time (s)")
+    ax1.set_title("CSR")
+    #ax1.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.55, 1), ncol=1)
+    
+    p1 = ax2.bar(x_idx - width, comm_CSC_baseline.tolist(), width)
+    p2 = ax2.bar(x_idx, comm_pCSC.tolist(), width)
+    p3 = ax2.bar(x_idx + width, comm_pCSR_numa.tolist(), width)
+    ax2.set_xticks(x_idx)
+    ax2.set_xticklabels(xticklabels)
+    ax2.set_xlabel("Number of GPUs")
+    ax2.set_title("CSC")
+    #ax2.legend((p1[0], p2[0], p3[0]), ('CSC-naive', 'pCSC', 'pCSC-opt'), loc='lower left', bbox_to_anchor= (-0.2, 1.01), ncol=3)
+    
 
-  ax1.legend((p1[0], p2[0], p3[0]), ('Baseline', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.3, -0.08), ncol=3)
-  
-  plt.tight_layout()
-  #plt.show()
-  plt.savefig('{}_total_speedup_{}.pdf'.format(matrix_name, platform))  
+    p1 = ax3.bar(x_idx - width, comm_COO_baseline.tolist(), width)
+    p2 = ax3.bar(x_idx, comm_pCOO.tolist(), width)
+    p3 = ax3.bar(x_idx + width, comm_pCSR_numa.tolist(), width)
+    ax3.set_xticks(x_idx)
+    ax3.set_xticklabels(xticklabels)
+    ax3.set_title("COO")
 
-  ################ NUMA Speedup #################
-  fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
-  width = 0.25 
-  #x_idx = ['1','2','3','4','5','6']
-  #x_idx = np.arange(ngpu)
-  
-  p1 = ax1.bar(x_idx - width/2, speedup_pCSR_opt.tolist(), width)
-  p2 = ax1.bar(x_idx + width/2, speedup_pCSR_opt_numa.tolist(), width)
-  ax1.set_xticks(x_idx)
-  ax1.set_xticklabels(xticklabels)
-  ax1.set_ylabel("Speedup")
-  ax1.set_title("CSR")
-  #ax1.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.55, 1), ncol=1)
-  
-  p1 = ax2.bar(x_idx - width/2, speedup_pCSC_opt.tolist(), width)
-  p2 = ax2.bar(x_idx + width/2, speedup_pCSC_opt_numa.tolist(), width)
-  ax2.set_xticks(x_idx)
-  ax2.set_xticklabels(xticklabels)
-  ax2.set_xlabel("Number of GPUs")
-  ax2.set_title("CSC")
-  #ax2.legend((p1[0], p2[0], p3[0]), ('CSC-naive', 'pCSC', 'pCSC-opt'), loc='lower left', bbox_to_anchor= (-0.2, 1.01), ncol=3)
-  
+    ax3.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', "p*-numa"), loc='upper left', bbox_to_anchor= (1, 1.01), ncol=1)
+    
+    plt.tight_layout()
+    #plt.show()
+    plt.savefig('{}_comm_time_{}.pdf'.format(matrix_name, platform))  
 
-  p1 = ax3.bar(x_idx - width/2, speedup_pCOO_opt.tolist(), width)
-  p2 = ax3.bar(x_idx + width/2, speedup_pCOO_opt_numa.tolist(), width)
-  ax3.set_xticks(x_idx)
-  ax3.set_xticklabels(xticklabels)
-  ax3.set_title("COO")
+    ################ Comp Time #################
+    fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
+    width = 0.25 
+    #x_idx = ['1','2','3','4','5','6']
+    #x_idx = np.arange(ngpu)
+    
+    p1 = ax1.bar(x_idx - width, comp_CSR_baseline.tolist(), width)
+    p2 = ax1.bar(x_idx, comp_pCSR.tolist(), width)
+    ax1.set_xticks(x_idx)
+    ax1.set_xticklabels(xticklabels)
+    ax1.set_ylabel("Time (s)")
+    ax1.set_title("CSR")
+    #ax1.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.55, 1), ncol=1)
+    
+    p1 = ax2.bar(x_idx - width, comp_CSC_baseline.tolist(), width)
+    p2 = ax2.bar(x_idx, comp_pCSC.tolist(), width)
+    ax2.set_xticks(x_idx)
+    ax2.set_xticklabels(xticklabels)
+    ax2.set_xlabel("Number of GPUs")
+    ax2.set_title("CSC")
+    #ax2.legend((p1[0], p2[0], p3[0]), ('CSC-naive', 'pCSC', 'pCSC-opt'), loc='lower left', bbox_to_anchor= (-0.2, 1.01), ncol=3)
+    
 
-  ax1.legend((p1[0], p2[0]), ('w/o NUMA-aware', 'w/ NUMA-aware'), loc='upper left', bbox_to_anchor= (0, -0.1), ncol=1)
-  
-  plt.tight_layout()
-  #plt.show()
-  plt.savefig('{}_numa_speedup_{}.pdf'.format(matrix_name, platform))  
+    p1 = ax3.bar(x_idx - width, comp_COO_baseline.tolist(), width)
+    p2 = ax3.bar(x_idx, comp_pCOO.tolist(), width)
+    ax3.set_xticks(x_idx)
+    ax3.set_xticklabels(xticklabels)
+    ax3.set_title("COO")
+
+    ax3.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*'), loc='upper left', bbox_to_anchor= (1, 1.01), ncol=1)
+    
+    plt.tight_layout()
+    #plt.show()
+    plt.savefig('{}_comp_time_{}.pdf'.format(matrix_name, platform))  
+
+    ################ Overall Time #################
+    fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
+    width = 0.25 
+    #x_idx = ['1','2','3','4','5','6']
+    #x_idx = np.arange(ngpu)
+    
+    p1 = ax1.bar(x_idx - width, total_CSR_baseline.tolist(), width)
+    p2 = ax1.bar(x_idx, total_pCSR.tolist(), width)
+    p3 = ax1.bar(x_idx + width, total_pCSR_opt.tolist(), width)
+    ax1.set_xticks(x_idx)
+    ax1.set_xticklabels(xticklabels)
+    ax1.set_ylabel("Time (s)")
+    ax1.set_title("CSR")
+    #ax1.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.55, 1), ncol=1)
+    
+    p1 = ax2.bar(x_idx - width, total_CSC_baseline.tolist(), width)
+    p2 = ax2.bar(x_idx, total_pCSC.tolist(), width)
+    p3 = ax2.bar(x_idx + width, total_pCSC_opt.tolist(), width)
+    ax2.set_xticks(x_idx)
+    ax2.set_xticklabels(xticklabels)
+    ax2.set_xlabel("Number of GPUs")
+    ax2.set_title("CSC")
+    #ax2.legend((p1[0], p2[0], p3[0]), ('CSC-naive', 'pCSC', 'pCSC-opt'), loc='lower left', bbox_to_anchor= (-0.2, 1.01), ncol=3)
+    
+
+    p1 = ax3.bar(x_idx - width, total_COO_baseline.tolist(), width)
+    p2 = ax3.bar(x_idx, total_pCOO.tolist(), width)
+    p3 = ax3.bar(x_idx + width, total_pCOO_opt.tolist(), width)
+    ax3.set_xticks(x_idx)
+    ax3.set_xticklabels(xticklabels)
+    ax3.set_title("COO")
+
+    ax3.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (1, 1.01), ncol=1)
+    
+    plt.tight_layout()
+    #plt.show()
+    plt.savefig('{}_total_time_{}.pdf'.format(matrix_name, platform))  
+
+    ################ Overall Speedup #################
+    fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
+    width = 0.25 
+    #x_idx = ['1','2','3','4','5','6']
+    #x_idx = np.arange(ngpu)
+
+    if (platform == 'dgx1'):
+      y_idx = np.array(range(8))
+    if (platform == 'smt'):
+      y_idx = np.array(range(6))
+    
+    p1 = ax1.bar(x_idx - width, speedup_CSR_baseline.tolist(), width)
+    p2 = ax1.bar(x_idx, speedup_pCSR.tolist(), width)
+    p3 = ax1.bar(x_idx + width, speedup_pCSR_opt_numa.tolist(), width)
+    ax1.set_xticks(x_idx)
+    ax1.set_xticklabels(xticklabels)
+    ax1.set_ylabel("Speedup")
+    ax1.set_yticks(y_idx)
+    ax1.set_title("CSR")
+    #ax1.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.55, 1), ncol=1)
+    
+    p1 = ax2.bar(x_idx - width, speedup_CSC_baseline.tolist(), width)
+    p2 = ax2.bar(x_idx, speedup_pCSC.tolist(), width)
+    p3 = ax2.bar(x_idx + width, speedup_pCSC_opt_numa.tolist(), width)
+    ax2.set_xticks(x_idx)
+    ax2.set_xticklabels(xticklabels)
+    ax2.set_xlabel("Number of GPUs")
+    ax2.set_yticks(y_idx)
+    ax2.set_title("CSC")
+    #ax2.legend((p1[0], p2[0], p3[0]), ('CSC-naive', 'pCSC', 'pCSC-opt'), loc='lower left', bbox_to_anchor= (-0.2, 1.01), ncol=3)
+    
+
+    p1 = ax3.bar(x_idx - width, speedup_COO_baseline.tolist(), width)
+    p2 = ax3.bar(x_idx, speedup_pCOO.tolist(), width)
+    p3 = ax3.bar(x_idx + width, speedup_pCOO_opt_numa.tolist(), width)
+    ax3.set_xticks(x_idx)
+    ax3.set_xticklabels(xticklabels)
+    ax3.set_yticks(y_idx)
+    ax3.set_title("COO")
+
+    ax1.legend((p1[0], p2[0], p3[0]), ('Baseline', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.3, -0.08), ncol=3)
+    
+    plt.tight_layout()
+    #plt.show()
+    plt.savefig('{}_total_speedup_{}.pdf'.format(matrix_name, platform))  
+
+    ################ NUMA Speedup #################
+    fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(12, 4))
+    width = 0.25 
+    #x_idx = ['1','2','3','4','5','6']
+    #x_idx = np.arange(ngpu)
+
+    if (platform == 'dgx1'):
+      y_idx = np.array(range(8))
+    if (platform == 'smt'):
+      y_idx = np.array(range(6))
+    
+    
+    p1 = ax1.bar(x_idx - width/2, speedup_pCSR_opt.tolist(), width)
+    p2 = ax1.bar(x_idx + width/2, speedup_pCSR_opt_numa.tolist(), width)
+    ax1.set_xticks(x_idx)
+    ax1.set_xticklabels(xticklabels)
+    ax1.set_ylabel("Speedup")
+    ax1.set_yticks(y_idx)
+    ax1.set_title("CSR")
+    #ax1.legend((p1[0], p2[0], p3[0]), ('Naive', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.55, 1), ncol=1)
+    
+    p1 = ax2.bar(x_idx - width/2, speedup_pCSC_opt.tolist(), width)
+    p2 = ax2.bar(x_idx + width/2, speedup_pCSC_opt_numa.tolist(), width)
+    ax2.set_xticks(x_idx)
+    ax2.set_xticklabels(xticklabels)
+    ax2.set_xlabel("Number of GPUs")
+    ax2.set_yticks(y_idx)
+    ax2.set_title("CSC")
+    #ax2.legend((p1[0], p2[0], p3[0]), ('CSC-naive', 'pCSC', 'pCSC-opt'), loc='lower left', bbox_to_anchor= (-0.2, 1.01), ncol=3)
+    
+
+    p1 = ax3.bar(x_idx - width/2, speedup_pCOO_opt.tolist(), width)
+    p2 = ax3.bar(x_idx + width/2, speedup_pCOO_opt_numa.tolist(), width)
+    ax3.set_xticks(x_idx)
+    ax3.set_xticklabels(xticklabels)
+    ax3.set_title("COO")
+    ax3.set_yticks(y_idx)
+
+    ax1.legend((p1[0], p2[0]), ('w/o NUMA-aware', 'w/ NUMA-aware'), loc='upper left', bbox_to_anchor= (0, -0.1), ncol=1)
+    
+    plt.tight_layout()
+    #plt.show()
+    plt.savefig('{}_numa_speedup_{}.pdf'.format(matrix_name, platform))  
+
+  return [speedup_pCSR_opt_numa, speedup_pCSC_opt_numa, speedup_pCOO_opt_numa]
 
 if __name__ == "__main__":
    main(sys.argv[1:])

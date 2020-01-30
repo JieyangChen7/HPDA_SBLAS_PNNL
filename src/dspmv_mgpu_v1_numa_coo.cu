@@ -472,7 +472,7 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
     elapsedTime /= 1000.0;
     comp_time += elapsedTime;
 
-    printf("omp thread %d, comm_time1 %f elapsedTime1 %f\n", dev_id, comm_time, elapsedTime);
+    // printf("omp thread %d, comm_time1 %f elapsedTime1 %f\n", dev_id, comm_time, elapsedTime);
     
     checkCudaErrors(cudaDeviceSynchronize());
     // if (status != CUSPARSE_STATUS_SUCCESS) printf("dev_id %d: exec error\n", dev_id);
