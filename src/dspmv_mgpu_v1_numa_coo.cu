@@ -289,28 +289,43 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
     checkCudaErrors(cudaMalloc((void**)&dev_csrColIdx, pcooGPU[dev_id].nnz     * sizeof(int) ));
 
 
+    checkCudaErrors(cudaMallocHost((void**)&pcooGPU[dev_id].host_rowIdx, pcooGPU[dev_id].nnz * sizeof(int)));
+    for (int i = 0; i < pcooGPU[dev_id].nnz; i ++) {
+        pcooGPU[dev_id].host_rowIdx[i] = pcooGPU[dev_id].rowIdx[i];
+    }
+
     if (part_opt == 0) {
       
-      checkCudaErrors(cudaMallocHost((void**)&pcooGPU[dev_id].host_rowIdx, pcooGPU[dev_id].nnz * sizeof(int)));
-      
-
+      // checkCudaErrors(cudaMallocHost((void**)&pcooGPU[dev_id].host_rowIdx, pcooGPU[dev_id].nnz * sizeof(int)));
       tmp_time = get_time();
       for (int i = 0; i < pcooGPU[dev_id].nnz; i ++) {
-        pcooGPU[dev_id].host_rowIdx[i] = pcooGPU[dev_id].rowIdx[i] - pcooGPU[dev_id].startRow;
+        pcooGPU[dev_id].host_rowIdx[i] -= pcooGPU[dev_id].startRow;
+        //pcooGPU[dev_id].host_rowIdx[i] = pcooGPU[dev_id].rowIdx[i] - pcooGPU[dev_id].startRow;
       }
       part_time += get_time() - tmp_time; 
-      checkCudaErrors(cudaEventRecord(comm_start, stream));
-      checkCudaErrors(cudaMemcpyAsync(pcooGPU[dev_id].drowIdx, pcooGPU[dev_id].host_rowIdx, pcooGPU[dev_id].nnz * sizeof(int), cudaMemcpyHostToDevice, stream)); 
-      checkCudaErrors(cudaEventRecord(comm_stop, stream));
-      checkCudaErrors(cudaDeviceSynchronize());
-      checkCudaErrors(cudaFreeHost(pcooGPU[dev_id].host_rowIdx));
+      // checkCudaErrors(cudaEventRecord(comm_start, stream));
+      // checkCudaErrors(cudaMemcpyAsync(pcooGPU[dev_id].drowIdx, pcooGPU[dev_id].host_rowIdx, pcooGPU[dev_id].nnz * sizeof(int), cudaMemcpyHostToDevice, stream)); 
+      // checkCudaErrors(cudaEventRecord(comm_stop, stream));
+      // checkCudaErrors(cudaDeviceSynchronize());
+      // checkCudaErrors(cudaFreeHost(pcooGPU[dev_id].host_rowIdx));
     }
- 
+
+    checkCudaErrors(cudaEventRecord(comm_start, stream));
+    checkCudaErrors(cudaMemcpyAsync(pcooGPU[dev_id].drowIdx, pcooGPU[dev_id].host_rowIdx, pcooGPU[dev_id].nnz * sizeof(int), cudaMemcpyHostToDevice, stream));
+    checkCudaErrors(cudaEventRecord(comm_stop, stream));
+    checkCudaErrors(cudaDeviceSynchronize());
+    checkCudaErrors(cudaEventSynchronize(comm_stop));
+    elapsedTime = 0.0;
+    checkCudaErrors(cudaEventElapsedTime(&elapsedTime, comm_start, comm_stop));
+    elapsedTime /= 1000.0;
+    comm_time += elapsedTime;
+
     if (part_opt == 1) {
-      checkCudaErrors(cudaEventRecord(comm_start, stream));
-      checkCudaErrors(cudaMemcpyAsync(pcooGPU[dev_id].drowIdx, pcooGPU[dev_id].rowIdx, pcooGPU[dev_id].nnz * sizeof(int), cudaMemcpyHostToDevice, stream));
-      checkCudaErrors(cudaEventRecord(comm_stop, stream));
-      checkCudaErrors(cudaDeviceSynchronize());
+      // checkCudaErrors(cudaEventRecord(comm_start, stream));
+      // checkCudaErrors(cudaMemcpyAsync(pcooGPU[dev_id].drowIdx, pcooGPU[dev_id].host_rowIdx, pcooGPU[dev_id].nnz * sizeof(int), cudaMemcpyHostToDevice, stream));
+      // //checkCudaErrors(cudaMemcpyAsync(pcooGPU[dev_id].drowIdx, pcooGPU[dev_id].rowIdx, pcooGPU[dev_id].nnz * sizeof(int), cudaMemcpyHostToDevice, stream));
+      // checkCudaErrors(cudaEventRecord(comm_stop, stream));
+      // checkCudaErrors(cudaDeviceSynchronize());
       
       tmp_time = get_time();
       calcCooRowIdx(pcooGPU[dev_id].drowIdx, pcooGPU[dev_id].nnz, pcooGPU[dev_id].startRow, stream);
@@ -318,11 +333,11 @@ spmv_ret spMV_mgpu_v1_numa_coo(int m, int n, int nnz, double * alpha,
       part_time += get_time() - tmp_time;  
     }
 
-    checkCudaErrors(cudaEventSynchronize(comm_stop));
-    elapsedTime = 0.0;
-    checkCudaErrors(cudaEventElapsedTime(&elapsedTime, comm_start, comm_stop));
-    elapsedTime /= 1000.0;
-    comm_time += elapsedTime;
+    // checkCudaErrors(cudaEventSynchronize(comm_stop));
+    // elapsedTime = 0.0;
+    // checkCudaErrors(cudaEventElapsedTime(&elapsedTime, comm_start, comm_stop));
+    // elapsedTime /= 1000.0;
+    // comm_time += elapsedTime;
     // printf("omp thread %d, comm_time0 %f elapsedTime0 %f\n", dev_id, comm_time, elapsedTime);
 
 

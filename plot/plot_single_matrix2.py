@@ -31,15 +31,16 @@ def main(argv):
   platform = str(argv[0])
   matrix_file = argv[1]
 
-  matrix_list = ['com-Orkut', 'mouse_gene', 'hollywood-2009', 'com-LiveJournal'] #'wb-edu'
+  matrix_list = ['HV15R', 'com-Orkut', 'mouse_gene', 'hollywood-2009', 'com-LiveJournal','wb-edu']
   for matrix_name in matrix_list:
     plot_single(platform, matrix_name + ".mtx", plot=True)
 
 
-  # plot_multiple(platform, matrix_file, 2)
-  # plot_multiple(platform, matrix_file, 4)
-  # plot_multiple(platform, matrix_file, 6)
-  #plot_multiple(platform, matrix_file, 8)
+  plot_multiple(platform, matrix_file, 2)
+  plot_multiple(platform, matrix_file, 4)
+  plot_multiple(platform, matrix_file, 6)
+  if (platform == 'dgx1'):
+    plot_multiple(platform, matrix_file, 8)
   
 
 
@@ -50,7 +51,7 @@ def plot_multiple(platform, matrix_file, ngpu):
   speedup_CSC = np.array([])
   speedup_COO = np.array([])
 
-  matrix_list = ['com-Orkut', 'mouse_gene', 'hollywood-2009', 'com-LiveJournal', 'wb-edu']
+  matrix_list = ['HV15R', 'com-Orkut', 'mouse_gene', 'hollywood-2009', 'com-LiveJournal','wb-edu']
 
   for matrix_name in matrix_list:
     ret = plot_single(platform, matrix_name + ".mtx", plot=False)
