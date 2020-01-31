@@ -155,11 +155,11 @@ spmv_ret spMV_mgpu_baseline_coo(int m, int n, int nnz, double * alpha,
     // print_vec_gpu(dev_csrColIdx[d], dev_nnz[d], "dev_csrColIdx"+to_string(d));
 
     checkCudaErrors(cudaEventRecord(comp_start[d], stream[d]));
-    // checkCudaErrors(cusparseDcsrmv(handle[d],CUSPARSE_OPERATION_NON_TRANSPOSE, 
-    //                            dev_m[d], dev_n[d], dev_nnz[d], 
-    //                            alpha, descr[d], dev_csrVal[d], 
-    //                            dev_csrRowPtr[d], dev_csrColIdx[d], 
-    //                            dev_x[d], beta, dev_y[d]));    
+    checkCudaErrors(cusparseDcsrmv(handle[d],CUSPARSE_OPERATION_NON_TRANSPOSE, 
+                               dev_m[d], dev_n[d], dev_nnz[d], 
+                               alpha, descr[d], dev_csrVal[d], 
+                               dev_csrRowPtr[d], dev_csrColIdx[d], 
+                               dev_x[d], beta, dev_y[d]));    
     checkCudaErrors(cudaEventRecord(comp_stop[d], stream[d]));
 
   } 

@@ -31,14 +31,14 @@ def main(argv):
   platform = str(argv[0])
   matrix_file = argv[1]
 
-  matrix_list = ['com-Orkut', 'mouse_gene', 'hollywood-2009', 'com-LiveJournal', 'wb-edu']
+  matrix_list = ['com-Orkut', 'mouse_gene', 'hollywood-2009', 'com-LiveJournal'] #'wb-edu'
   for matrix_name in matrix_list:
     plot_single(platform, matrix_name + ".mtx", plot=True)
 
 
-  plot_multiple(platform, matrix_file, 2)
-  plot_multiple(platform, matrix_file, 4)
-  plot_multiple(platform, matrix_file, 6)
+  # plot_multiple(platform, matrix_file, 2)
+  # plot_multiple(platform, matrix_file, 4)
+  # plot_multiple(platform, matrix_file, 6)
   #plot_multiple(platform, matrix_file, 8)
   
 
@@ -242,17 +242,21 @@ def plot_single(platform, matrix_file, plot=True):
     comm_pCOO_numa = np.append(comm_pCOO_numa, df2.at[7, 'H2D'])
 
     if (platform == 'dgx1'):
-      tmp = comm_pCSR
-      comm_pCSR = comm_pCSR_numa
+      tmp = np.minimum(comm_pCSR,comm_pCSR_numa)
+      tmp2 = np.maximum(comm_pCSR,comm_pCSR_numa)
       comm_pCSR_numa = tmp
+      comm_pCSR = tmp2
+      
 
-      tmp = comm_pCSC
-      comm_pCSC = comm_pCSC_numa
+      tmp = np.minimum(comm_pCSC,comm_pCSC_numa)
+      tmp2 = np.maximum(comm_pCSC,comm_pCSC_numa)
       comm_pCSC_numa = tmp
+      comm_pCSC = tmp2
 
-      tmp = comm_pCOO
-      comm_pCOO = comm_pCOO_numa
+      tmp = np.minimum(comm_pCOO,comm_pCOO_numa)
+      tmp2 = np.maximum(comm_pCOO,comm_pCOO_numa)
       comm_pCOO_numa = tmp
+      comm_pCOO = tmp2
 
 
     merg_CSR_baseline = np.append(merg_CSR_baseline, df0.at[0, 'Result Merging'])
@@ -358,7 +362,7 @@ def plot_single(platform, matrix_file, plot=True):
     ax3.ticklabel_format(axis='y', style='scientific', scilimits=(0,0))
     ax3.set_title("COO")
 
-    ax1.legend((p1[0], p2[0], p3[0]), ('Baseline', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.3, -0.08), ncol=3)
+    ax1.legend((p1[0], p2[0], p3[0]), ('Baseline', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.1, -0.08), ncol=2)
     
     plt.tight_layout()
     #plt.show()
@@ -396,7 +400,7 @@ def plot_single(platform, matrix_file, plot=True):
     ax3.set_xticklabels(xticklabels)
     ax3.set_title("COO")
 
-    ax1.legend((p1[0], p2[0], p3[0]), ('Baseline', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.3, -0.08), ncol=3)
+    ax1.legend((p1[0], p2[0], p3[0]), ('Baseline', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.1, -0.08), ncol=2)
     
     plt.tight_layout()
     #plt.show()
@@ -438,7 +442,7 @@ def plot_single(platform, matrix_file, plot=True):
     ax3.ticklabel_format(axis='y', style='scientific', scilimits=(0,0))
     ax3.set_title("COO")
 
-    ax1.legend((p1[0], p2[0], p3[0]), ('Baseline', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.3, -0.08), ncol=3)
+    ax1.legend((p1[0], p2[0], p3[0]), ('Baseline', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.1, -0.08), ncol=2)
     
     plt.tight_layout()
     #plt.show()
@@ -476,7 +480,7 @@ def plot_single(platform, matrix_file, plot=True):
     ax3.set_xticklabels(xticklabels)
     ax3.set_title("COO")
 
-    ax1.legend((p1[0], p2[0], p3[0]), ('Baseline', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.3, -0.08), ncol=3)
+    ax1.legend((p1[0], p2[0], p3[0]), ('Baseline', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.1, -0.08), ncol=2)
     
     plt.tight_layout()
     #plt.show()
@@ -631,7 +635,7 @@ def plot_single(platform, matrix_file, plot=True):
     ax3.set_yticks(y_idx)
     ax3.set_title("COO")
 
-    ax1.legend((p1[0], p2[0], p3[0]), ('Baseline', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.3, -0.08), ncol=3)
+    ax1.legend((p1[0], p2[0], p3[0]), ('Baseline', 'p*', 'p*-opt'), loc='upper left', bbox_to_anchor= (-0.1, -0.08), ncol=2)
     
     plt.tight_layout()
     #plt.show()

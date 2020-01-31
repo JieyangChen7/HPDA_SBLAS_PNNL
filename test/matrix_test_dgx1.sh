@@ -11,11 +11,11 @@ NUMA=AAA
 
 if ((${NUMA} == 1))
 then
-	export OMP_PLACES="{0},{1},{2},{3},{4},{5},{6},{7}"
+	export OMP_PLACES="{0},{2},{4},{8},{60},{62},{64},{66}"
 fi
 if ((${NUMA} == 0))
 then
-  export OMP_PLACES="{0},{1},{2},{3},{20},{21},{22},{23}"
+  export OMP_PLACES="{0},{2},{4},{6},{8},{10},{12},{14}"
 fi
 
 
