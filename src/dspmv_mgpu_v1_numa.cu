@@ -705,7 +705,7 @@ spmv_ret spMV_mgpu_v1_numa(int m, int n, int nnz, double * alpha,
     checkCudaErrors(cudaEventElapsedTime(&elapsedTime, comm_start, comm_stop));
     elapsedTime /= 1000.0;
     comm_time += elapsedTime;
-    printf("omp thread %d, elapsedTime %f comm_time %f\n", dev_id, elapsedTime, comm_time,
+    printf("omp thread %d, elapsedTime %f comm_time %f\n", dev_id, elapsedTime, comm_time);
 
     checkCudaErrors(cudaEventSynchronize(comp_stop));
     elapsedTime = 0.0;
