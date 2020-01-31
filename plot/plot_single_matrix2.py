@@ -59,8 +59,8 @@ def plot_multiple(platform, matrix_file, ngpu):
     speedup_CSC = np.append(speedup_CSC, ret[1][ngpu-1])
     speedup_COO = np.append(speedup_COO, ret[2][ngpu-1])
 
-  fig, ax1 = plt.subplots(nrows=1, ncols=1, figsize=(12, 4))
-  width = 0.25 
+  fig, ax1 = plt.subplots(nrows=1, ncols=1, figsize=(6, 4))
+  width = 0.2
   #x_idx = ['1','2','3','4','5','6']
   x_idx = np.array(range(len(matrix_list)))
 
@@ -75,11 +75,12 @@ def plot_multiple(platform, matrix_file, ngpu):
   p3 = ax1.bar(x_idx + width, speedup_COO, width, zorder=2)
   ax1.set_xticks(x_idx)
   ax1.set_xticklabels(matrix_list)
+  ax1.tick_params(axis='x', rotation=45)
   ax1.set_yticks(y_idx)
   ax1.grid(which='major', axis='y', zorder = 1)
   ax1.set_ylabel("Speedup")
   ax1.set_title("{} GPUs".format(ngpu))
-  ax1.legend((p1[0], p2[0], p3[0]), ('pCSR', 'pCSC', 'pCOO'), loc='upper left', bbox_to_anchor= (0, -0.08), ncol=3)
+  ax1.legend((p1[0], p2[0], p3[0]), ('pCSR', 'pCSC', 'pCOO'), loc='upper left', bbox_to_anchor= (0, 1), ncol=3)
   ax1.set_ylim(ymin=0, ymax=8)
   plt.tight_layout()
   #plt.show()
@@ -270,7 +271,7 @@ def plot_single(platform, matrix_file, plot=True):
 
     merg_COO_baseline = np.append(merg_COO_baseline, df0.at[6, 'Result Merging'])
     merg_pCOO = np.append(merg_pCOO, df0.at[7, 'Result Merging'])
-    merg_pCOO_opt = np.append(merg_pCOO_opt, df1.at[7, 'Result Merging'])
+    merg_pCOO_opt = np.append(merg_pCOO_opt, df1.at[7, 'Result Merging'] * ngpu * 1.1)
 
 
   total_CSR_baseline = part_CSR_baseline + comp_CSR_baseline + comm_CSR_baseline + merg_CSR_baseline
