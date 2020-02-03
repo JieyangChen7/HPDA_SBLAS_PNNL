@@ -243,24 +243,6 @@ def plot_single(platform, matrix_file, plot=True):
     comm_pCOO = np.append(comm_pCOO, df0.at[7, 'H2D'])
     comm_pCOO_numa = np.append(comm_pCOO_numa, df2.at[7, 'H2D'])
 
-    if (platform == 'dgx1'):
-      tmp = np.minimum(comm_pCSR,comm_pCSR_numa)
-      tmp2 = np.maximum(comm_pCSR,comm_pCSR_numa)
-      comm_pCSR_numa = tmp
-      comm_pCSR = tmp2
-      
-
-      tmp = np.minimum(comm_pCSC,comm_pCSC_numa)
-      tmp2 = np.maximum(comm_pCSC,comm_pCSC_numa)
-      comm_pCSC_numa = tmp
-      comm_pCSC = tmp2
-
-      tmp = np.minimum(comm_pCOO,comm_pCOO_numa)
-      tmp2 = np.maximum(comm_pCOO,comm_pCOO_numa)
-      comm_pCOO_numa = tmp
-      comm_pCOO = tmp2
-
-
     merg_CSR_baseline = np.append(merg_CSR_baseline, df0.at[0, 'Result Merging'])
     merg_pCSR = np.append(merg_pCSR, df0.at[1, 'Result Merging'])
     merg_pCSR_opt = np.append(merg_pCSR_opt, df1.at[1, 'Result Merging'])
