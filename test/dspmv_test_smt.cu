@@ -583,7 +583,9 @@ int main(int argc, char *argv[]) {
   ret_baseline_coo.avg(repeat_test);
   ret_static_coo.avg(repeat_test);
   ret_dynamic_coo.avg(repeat_test);
-    
+
+  printf("NUMA copy time, Partition time, H2D copy time, compute time, results merging time\n");
+
   ret_baseline_csr.print();
   ret_static_csr.print();
   ret_dynamic_csr.print();
