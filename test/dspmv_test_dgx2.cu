@@ -455,8 +455,8 @@ int main(int argc, char *argv[]) {
   struct spmv_ret ret;
   struct spmv_ret ret2;
   ret = ret2;
-  int numa_mapping[16] = {0,0,0,0,0,0,0,0,0,
-                          0,0,0,0,0,0,0,0,0,};
+  int numa_mapping[16] = {0,0,0,0,0,0,0,0,
+                          0,0,0,0,0,0,0,0};
   double E = 1e-3;
 
   // int part_opt = 0;
@@ -683,37 +683,37 @@ int main(int argc, char *argv[]) {
 
   ret_baseline_csr.print();
   ret_static_csr.print();
-  ret_dynamic_csr.print();
+  //ret_dynamic_csr.print();
   
   ret_baseline_csc.print();
   ret_static_csc.print();
-  ret_dynamic_csc.print();
+  //ret_dynamic_csc.print();
   
   ret_baseline_coo.print();
   ret_static_coo.print();
-  ret_dynamic_coo.print();
+  //ret_dynamic_coo.print();
 
   printf("Check: %d/%d\n", pass_baseline_csr, repeat_test);
   printf("Check: %d/%d\n", pass_static_csr, repeat_test);
-  printf("Check: %d/%d\n", pass_dynamic_csr, repeat_test);
+  //printf("Check: %d/%d\n", pass_dynamic_csr, repeat_test);
   printf("Check: %d/%d\n", pass_baseline_csc, repeat_test);
   printf("Check: %d/%d\n", pass_static_csc, repeat_test);
-  printf("Check: %d/%d\n", pass_dynamic_csc, repeat_test);
+  //printf("Check: %d/%d\n", pass_dynamic_csc, repeat_test);
   printf("Check: %d/%d\n", pass_baseline_coo, repeat_test);
   printf("Check: %d/%d\n", pass_static_coo, repeat_test);
-  printf("Check: %d/%d\n", pass_dynamic_coo, repeat_test);
+  //printf("Check: %d/%d\n", pass_dynamic_coo, repeat_test);
 
   myfile << ret_baseline_csr.to_string();
   myfile << ret_static_csr.to_string();
-  myfile << ret_dynamic_csr.to_string();
+  //myfile << ret_dynamic_csr.to_string();
 
   myfile << ret_baseline_csc.to_string();
   myfile << ret_static_csc.to_string();
-  myfile << ret_dynamic_csc.to_string();
+  //myfile << ret_dynamic_csc.to_string();
 
   myfile << ret_baseline_coo.to_string();
   myfile << ret_static_coo.to_string();
-  myfile << ret_dynamic_coo.to_string();
+  //myfile << ret_dynamic_coo.to_string();
 
   myfile.close();
 }
