@@ -1,0 +1,719 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctime>
+#include <sys/time.h>
+#include <cuda_runtime.h>
+#include "cusparse.h"
+#include <iostream>
+#include <iomanip>
+#include <cmath>
+#include "mmio.h"
+#include <float.h>
+#include <omp.h>
+//#include "anonymouslib_cuda.h"
+#include <cuda_profiler_api.h>
+#include "spmv_kernel.h"
+#include <limits>
+#include <fstream>
+#include <sstream>
+using namespace std;
+
+
+void print_error(cusparseStatus_t status) {
+  if (status == CUSPARSE_STATUS_NOT_INITIALIZED)
+    cout << "CUSPARSE_STATUS_NOT_INITIALIZED" << endl;
+  else if (status == CUSPARSE_STATUS_ALLOC_FAILED)
+    cout << "CUSPARSE_STATUS_ALLOC_FAILED" << endl;
+  else if (status == CUSPARSE_STATUS_INVALID_VALUE)
+    cout << "CUSPARSE_STATUS_INVALID_VALUE" << endl;
+  else if (status == CUSPARSE_STATUS_ARCH_MISMATCH)
+    cout << "CUSPARSE_STATUS_ARCH_MISMATCH" << endl;
+  else if (status == CUSPARSE_STATUS_INTERNAL_ERROR)
+    cout << "CUSPARSE_STATUS_INTERNAL_ERROR" << endl;
+  else if (status == CUSPARSE_STATUS_MATRIX_TYPE_NOT_SUPPORTED)
+    cout << "CUSPARSE_STATUS_MATRIX_TYPE_NOT_SUPPORTED" << endl;
+}
+
+
+/* CPU version spmv for correctness verification */
+void csr_spmv_cpu(int m, int n, int nnz, 
+       double * alpha,
+                   double * cooVal, int * csrRowPtr, int * cooColIndex,
+                   double * x, 
+             double * beta,
+                   double * y) { 
+  for (int i = 0; i < m; i++) {
+    double sum = 0.0;
+    for (int j = csrRowPtr[i]; j < csrRowPtr[i+1]; j++ ){
+      sum += cooVal[j] * x[cooColIndex[j]];
+    }
+    y[i] = (*alpha) * sum + (*beta) * y[i]; 
+  }
+}
+
+
+void coo_spmv_cpu(int m, int n, int nnz, double * alpha,
+                  double * cooVal, int * cooRowIdx, int * cooColIdx,
+                   double * x, double * beta, double * y) { 
+  double * sum = new double[m];
+  for(int i = 0; i < m; i++) {
+    sum[i] = 0.0;
+  }
+  for (int i = 0; i < nnz; i++) {
+    sum[cooRowIdx[i]] += cooVal[i] * x[cooColIdx[i]];
+  }
+  for(int i = 0; i < m; i++) {
+    y[i] = (*alpha) * sum[i] + (*beta) * y[i]; 
+  }
+  delete [] sum;
+}
+
+
+int main(int argc, char *argv[]) {
+
+
+  if (argc < 5) {
+    cout << "Incorrect number of arguments!" << endl;
+    cout << "Usage ./spmv [input matrix file] [number of GPU(s)] [number of test(s)] [kernel version (1-3)] [data type ('f' or 'b')]"  << endl;
+    return -1;
+  }
+
+  char input_type = argv[1][0];
+
+  char * filename = argv[2];
+
+  int ngpu = atoi(argv[3]);
+  int repeat_test = atoi(argv[4]);
+
+  char * csv_output = argv[5];
+
+  int part_opt = atoi(argv[6]);
+  int merg_opt = atoi(argv[7]);
+
+  cout << "Read" << " arguments..."  << "part_opt " << part_opt << " merg_opt " << merg_opt << endl;
+  //int kernel_version = atoi(argv[5]);
+  
+  //int divide = atoi(argv[7]);
+  //int copy_of_workspace = atoi(argv[8]);
+
+
+  // double ** fake_data = new double*[500];
+  // for (int i = 0; i < 500; i++) {
+  //   checkCudaErrors(cudaMallocHost((void **)&(fake_data[i]), 134217728 * sizeof(double)));
+  //   cout << "allocated pin memory: " << i << " GB" << endl;
+  // }
+
+  int ret_code;
+  MM_typecode matcode;
+  FILE *f;
+  int m, n;
+  int nnz;   
+  int * cooRowIdx;
+  int * cooColIdx;
+  double * cooVal;
+  
+
+  
+  //cout << "csv_output" << csv_output << endl;
+  int deviceCount;
+  checkCudaErrors(cudaGetDeviceCount(&deviceCount));
+  if (deviceCount < ngpu) {
+    cout << "Error: Not enough number of GPUs. Only " << deviceCount << "available." << endl;
+    return -1;
+  }
+  if (ngpu <= 0) {
+    cout << "Error: Number of GPU(s) needs to be greater than 0." << endl;
+    return -1;
+  }
+
+
+  cout << "Using total " << ngpu << " GPU(s)." << endl; 
+
+
+  if (input_type == 'f') {
+
+    cout << "Loading input matrix from " << filename << endl;
+    if ((f = fopen(filename, "r")) == NULL) {
+        printf("File open error. \n");
+        exit(1);
+    }
+    if (mm_read_banner(f, &matcode) != 0) {
+        printf("Could not process Matrix Market banner.\n");
+        exit(1);
+    }
+    cout << mm_typecode_to_str(matcode) << endl;
+    int nnz_int;
+    if ((ret_code = mm_read_mtx_crd_size(f, &m, &n, &nnz_int)) !=0) {
+      printf("header reading error. \n");  
+      exit(1);
+    }
+    nnz = nnz_int;
+        
+    // nnz = 100;
+    //  m = 10;
+    //  n = 10;
+
+    cout << "m: " << m << " n: " << n << " nnz: " << nnz << endl;
+    checkCudaErrors(cudaMallocHost((void **)&cooRowIdx, nnz * sizeof(int)));
+    checkCudaErrors(cudaMallocHost((void **)&cooColIdx, nnz * sizeof(int)));
+    checkCudaErrors(cudaMallocHost((void **)&cooVal, nnz * sizeof(double)));
+    //Read matrix from file into COO format
+    cout << "Start reading data from file" << endl;
+    if (mm_is_pattern(matcode)) { // binary input
+      cout << "binary input\n";
+      for (int i = 0; i < nnz; i++) {
+        fscanf(f, "%d %d\n", &cooRowIdx[i], &cooColIdx[i]);
+        cooVal[i] = 1;
+        cooRowIdx[i]--;
+        cooColIdx[i]--;
+      }
+    } else if (mm_is_real(matcode)){ // float input
+      cout << "float input\n";
+      for (int i = 0; i < nnz; i++) {
+        fscanf(f, "%d %d %lg\n", &cooRowIdx[i], &cooColIdx[i], &cooVal[i]);
+        cooRowIdx[i]--;
+        cooColIdx[i]--;
+      }
+    } else if (mm_is_integer(matcode)){ // integer input
+      cout << "integer input\n";
+      for (int i = 0; i < nnz; i++) {
+        int tmp;
+        fscanf(f, "%d %d %d\n", &cooRowIdx[i], &cooColIdx[i], &tmp);
+        cooVal[i] = tmp;
+        cooRowIdx[i]--;
+        cooColIdx[i]--;
+      }
+    }
+    
+    // testing data
+    // int p = 0;
+    // for (int i = 0; i < m; i++) {
+    //   for (int j = 0; j < n; j++) {
+    //     cooVal[p] = 1;
+    //     cooRowIdx[p] = i;
+    //     cooColIdx[p] = j;
+    //     p++;
+    //   }
+    // }
+    
+    cout << "Done loading data from file" << endl;
+  } else if(input_type == 'g') { // generate data
+    n = atoi(filename);
+    m = n;
+    int nb = m / 8;
+    double r;
+    double r1 = 0.9;
+    double r2 = 0.01;
+    int p = 0;
+    for (int i = 0; i < m; i += nb) {
+      if (i == 0) {
+        r = r1;
+      } else {
+        r = r2;
+      }
+      for (int ii = i; ii < i + nb; ii++) {
+        for (int j = 0; j < n * r; j++) {
+          p++;
+        }
+      }
+    }
+
+    nnz = p;
+    cout << "m: " << m << " n: " << n << " nnz: " << nnz << endl;
+    
+    checkCudaErrors(cudaMallocHost((void **)&cooRowIdx, nnz * sizeof(int)));
+    checkCudaErrors(cudaMallocHost((void **)&cooColIdx, nnz * sizeof(int)));
+    checkCudaErrors(cudaMallocHost((void **)&cooVal, nnz * sizeof(double)));
+    p = 0;
+    
+    cout << "Start generating data " << std::flush;
+    for (int i = 0; i < m; i += nb) {
+      cout << "." << std::flush;
+      if (i == 0) {
+        r = r1;
+      } else {
+        r = r2;
+      }
+      //cout << "Matrix:" << endl;
+      for (int ii = i; ii < i + nb; ii++) {
+        for (int j = 0; j < n * r; j++) {
+          //if (p > nnz) { cout << "error" << endl; break;}
+          //else {
+          cooRowIdx[p] = ii;
+          cooColIdx[p] = j;
+          cooVal[p] = 1.0;//(double) rand() / (RAND_MAX);
+          p++;
+          //cout << 1 << " ";
+          //}
+        }
+        //cout << endl;
+      }
+    }
+    cout << endl;
+    //cout << "m: " << m << " n: " << n << " nnz: " << p << endl;
+    cout << "Done generating data." << endl;
+  }
+
+
+
+  
+
+  // Convert COO to CSR
+  
+
+  long long matrix_data_space = nnz * sizeof(double) + nnz * sizeof(int) + (nnz) * sizeof(int);
+
+  double matrix_size_in_gb = (double)matrix_data_space / 1e9;
+  cout << "Matrix space size: " << matrix_size_in_gb << " GB." << endl;
+
+  
+  // CSR to CSC
+  
+
+  // csr2csrNcsc(m, n, nnz,
+  //            cooVal, cooRowIdx, cooColIdx,
+  //            csrVal, csrRowPtr, csrColIdx,
+  //            cscVal, cscColPtr, cscRowIdx);
+  // printf("Converting COO to CSR and CSC\n");
+
+  
+
+  
+  cout << "Sorting COO" << endl;
+  sortCOORow(m, n, nnz, cooVal, cooRowIdx, cooColIdx);
+
+
+  // omp_set_num_threads(ngpu);
+  // int * counter = new int[m];
+  // for (int i = 0; i < m; i++) {
+  //   counter[i] = 0;
+  // }
+
+  // #pragma omp parallel for
+  // for (int i = 0; i < nnz; i++) {
+  //   counter[cooRowIdx[i]]++;
+  // }
+  // csrRowPtr[0] = 0;
+  // for (int i = 1; i <= m; i++) {
+  //   csrRowPtr[i] = csrRowPtr[i - 1] + counter[i - 1];
+  // }
+
+  // csrVal = cooVal;
+  // csrColIdx = cooColIdx;
+
+
+  // int * counter2 = new int[n];
+  // for (int i = 0; i < n; i++) {
+  //   counter2[i] = 0;
+  // }
+
+  // #pragma omp parallel for
+  // for (int i = 0; i < nnz; i++) {
+  //   counter2[cooColIdx[i]]++;
+  // }
+  // cscColPtr[0] = 0;
+  // for (int i = 1; i <= n; i++) {
+  //   cscColPtr[i] = cscColPtr[i - 1] + counter2[i - 1];
+  // }
+
+  // cscVal = cooVal;
+  // cscRowIdx = cooRowIdx;
+
+  printf("Done sorting\n");
+  // report_all_mem_usage();
+
+  // printf("csrRowPtr: %d - %d\n", csrRowPtr[0], csrRowPtr[m]);
+  // printf("cscColPtr: %d - %d\n", cscColPtr[0], cscColPtr[n]);
+  // print_vec(csrVal, nnz, "csrVal:");
+  // print_vec(csrRowPtr, m+1, "csrRowPtr:");
+  // print_vec(csrColIdx, nnz, "csrColIdx:");
+
+  // print_vec(cscVal, nnz, "cscVal:");
+  // print_vec(cscColPtr, n+1, "cscColPtr:");
+  // print_vec(cscRowIdx, nnz, "cscRowIdx:");
+
+  double * x;
+
+  double * y_baseline_csr;
+  double * y_static_csr;
+  double * y_dynamic_csr;
+
+  double * y_baseline_csc;
+  double * y_static_csc;
+  double * y_dynamic_csc;
+
+  double * y_baseline_coo;
+  double * y_static_coo;
+  double * y_dynamic_coo;
+
+  double * y_verify;
+
+  printf("Allocate y\n");
+
+  checkCudaErrors(cudaMallocHost((void**)&x, n * sizeof(double)));
+
+  checkCudaErrors(cudaMallocHost((void**)&y_baseline_csr, m * sizeof(double)));
+  checkCudaErrors(cudaMallocHost((void**)&y_static_csr, m * sizeof(double)));
+  checkCudaErrors(cudaMallocHost((void**)&y_dynamic_csr, m * sizeof(double)));
+
+  checkCudaErrors(cudaMallocHost((void**)&y_baseline_csc, m * sizeof(double)));
+  checkCudaErrors(cudaMallocHost((void**)&y_static_csc, m * sizeof(double)));
+  checkCudaErrors(cudaMallocHost((void**)&y_dynamic_csc, m * sizeof(double)));
+
+  checkCudaErrors(cudaMallocHost((void**)&y_baseline_coo, m * sizeof(double)));
+  checkCudaErrors(cudaMallocHost((void**)&y_static_coo, m * sizeof(double)));
+  checkCudaErrors(cudaMallocHost((void**)&y_dynamic_coo, m * sizeof(double)));
+
+  checkCudaErrors(cudaMallocHost((void**)&y_verify, m * sizeof(double)));
+
+  cout << "Initializing x" << endl;
+  for (int i = 0; i < n; i++)
+  {
+    x[i] = 1.0; //((double) rand() / (RAND_MAX)); 
+  }
+//   /*
+//   int zero_count = 0;
+//   for (int i = 0; i < n; i++){
+//     if ((double) rand() / (RAND_MAX) < 0.5) {
+//       x[i] = 0;
+//       zero_count++;
+//     }
+//   }
+//   cout << "x zero count: " << zero_count << "/" << n << endl;
+//   */
+
+  double ALPHA = 1.0;//(double) rand() / (RAND_MAX);
+  double BETA = 0.0; //(double) rand() / (RAND_MAX);
+
+  double time_baseline = 0.0;
+  double time_baseline_part = 0.0;
+
+  struct spmv_ret ret_baseline_csr;
+  struct spmv_ret ret_static_csr;
+  struct spmv_ret ret_dynamic_csr;
+
+  struct spmv_ret ret_baseline_csc;
+  struct spmv_ret ret_static_csc;
+  struct spmv_ret ret_dynamic_csc;
+
+  struct spmv_ret ret_baseline_coo;
+  struct spmv_ret ret_static_coo;
+  struct spmv_ret ret_dynamic_coo;
+
+  ret_baseline_csr.init();
+  ret_static_csr.init();
+  ret_dynamic_csr.init();
+
+  ret_baseline_csc.init();
+  ret_static_csc.init();
+  ret_dynamic_csc.init();
+
+  ret_baseline_coo.init();
+  ret_static_coo.init();
+  ret_dynamic_coo.init();
+  
+  cout << "Compute CPU version" << endl;
+  for (int i = 0; i < m; i++) y_verify[i] = 0.0;
+  // csr_spmv_cpu(m, n, nnz,
+  //              &ALPHA,
+  //              csrVal, csrRowPtr, csrColIdx,
+  //              x,
+  //              &BETA,
+  //              y_verify);
+  coo_spmv_cpu(m, n, nnz,
+               &ALPHA,
+               cooVal, cooRowIdx, cooColIdx, 
+               x,
+               &BETA,
+               y_verify);
+
+  ofstream myfile;
+  ostringstream o;
+  if(input_type == 'g') {
+      o << csv_output << "_" << n << ".csv";
+  }
+  if(input_type == 'f') {
+      o << csv_output << ".csv";
+  }
+  cout <<"Output to file: " << o.str().c_str() << endl;
+  myfile.open (o.str().c_str());
+
+    
+
+  int pass_baseline_csr = 0;
+  int pass_static_csr = 0;
+  int pass_dynamic_csr = 0;
+
+  int pass_baseline_csc = 0;
+  int pass_static_csc = 0;
+  int pass_dynamic_csc = 0;
+
+  int pass_baseline_coo = 0;
+  int pass_static_coo = 0;
+  int pass_dynamic_coo = 0;
+
+  struct spmv_ret ret;
+  struct spmv_ret ret2;
+  ret = ret2;
+  int numa_mapping[16] = {0,0,0,0,0,0,0,0,0,
+                          0,0,0,0,0,0,0,0,0,};
+  double E = 1e-3;
+
+  // int part_opt = 0;
+  // int merg_opt = 1;
+  
+  cout << "Starting tests..."  << "part_opt " << part_opt << " merg_opt " << merg_opt << endl;
+
+  // cout << "start test coo\n";
+  // report_all_mem_usage();
+  for (int j = 0; j < repeat_test; j++) {
+    for (int i = 0; i < m; i++) {
+      y_baseline_coo[i] = 0.0;
+      y_static_coo[i] = 0.0;
+      y_dynamic_coo[i] = 0.0;
+    }
+    // cout << "Iter:" << j << endl;
+    // cout << "before baseline\n";
+    // report_all_mem_usage();
+    ret = spMV_mgpu_baseline_coo(m, n, nnz, &ALPHA,
+                                cooVal, cooRowIdx, cooColIdx, 
+                                x, &BETA,
+                                y_baseline_coo,
+                                ngpu);
+    ret_baseline_coo.add(ret);
+    
+    // cout << "in-between baseline and v1\n";
+    // report_all_mem_usage();
+    
+    ret = spMV_mgpu_v1_numa_coo(m, n, nnz, &ALPHA,
+                                cooVal, cooRowIdx, cooColIdx, 
+                                x, &BETA,
+                                y_static_coo,
+                                ngpu,
+                                1,
+                                numa_mapping,
+                                part_opt, merg_opt); //kernel 1
+    ret_static_coo.add(ret);
+    // cout << "after v1\n";
+    // report_all_mem_usage();
+
+    bool correct_baseline_coo = true;
+    bool correct_static_coo = true;
+    bool correct_dynamic_coo = true;
+    for(int i = 0; i < m; i++) {
+      if (abs(y_verify[i] - y_baseline_coo[i]) > E) {
+        correct_baseline_coo = false;
+      }
+      if (abs(y_verify[i] - y_static_coo[i]) > E) {
+        correct_static_coo = false;
+      }
+      if (abs(y_verify[i] - y_dynamic_coo[i]) > E) {
+        correct_dynamic_coo = false;
+      }
+    }
+    if (correct_baseline_coo) pass_baseline_coo++;
+    if (correct_static_coo) pass_static_coo++;
+    if (correct_dynamic_coo) pass_dynamic_coo++;
+  }
+
+  // cout << "in-between coo test and allocate csr\n";
+  // report_all_mem_usage();
+  double * csrVal;
+  int * csrRowPtr;
+  int * csrColIdx;
+  checkCudaErrors(cudaMallocHost((void **)&csrVal, nnz * sizeof(double)));
+  checkCudaErrors(cudaMallocHost((void **)&csrRowPtr, (m+1) * sizeof(int)));
+  checkCudaErrors(cudaMallocHost((void **)&csrColIdx, nnz * sizeof(int)));
+
+  // cout << "in-between allocate csr and coo2csr\n";
+  // report_all_mem_usage();
+  coo2csr(m, n, nnz,
+          cooVal, cooRowIdx, cooColIdx,
+          csrVal, csrRowPtr, csrColIdx);
+  // cout << "in-between coo2csr and csr test\n";
+  // report_all_mem_usage();
+
+  for (int j = 0; j < repeat_test; j++) {
+    for (int i = 0; i < m; i++) {
+      y_baseline_csr[i] = 0.0;
+      y_static_csr[i] = 0.0;
+      y_dynamic_csr[i] = 0.0;
+    }
+    // cout << "Iter:" << j << endl;
+    // cout << "before baseline\n";
+    // report_all_mem_usage();
+    ret = spMV_mgpu_baseline(m, n, nnz, &ALPHA,
+                            csrVal, csrRowPtr, csrColIdx, 
+                            x, &BETA,
+                            y_baseline_csr,
+                            ngpu);
+    ret_baseline_csr.add(ret);
+    // cout << "in-between baseline and v1\n";
+    // report_all_mem_usage();
+
+    ret = spMV_mgpu_v1_numa(m, n, nnz, &ALPHA,
+                            csrVal, csrRowPtr, csrColIdx,
+                            x, &BETA,
+                            y_static_csr,
+                            ngpu,
+                            1,
+                            numa_mapping,
+                            part_opt, merg_opt); //kernel 1
+    ret_static_csr.add(ret);
+    // cout << "after v1\n";
+    // report_all_mem_usage();
+
+    bool correct_baseline_csr = true;
+    bool correct_static_csr = true;
+    bool correct_dynamic_csr = true;
+    for(int i = 0; i < m; i++) {
+      if (abs(y_verify[i] - y_baseline_csr[i]) > E) {
+        correct_baseline_csr = false;
+      }
+      if (abs(y_verify[i] - y_static_csr[i]) > E) {
+        correct_static_csr = false;
+      }
+      if (abs(y_verify[i] - y_dynamic_csr[i]) > E) {
+        correct_dynamic_csr = false;
+      }
+    }
+    if (correct_baseline_csr) pass_baseline_csr++;
+    if (correct_static_csr) pass_static_csr++;
+    if (correct_dynamic_csr) pass_dynamic_csr++;
+  }
+
+  // cout << "in-between coo test and free csr\n";
+  // report_all_mem_usage();
+  checkCudaErrors(cudaFreeHost(csrVal));
+  checkCudaErrors(cudaFreeHost(csrRowPtr));
+  checkCudaErrors(cudaFreeHost(csrColIdx));
+  // cout << "in-between csr free and allocate csc\n";
+  // report_all_mem_usage();
+  double * cscVal;
+  int * cscColPtr;
+  int * cscRowIdx;
+  checkCudaErrors(cudaMallocHost((void **)&cscVal, nnz * sizeof(double)));
+  checkCudaErrors(cudaMallocHost((void **)&cscColPtr, (n+1) * sizeof(int)));
+  checkCudaErrors(cudaMallocHost((void **)&cscRowIdx, nnz * sizeof(int)));
+
+
+  // cout << "in-between allocate csc and coo2csc\n";
+  // report_all_mem_usage();
+  coo2csc(m, n, nnz,
+          cooVal, cooRowIdx, cooColIdx,
+          cscVal, cscColPtr, cscRowIdx);
+  // cout << "in-between coo2csc and csc test\n";
+  // report_all_mem_usage();
+
+  for (int j = 0; j < repeat_test; j++) {
+    for (int i = 0; i < m; i++) {
+      y_baseline_csc[i] = 0.0;
+      y_static_csc[i] = 0.0;
+      y_dynamic_csc[i] = 0.0;
+    }
+    // cout << "Iter:" << j << endl;
+    // cout << "before baseline\n";
+    // report_all_mem_usage();
+    ret = spMV_mgpu_baseline_csc(m, n, nnz, &ALPHA,
+                                cscVal, cscColPtr, cscRowIdx,
+                                x, &BETA,
+                                y_baseline_csc,
+                                ngpu);
+    ret_baseline_csc.add(ret);
+    // cout << "in-between baseline and v1\n";
+    // report_all_mem_usage();
+    ret = spMV_mgpu_v1_numa_csc(m, n, nnz, &ALPHA,
+                                cscVal, cscColPtr, cscRowIdx,
+                                x, &BETA,
+                                y_static_csc,
+                                ngpu,
+                                1,
+                                numa_mapping,
+                                part_opt, merg_opt); //kernel 1
+    ret_static_csc.add(ret);
+    // cout << "after v1\n";
+    // report_all_mem_usage();
+    bool correct_baseline_csc = true;
+    bool correct_static_csc = true;
+    bool correct_dynamic_csc = true;  
+    for(int i = 0; i < m; i++) {
+      if (abs(y_verify[i] - y_baseline_csc[i]) > E) {
+        correct_baseline_csc = false;
+      }
+      if (abs(y_verify[i] - y_static_csc[i]) > E) {
+        correct_static_csc = false;
+      }
+      if (abs(y_verify[i] - y_dynamic_csc[i]) > E) {
+        correct_dynamic_csc = false;
+      }
+    }
+    if (correct_baseline_csc) pass_baseline_csc++;
+    if (correct_static_csc) pass_static_csc++;
+    if (correct_dynamic_csc) pass_dynamic_csc++;
+  }
+
+  // cout << "in-between csc test and free csc v1\n";
+  // report_all_mem_usage();
+  checkCudaErrors(cudaFreeHost(cscVal));
+  checkCudaErrors(cudaFreeHost(cscColPtr));
+  checkCudaErrors(cudaFreeHost(cscRowIdx));
+
+  // cout << "in-between free csc test and free coo v1\n";
+  // report_all_mem_usage();
+  checkCudaErrors(cudaFreeHost(cooRowIdx));
+  checkCudaErrors(cudaFreeHost(cooColIdx));
+  checkCudaErrors(cudaFreeHost(cooVal));
+
+  // cout << "after free csc v1\n";
+  // report_all_mem_usage();
+
+  ret_baseline_csr.avg(repeat_test);
+  ret_static_csr.avg(repeat_test);
+  ret_dynamic_csr.avg(repeat_test);
+
+  ret_baseline_csc.avg(repeat_test);
+  ret_static_csc.avg(repeat_test);
+  ret_dynamic_csc.avg(repeat_test);
+
+  ret_baseline_coo.avg(repeat_test);
+  ret_static_coo.avg(repeat_test);
+  ret_dynamic_coo.avg(repeat_test);
+
+  printf("NUMA copy time, Partition time, H2D copy time, compute time, results merging time\n");
+
+  ret_baseline_csr.print();
+  ret_static_csr.print();
+  ret_dynamic_csr.print();
+  
+  ret_baseline_csc.print();
+  ret_static_csc.print();
+  ret_dynamic_csc.print();
+  
+  ret_baseline_coo.print();
+  ret_static_coo.print();
+  ret_dynamic_coo.print();
+
+  printf("Check: %d/%d\n", pass_baseline_csr, repeat_test);
+  printf("Check: %d/%d\n", pass_static_csr, repeat_test);
+  printf("Check: %d/%d\n", pass_dynamic_csr, repeat_test);
+  printf("Check: %d/%d\n", pass_baseline_csc, repeat_test);
+  printf("Check: %d/%d\n", pass_static_csc, repeat_test);
+  printf("Check: %d/%d\n", pass_dynamic_csc, repeat_test);
+  printf("Check: %d/%d\n", pass_baseline_coo, repeat_test);
+  printf("Check: %d/%d\n", pass_static_coo, repeat_test);
+  printf("Check: %d/%d\n", pass_dynamic_coo, repeat_test);
+
+  myfile << ret_baseline_csr.to_string();
+  myfile << ret_static_csr.to_string();
+  myfile << ret_dynamic_csr.to_string();
+
+  myfile << ret_baseline_csc.to_string();
+  myfile << ret_static_csc.to_string();
+  myfile << ret_dynamic_csc.to_string();
+
+  myfile << ret_baseline_coo.to_string();
+  myfile << ret_static_coo.to_string();
+  myfile << ret_dynamic_coo.to_string();
+
+  myfile.close();
+}

@@ -19,6 +19,7 @@ do
     sed -i 's/EEE/'"${MERG_OPT}"'/g' ${job_script}
     sed -i 's/AAA/'"${NUMA}"'/g' ${job_script}
     bsub ${job_script}
+    rm ./${job_script}
 
     PART_OPT=1
 	  MERG_OPT=1
@@ -32,6 +33,7 @@ do
     sed -i 's/EEE/'"${MERG_OPT}"'/g' ${job_script} 
     sed -i 's/AAA/'"${NUMA}"'/g' ${job_script}
     bsub ${job_script}
+    rm ./${job_script}
 
     PART_OPT=1
     MERG_OPT=1
@@ -45,6 +47,7 @@ do
     sed -i 's/EEE/'"${MERG_OPT}"'/g' ${job_script} 
     sed -i 's/AAA/'"${NUMA}"'/g' ${job_script}
     bsub ${job_script}
+    rm ./${job_script}
 
 
   done
