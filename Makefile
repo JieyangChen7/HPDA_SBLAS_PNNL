@@ -28,7 +28,7 @@ test_dgx1: lib dspmv_test_dgx1.o
 	(cd test && nvcc -ccbin g++ $(NVCC_FLAGS) ../src/csr5_kernel.o ../src/spmv_helper.o dspmv_test_dgx1.o ../src/dspmv_mgpu_baseline.o ../src/dspmv_mgpu_baseline_csc.o ../src/dspmv_mgpu_baseline_coo.o ../src/dspmv_mgpu_v1.o ../src/dspmv_mgpu_v1_numa.o ../src/dspmv_mgpu_v1_numa_csc.o ../src/dspmv_mgpu_v1_numa_coo.o ../src/dspmv_mgpu_v2.o -o test_spmv_dgx1 $(INC) $(CUDA_INCLUDES) $(CUDA_LIBS) -D VALUE_TYPE=$(VALUE_TYPE) -D NUM_RUN=$(NUM_RUN))
 	
 test_dgx2: lib dspmv_test_dgx2.o 
-	(cd test && nvcc -ccbin g++ $(NVCC_FLAGS) ../src/csr5_kernel.o ../src/spmv_helper.o dspmv_test_dgx1.o ../src/dspmv_mgpu_baseline.o ../src/dspmv_mgpu_baseline_csc.o ../src/dspmv_mgpu_baseline_coo.o ../src/dspmv_mgpu_v1.o ../src/dspmv_mgpu_v1_numa.o ../src/dspmv_mgpu_v1_numa_csc.o ../src/dspmv_mgpu_v1_numa_coo.o ../src/dspmv_mgpu_v2.o -o test_spmv_dgx2 $(INC) $(CUDA_INCLUDES) $(CUDA_LIBS) -D VALUE_TYPE=$(VALUE_TYPE) -D NUM_RUN=$(NUM_RUN))
+	(cd test && nvcc -ccbin g++ $(NVCC_FLAGS) ../src/csr5_kernel.o ../src/spmv_helper.o dspmv_test_dgx2.o ../src/dspmv_mgpu_baseline.o ../src/dspmv_mgpu_baseline_csc.o ../src/dspmv_mgpu_baseline_coo.o ../src/dspmv_mgpu_v1.o ../src/dspmv_mgpu_v1_numa.o ../src/dspmv_mgpu_v1_numa_csc.o ../src/dspmv_mgpu_v1_numa_coo.o ../src/dspmv_mgpu_v2.o -o test_spmv_dgx2 $(INC) $(CUDA_INCLUDES) $(CUDA_LIBS) -D VALUE_TYPE=$(VALUE_TYPE) -D NUM_RUN=$(NUM_RUN))
 
 dspmv_mgpu_v2.o: ./src/dspmv_mgpu_v2.cu 
 	(cd src && nvcc -ccbin g++ -c $(NVCC_FLAGS) dspmv_mgpu_v2.cu $(INC) $(CUDA_INCLUDES) $(CUDA_LIBS))
