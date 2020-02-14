@@ -1,14 +1,13 @@
 #! /bin/bash
 
 job_script_template=matrix_test_smt.sh
-#job_script=matrix_test_tmp.sh 
 
 for matrix_file in $1
 do
   for NGPU in 6 5 4 3 2 1
   do
-  	PART_OPT=0
-	  MERG_OPT=0
+    PART_OPT=0
+    MERG_OPT=0
     NUMA=0
 
     job_script=matrix_test_smt_${matrix_file}_${NGPU}_${PART_OPT}_${MERG_OPT}_${NUMA}.sh
@@ -22,7 +21,7 @@ do
     rm ./${job_script}
 
     PART_OPT=1
-	  MERG_OPT=1
+    MERG_OPT=1
     NUMA=0
 
     job_script=matrix_test_smt_${matrix_file}_${NGPU}_${PART_OPT}_${MERG_OPT}_${NUMA}.sh
@@ -52,4 +51,4 @@ do
 
   done
 done
-	 	
+    
